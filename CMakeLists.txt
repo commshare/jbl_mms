@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0)
+project(MMS)
+set(MMS_VERSION_MAJOR 0)
+set(MMS_VERSION_MINOR 1)
+include(3rd_lib.cmake)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
