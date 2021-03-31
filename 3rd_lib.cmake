@@ -5,6 +5,6 @@ ExternalProject_Add(libboost
     URL https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ./bootstrap.sh --prefix=${PROJECT_BINARY_DIR}
-    BUILD_COMMAND ./b2 cxxflags="--std=c++11" --with-filesystem install
+    BUILD_COMMAND ./b2 cxxflags="--std=c++11" --with-system --with-thread --with-date_time --with-regex --with-serialization install
     INSTALL_COMMAND ""
 )

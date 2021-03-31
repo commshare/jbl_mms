@@ -16,8 +16,13 @@ add_dependencies(mms
     libboost
 )
 
-# target_link_libraries(
-#     MMS
-#     libboost
-# )
+target_link_libraries(mms
+    boost_system.a
+    boost_thread.a
+    boost_serialization.a
+    boost_date_time.a
+    boost_filesystem.a
+    boost_regex.a
+    pthread
+)
 install(TARGETS mms RUNTIME DESTINATION bin)
