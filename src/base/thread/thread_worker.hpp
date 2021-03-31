@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include <condition_variable>
+#include <boost/asio.hpp>
 namespace mms {
 class ThreadWorker {
 public:
@@ -27,10 +28,14 @@ public:
         return cpu_core_;
     }
 
-    void addTask(const Task & t) {
-        std::unique_lock<std::mutex> lock(tasks_mutex_);
-        tasks_.emplace(t);
-        tasks_cv_.notify_one();
+    template<typename F, typename ...ARGS>
+    void post(F &&f, ARGS &&...args) {
+        io_service_.post(std::bind(f, std::forward<ARGS>(args)...));
+    }
+
+    template<typename F, typename ...ARGS>
+    void dispatch(F &&f, ARGS &&...args) {
+        io_service_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
     }
     
     void start() {
@@ -50,21 +55,9 @@ public:
         } else {
 
         }
-        
-        while(running_) {
-            std::unique_lock<std::mutex> lock(tasks_mutex_);
-            tasks_cv_.wait(lock, [this]() {return !running_ || !tasks_.empty();});
-            if (!running_) {
-                return;
-            }
-
-            if (tasks_.empty()) {
-                continue;
-            }
-            Task &t = tasks_.front();
-            t();
-            tasks_.pop();
-        }
+        work_ = std::make_shared<boost::asio::io_service::work>(io_service_);
+        io_service_.run();
+        std::cout << "stop worker:" << cpu_core_ << " ..." << std::endl;
     }
 
     void stop() {
@@ -72,15 +65,17 @@ public:
             return;
         }
 
-        running_ = false;
-        tasks_cv_.notify_one();
+        io_service_.stop();
         thread_.join();
+    }
+
+    boost::asio::io_service & getIOService() {
+        return io_service_;
     }
 private:
     int cpu_core_;
-    std::mutex tasks_mutex_;
-    std::condition_variable tasks_cv_;
-    std::queue<Task> tasks_;
+    boost::asio::io_service io_service_;
+    std::shared_ptr<boost::asio::io_service::work> work_;
     std::thread thread_;
     std::atomic_bool running_;
 };
