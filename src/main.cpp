@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>  
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "base/thread_pool.hpp"
+#include "base/thread/thread_pool.hpp"
 using namespace mms;
 int main(int argc, char *argv[]) {
     ThreadPool p;
