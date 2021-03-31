@@ -20,5 +20,4 @@ add_dependencies(mms
 #     MMS
 #     libboost
 # )
-
 install(TARGETS mms RUNTIME DESTINATION bin)
