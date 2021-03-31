@@ -3,13 +3,13 @@
 #include <boost/asio.hpp>  
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "system/system.h"
 #include "base/thread_pool.hpp"
 using namespace mms;
 int main(char argc, char *argv[]) {
     ThreadPool p;
-    p.start(mms::getCPUCount());
+    p.start(std::thread::hardware_concurrency());
     auto w = p.getWorker(0);
+    std::cout << "cpu count:" << std::thread::hardware_concurrency() << std::endl;
     w->addTask([]() {
         std::cout << "running task" << std::endl;
     });
