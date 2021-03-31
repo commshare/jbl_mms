@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-add_definitions(-DJEMALLOC_NO_DEMANGLE)
+add_definitions(-DJEMALLOC_NO_DEMANGLE) 
 set(CMAKE_CXX_FLAGS "-g -Wall -std=c++11")
 # rpath
 set(CMAKE_SKIP_BUILD_RPATH FALSE)                 # 编译时加上RPATH  
@@ -25,6 +25,8 @@ target_link_libraries(mms
     boost_date_time.a
     boost_filesystem.a
     boost_regex.a
+    libjemalloc.a
+    dl
     pthread
 )
 install(TARGETS mms RUNTIME DESTINATION bin)
