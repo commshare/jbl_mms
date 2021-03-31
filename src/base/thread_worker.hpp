@@ -29,7 +29,7 @@ public:
 
     void addTask(const Task & t) {
         std::unique_lock<std::mutex> lock(tasks_mutex_);
-        tasks_.push(t);
+        tasks_.emplace(t);
         tasks_cv_.notify_one();
     }
     
@@ -61,9 +61,9 @@ public:
             if (tasks_.empty()) {
                 continue;
             }
-            Task t = tasks_.front();
-            tasks_.pop();
+            Task &t = tasks_.front();
             t();
+            tasks_.pop();
         }
     }
 
