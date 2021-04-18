@@ -1,3 +1,4 @@
+#pragma once
 #include <atomic>
 #include <boost/asio.hpp>
 
@@ -6,17 +7,16 @@
 namespace mms {
 class TcpSocket {
 public:
-    TcpSocket(ThreadWorker *worker_) {
+    TcpSocket(ThreadWorker *worker);
 
+    virtual ~TcpSocket();
+
+    boost::asio::ip::tcp::socket & getSocket() {
+        return socket_;
     }
-
-    virtual ~TcpSocket() {
-
-    }
-
-
+    
 private:
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket_;
+    boost::asio::ip::tcp::socket socket_;
     std::atomic_uint64_t in_bytes_;
     std::atomic_uint64_t out_bytes_;
     ThreadWorker *worker_;

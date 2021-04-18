@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sys/prctl.h>
 
 #include <functional>
@@ -9,11 +11,12 @@
 namespace mms {
 class ThreadPool {
 public:
-    ThreadPool() : running_(false) {
-
+    ThreadPool() : running_(false), using_worker_idx_(0) {
+        
     }
-    virtual ~ThreadPool() {
 
+    virtual ~ThreadPool() {
+        stop();
     }
 
     void start(int cpu_count) {
@@ -42,10 +45,16 @@ public:
     }
 
     ThreadWorker* getWorker(int cpu_num) {
+        if (cpu_num == -1) {
+            uint32_t idx = using_worker_idx_%workers_.size();
+            using_worker_idx_++;
+            return workers_[idx];
+        }
         return workers_[cpu_num];
     }
 private:
     std::atomic_bool running_;
+    std::atomic_uint64_t using_worker_idx_;
     std::vector<ThreadWorker*> workers_;
 };
 };

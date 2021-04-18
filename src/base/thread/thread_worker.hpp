@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <sys/prctl.h>
 
 #include <functional>
@@ -30,12 +32,12 @@ public:
 
     template<typename F, typename ...ARGS>
     void post(F &&f, ARGS &&...args) {
-        io_service_.post(std::bind(f, std::forward<ARGS>(args)...));
+        io_context_.post(std::bind(f, std::forward<ARGS>(args)...));
     }
 
     template<typename F, typename ...ARGS>
     void dispatch(F &&f, ARGS &&...args) {
-        io_service_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
+        io_context_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
     }
     
     void start() {
@@ -55,9 +57,8 @@ public:
         } else {
 
         }
-        work_ = std::make_shared<boost::asio::io_service::work>(io_service_);
-        io_service_.run();
-        std::cout << "stop worker:" << cpu_core_ << " ..." << std::endl;
+        work_ = std::make_shared<boost::asio::io_context::work>(io_context_);
+        io_context_.run();
     }
 
     void stop() {
@@ -65,16 +66,16 @@ public:
             return;
         }
 
-        io_service_.stop();
+        io_context_.stop();
         thread_.join();
     }
 
-    boost::asio::io_service & getIOService() {
-        return io_service_;
+    boost::asio::io_context & getIOContext() {
+        return io_context_;
     }
 private:
     int cpu_core_;
-    boost::asio::io_service io_service_;
+    boost::asio::io_context io_context_;
     std::shared_ptr<boost::asio::io_service::work> work_;
     std::thread thread_;
     std::atomic_bool running_;
