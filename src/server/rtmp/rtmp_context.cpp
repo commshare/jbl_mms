@@ -29,9 +29,54 @@ void RtmpServerContext::run() {
 
     int pos = 0;
     while(1) {
-        int recv_size = tcp_socket_->recvSome(buffer_.data() + pos, buffer_.size() - pos);
+        char d;
+        bool ret = tcp_socket_->recv(&d, 1);
+        if (!ret) {
+            tcp_socket_->close();
+            return;
+        }
+        int32_t cid = (int32_t)(d & 0x3f);
+        int8_t fmt = (d >> 6) & 0x03;
+        if (cid > 1) {
+            // todo read message header
+        }
+
+        if (cid == 0) {
+            if (!tcp_socket_->recv(&d, 1)) {
+                cid += 64;
+                cid += (int32_t)d;
+            }
+        } else if(cid == 1) {
+            char buf[2];
+            if (!tcp_socket_->recv(buf, 2)) {
+                tcp_socket_->close();
+                return;
+            }
+            cid = 64;
+            cid += (int32_t)(buf[0]);
+            cid += (int32_t)(buf[1]);
+        }
+        // recv message header
+
+        auto cid_it = chunk_streams_.find(cid);
+        std::shared_ptr<RtmpChunk> chunk;
+        if (cid_it == chunk_streams_.end()) {
+            chunk = std::make_shared<RtmpChunk>();
+            chunk_streams_[cid] = chunk;
+        } else {
+            chunk = cid_it->second;
+        }
+
+        std::cout << "cid:" << (uint32_t)cid << ", fmt:" << (uint32_t)fmt << std::endl;
+        sleep(10000);
+        // if (!rtmp_message_->rtmp_message_) {// chunk 的rtmp message 为空
+
+        // }
+
+
+
         // decode data in buffer.
-        std::cout << "recv some size:" << recv_size << std::endl;
+        // std::cout << "recv some size:" << recv_size << std::endl;
     }
 }
 
