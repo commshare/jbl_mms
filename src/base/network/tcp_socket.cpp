@@ -38,5 +38,9 @@ int32_t TcpSocket::recvSome(char *data, size_t len) {
     return s;
 }
 
+void TcpSocket::close() {
+    
+}
+
 
 };

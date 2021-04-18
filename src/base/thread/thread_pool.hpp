@@ -7,6 +7,8 @@
 #include <memory>
 #include <atomic>
 
+#include <boost/serialization/singleton.hpp> 
+
 #include "thread_worker.hpp"
 namespace mms {
 class ThreadPool {
@@ -57,4 +59,6 @@ private:
     std::atomic_uint64_t using_worker_idx_;
     std::vector<ThreadWorker*> workers_;
 };
+
+typedef boost::serialization::singleton<ThreadPool> thread_pool_inst;
 };

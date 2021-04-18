@@ -33,18 +33,17 @@ void waitExit() {
 }
 
 int main(int argc, char *argv[]) {
-    ThreadPool p;
-    p.start(std::thread::hardware_concurrency());
+    thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
 
-    RtmpServer rtmp_server(p.getWorker(-1));
+    RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
     if(!rtmp_server.start()) {
         return -1;
     }
 
     waitExit();
-    
+
     std::cout << "stop rtmp server" << std::endl;
     rtmp_server.stop();
-    p.stop();
+    thread_pool_inst::get_mutable_instance().stop();
     return 0;
 }

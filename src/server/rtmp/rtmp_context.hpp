@@ -1,19 +1,30 @@
 #pragma once
+#include <memory>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/array.hpp>
 
 #include "base/thread/thread_worker.hpp"
 #include "base/network/tcp_socket.hpp"
 namespace mms {
-class RtmpContext {
+enum RtmpState {
+    RTMP_SERVER_STATE_WAIT_C0_C1    = 0,
+    RTMP_SERVER_STATE_WAIT_C2       = 1,
+    RTMP_SERVER_STATE_RECV_AV       = 2,
+};
+
+class RtmpServerContext {
 public:
-    RtmpContext(TcpSocket *sock) {
+    RtmpServerContext(boost::shared_ptr<TcpSocket> sock) {
         tcp_socket_ = sock;
     }
 
     void run();
 private:
+    void _genS0S1S2(char *c0c1, char *s0s1s2);
     ThreadWorker *worker_;
-    TcpSocket *tcp_socket_;
+    boost::shared_ptr<TcpSocket> tcp_socket_;
+    RtmpState rtmp_state_ = RTMP_SERVER_STATE_WAIT_C0_C1;
+    boost::array<char, 1024*1024> buffer_;
 };
 };

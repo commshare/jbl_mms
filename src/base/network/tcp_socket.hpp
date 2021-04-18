@@ -2,8 +2,7 @@
 #include <atomic>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
-
-#include "../thread/thread_pool.hpp"
+#include "base/thread/thread_pool.hpp"
 
 namespace mms {
 class TcpSocket {
@@ -15,6 +14,7 @@ public:
     bool send(const char *data, size_t len);
     bool recv(char *data, size_t len);
     int32_t recvSome(char *data, size_t len);
+    void close();
 private:
     boost::asio::ip::tcp::socket *socket_;
     ThreadWorker *worker_;

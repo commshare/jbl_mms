@@ -4,10 +4,10 @@
 #include "base/thread/thread_pool.hpp"
 
 namespace mms {
-class RtmpServer : public TcpServer<RtmpContext> {
+class RtmpServer : public TcpServer, TcpServerHandler {
 public:
     RtmpServer(ThreadWorker *w):TcpServer(w) {
-
+        setTcpHandler(this);
     }
     
     bool start() {
@@ -20,5 +20,8 @@ public:
     void stop() {
         stopListen();
     }
+private:
+    void onTcpSocketOpen(boost::shared_ptr<TcpSocket> sock);
+    void onTcpSocketClosed(boost::shared_ptr<TcpSocket> sock);
 };
 };
