@@ -38,14 +38,15 @@ public:
             acceptor_->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
             while(1) {
                 boost::system::error_code ec;
-                auto client_sock = new TcpSocket(worker_);
-                acceptor_->async_accept(client_sock->getSocket(), yield[ec]);
+                boost::asio::ip::tcp::socket *tcp_sock = new boost::asio::ip::tcp::socket(worker_->getIOContext());
+                acceptor_->async_accept(*tcp_sock, yield[ec]);
                 if (ec) {
-                    delete client_sock;
+                    delete tcp_sock;
                     break;
                 }
                 
-                boost::asio::spawn(worker_->getIOContext(), [client_sock](boost::asio::yield_context yield) {
+                boost::asio::spawn(worker_->getIOContext(), [this, tcp_sock](boost::asio::yield_context yield) {
+                    auto client_sock = new TcpSocket(tcp_sock, worker_, yield);
                     auto ctx = boost::make_shared<CONTEXT>(client_sock);
                     ctx->run();
                 });

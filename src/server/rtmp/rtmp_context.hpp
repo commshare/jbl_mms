@@ -11,9 +11,7 @@ public:
         tcp_socket_ = sock;
     }
 
-    void run() {
-
-    }
+    void run();
 private:
     ThreadWorker *worker_;
     TcpSocket *tcp_socket_;
