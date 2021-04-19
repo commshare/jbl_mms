@@ -55,7 +55,7 @@ void RtmpServerContext::run() {
             cid += (int32_t)(buf[0]);
             cid += (int32_t)(buf[1]);
         }
-        // recv message header
+        // read chunk message header
         auto cid_it = chunk_streams_.find(cid);
         std::shared_ptr<RtmpChunk> chunk;
         if (cid_it == chunk_streams_.end()) {
@@ -63,6 +63,81 @@ void RtmpServerContext::run() {
             chunk_streams_[cid] = chunk;
         } else {
             chunk = cid_it->second;
+        }
+
+        if (!chunk->rtmp_message_ && fmt != 0) {// rtmp消息的第一个chunk，fmt必须是0
+            // todo add log
+            tcp_socket_->close();
+            return;
+        }
+
+        if (!chunk->rtmp_message_) {
+            chunk->rtmp_message_ = new RtmpMessage;
+        }
+
+        if (fmt == 0) {
+            char t[4] = {0};
+            if(!tcp_socket_->recv(t, 3)) {
+                tcp_socket_->close();
+                return;
+            }
+            chunk->rtmp_header_.timestamp = ntohl(*(int32_t*)t);
+
+            memset(t, 0, 4);
+            if(!tcp_socket_->recv(t, 3)) {
+                tcp_socket_->close();
+                return;
+            }
+            chunk->rtmp_header_.message_length = ntohl(*(int32_t*)t);
+
+            if(!tcp_socket_->recv((char*)&chunk->rtmp_header_.message_type_id, 1)) {
+                tcp_socket_->close();
+                return;
+            }
+
+            memset(t, 0, 4);
+            if(!tcp_socket_->recv(t, 3)) {
+                tcp_socket_->close();
+                return;
+            }
+            chunk->rtmp_header_.message_stream_id = ntohl(*(int32_t*)t);
+
+            if (chunk->rtmp_header_.timestamp == 0x00ffffff) {
+                memset(t, 0, 4);
+                if(!tcp_socket_->recv(t, 4)) {
+                    tcp_socket_->close();
+                    return;
+                }
+                chunk->rtmp_header_.timestamp = ntohl(*(int32_t*)t);
+            }
+        } else if (fmt == 1) {
+            std::shared_ptr<RtmpChunk> prev_chunk = chunk;
+            chunk = std::make_shared<RtmpChunk>();
+            
+            char t[4] = {0};
+            if(!tcp_socket_->recv(t, 3)) {
+                tcp_socket_->close();
+                return;
+            }
+            int32_t time_delta = ntohl(*(int32_t*)t);
+            chunk->rtmp_header_.timestamp = prev_chunk->rtmp_header_.timestamp + time_delta;
+            
+            memset(t, 0, 4);
+            if(!tcp_socket_->recv(t, 3)) {
+                tcp_socket_->close();
+                return;
+            }
+            chunk->rtmp_header_.message_length = ntohl(*(int32_t*)t);
+
+            if(!tcp_socket_->recv((char*)&chunk->rtmp_header_.message_type_id, 1)) {
+                tcp_socket_->close();
+                return;
+            }
+
+            chunk->rtmp_header_->message_type_id_ = prev_chunk->rtmp_header_->message_type_id_;
+            chunk_streams_[cid] = chunk;
+        } else if (fmt == 2) {
+            
         }
 
 
