@@ -5,7 +5,7 @@
 #include <functional>
 #include <thread>
 #include <memory>
-#include <atomic>
+#include <boost/atomic.hpp>
 
 #include <boost/serialization/singleton.hpp> 
 
@@ -55,8 +55,8 @@ public:
         return workers_[cpu_num];
     }
 private:
-    std::atomic_bool running_;
-    std::atomic_uint64_t using_worker_idx_;
+    boost::atomic_bool running_;
+    boost::atomic_uint64_t using_worker_idx_;
     std::vector<ThreadWorker*> workers_;
 };
 

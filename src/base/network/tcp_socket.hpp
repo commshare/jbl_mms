@@ -1,5 +1,5 @@
 #pragma once
-#include <atomic>
+#include <boost/atomic.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #include "base/thread/thread_pool.hpp"
@@ -19,7 +19,7 @@ private:
     boost::asio::ip::tcp::socket *socket_;
     ThreadWorker *worker_;
     boost::asio::yield_context yield_;
-    std::atomic_uint64_t in_bytes_;
-    std::atomic_uint64_t out_bytes_;
+    boost::atomic_uint64_t in_bytes_;
+    boost::atomic_uint64_t out_bytes_;
 };
 };
