@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 
+#include <memory>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 
@@ -10,12 +11,14 @@
 #include "base/network/tcp_socket.hpp"
 
 namespace mms {
-class TcpServerHandler {
+template <typename CONN>
+class ServerConnHandler {
 public:
-    virtual void onTcpSocketOpen(boost::shared_ptr<TcpSocket> sock) {};
-    virtual void onTcpSocketClosed(boost::shared_ptr<TcpSocket> sock) {};
+    virtual void onConnOpen(std::unique_ptr<CONN> conn) {};
+    virtual void onConnClosed(std::unique_ptr<CONN> conn) {};
 };
 
+template <typename CONN>
 class TcpServer {
 public:
     TcpServer(ThreadWorker *worker):worker_(worker) {
@@ -26,7 +29,7 @@ public:
 
     }
 public:
-    void setTcpHandler(TcpServerHandler *handler) {
+    void setConnHandler(ServerConnHandler<CONN> *handler) {
         handler_ = handler;
     }
 
@@ -58,8 +61,8 @@ public:
                 }
                 
                 boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context yield) {
-                    auto client_sock = boost::make_shared<TcpSocket>(tcp_sock, worker, yield);
-                    handler_->onTcpSocketOpen(client_sock);
+                    auto client_conn = std::unique_ptr<CONN>(new CONN(tcp_sock, worker, yield));
+                    handler_->onConnOpen(std::move(client_conn));
                 });
             }
         });
@@ -75,7 +78,7 @@ public:
     }
 private:
     ThreadWorker *worker_;
-    TcpServerHandler *handler_;
+    ServerConnHandler<CONN> *handler_;
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
 };
 };

@@ -1,52 +1,49 @@
 #include <iostream>
-#include "rtmp_context.hpp"
+#include "rtmp_conn.hpp"
 
 namespace mms {
 
-void RtmpServerContext::run() {
+void RtmpConn::doService() {
     boost::array<char, 1537> c0c1;
-    std::cout << "wait for c0, c1" << std::endl;
-    if(!tcp_socket_->recv(c0c1.data(), 1537)) {
-        tcp_socket_->close(); // 关闭socket
+    if(!recv(c0c1.data(), 1537)) {
+        close(); // 关闭socket
         return;
     }
-    std::cout << "recv c0 c1" << std::endl;
+
     boost::array<char, 3073> s0s1s2;
     _genS0S1S2(c0c1.data(), s0s1s2.data());
     // send s0, s1, s2
-    if(!tcp_socket_->send(s0s1s2.data(), 3073)) {
-        tcp_socket_->close(); // 关闭socket
+    if(!send(s0s1s2.data(), 3073)) {
+        close(); // 关闭socket
         return;
     }
 
     boost::array<char, 1536> c2;
-    if(!tcp_socket_->recv(c2.data(), 1536)) {
-        tcp_socket_->close(); // 关闭socket
+    if(!recv(c2.data(), 1536)) {
+        close(); // 关闭socket
         return;
     }
     // handshake done
     while(1) {
         // read basic header
         char d;
-        bool ret = tcp_socket_->recv(&d, 1);
+        bool ret = recv(&d, 1);
         if (!ret) {
-            tcp_socket_->close();
+            close();
             return;
         }
         
         int32_t cid = (int32_t)(d & 0x3f);
         int8_t fmt = (d >> 6) & 0x03;
-        // std::cout << "fmt:" << uint32_t(fmt) << ", cid:" << cid << std::endl;
-        printf("d:%x\n", d);
         if (cid == 0) {
-            if (!tcp_socket_->recv(&d, 1)) {
+            if (!recv(&d, 1)) {
                 cid += 64;
                 cid += (int32_t)d;
             }
         } else if(cid == 1) {
             char buf[2];
-            if (!tcp_socket_->recv(buf, 2)) {
-                tcp_socket_->close();
+            if (!recv(buf, 2)) {
+                close();
                 return;
             }
             cid = 64;
@@ -63,50 +60,49 @@ void RtmpServerContext::run() {
         auto chunk = std::make_shared<RtmpChunk>();
         if (fmt == 0) {
             char t[4] = {0};
-            if(!tcp_socket_->recv(t+1, 3)) {
-                tcp_socket_->close();
+            if(!recv(t+1, 3)) {
+                close();
                 return;
             }
             chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
 
             memset(t, 0, 4);
-            if(!tcp_socket_->recv(t+1, 3)) {
-                tcp_socket_->close();
+            if(!recv(t+1, 3)) {
+                close();
                 return;
             }
             chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
-            printf("%x%x%x%x\n", t[0], t[1], t[2], t[3]);
 
-            if(!tcp_socket_->recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
-                tcp_socket_->close();
+            if(!recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                close();
                 return;
             }
 
             memset(t, 0, 4);
-            if(!tcp_socket_->recv(t, 4)) {
-                tcp_socket_->close();
+            if(!recv(t, 4)) {
+                close();
                 return;
             }
             chunk->chunk_message_header_.message_stream_id_ = ntohl(*(int32_t*)t);
 
             if (chunk->chunk_message_header_.timestamp_ == 0x00ffffff) {
                 memset(t, 0, 4);
-                if(!tcp_socket_->recv(t, 4)) {
-                    tcp_socket_->close();
+                if(!recv(t, 4)) {
+                    close();
                     return;
                 }
                 chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
             }
         } else if (fmt == 1) {
             if (!prev_chunk) {//type1 必须有前面的chunk作为基础
-                tcp_socket_->close();
+                close();
                 return;
             }
             *chunk = *prev_chunk;
 
             char t[4] = {0};
-            if(!tcp_socket_->recv(t+1, 3)) {
-                tcp_socket_->close();
+            if(!recv(t+1, 3)) {
+                close();
                 return;
             }
 
@@ -114,28 +110,28 @@ void RtmpServerContext::run() {
             chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
             
             memset(t, 0, 4);
-            if(!tcp_socket_->recv(t+1, 3)) {
-                tcp_socket_->close();
+            if(!recv(t+1, 3)) {
+                close();
                 return;
             }
             chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
 
-            if(!tcp_socket_->recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
-                tcp_socket_->close();
+            if(!recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                close();
                 return;
             }
 
             chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
         } else if (fmt == 2) {
             if (!prev_chunk) {//type1 必须有前面的chunk作为基础
-                tcp_socket_->close();
+                close();
                 return;
             }
             *chunk = *prev_chunk;
 
             char t[4] = {0};
-            if(!tcp_socket_->recv(t+1, 3)) {
-                tcp_socket_->close();
+            if(!recv(t+1, 3)) {
+                close();
                 return;
             }
             int32_t time_delta = ntohl(*(int32_t*)t);
@@ -145,14 +141,18 @@ void RtmpServerContext::run() {
         }
         chunk_streams_[cid] = chunk;
 
+        if (chunk->chunk_message_header_.message_length_ >= 2*1024*1024) {// packet too big
+            close();
+            return;
+        }   
+
         if (!chunk->rtmp_message_) {
             chunk->rtmp_message_ = new RtmpMessage(chunk->chunk_message_header_.message_length_);
         }
         // read the payload
         int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->curr_size_);
-        std::cout << "this_chunk_payload_size=" << this_chunk_payload_size << ",message_length_=" << chunk->chunk_message_header_.message_length_  << std::endl;
-        if(!tcp_socket_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->curr_size_, this_chunk_payload_size)) {
-            tcp_socket_->close();
+        if(!recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->curr_size_, this_chunk_payload_size)) {
+            close();
             return;
         }
         in_chunk_size_ = 4096;
@@ -162,13 +162,12 @@ void RtmpServerContext::run() {
             // process this chunk->rtmp_message_;
             delete chunk->rtmp_message_;
             chunk->rtmp_message_ = nullptr;
-            std::cout << "we get a rtmp message" << std::endl;
             // release this chunk->rtmp_message_
         }
     }
 }
 
-void RtmpServerContext::_genS0S1S2(char *c0c1, char *s0s1s2) {
+void RtmpConn::_genS0S1S2(char *c0c1, char *s0s1s2) {
     //s0
     s0s1s2[0] = '\x03';
     //s1

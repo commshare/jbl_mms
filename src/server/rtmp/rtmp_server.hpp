@@ -1,13 +1,15 @@
 #pragma once
+#include <memory>
+
 #include "server/tcp/tcp_server.hpp"
-#include "rtmp_context.hpp"
+#include "rtmp_conn.hpp"
 #include "base/thread/thread_pool.hpp"
 
 namespace mms {
-class RtmpServer : public TcpServer, TcpServerHandler {
+class RtmpServer : public TcpServer<RtmpConn>, ServerConnHandler<RtmpConn> {
 public:
     RtmpServer(ThreadWorker *w):TcpServer(w) {
-        setTcpHandler(this);
+        setConnHandler(this);
     }
     
     bool start() {
@@ -21,7 +23,7 @@ public:
         stopListen();
     }
 private:
-    void onTcpSocketOpen(boost::shared_ptr<TcpSocket> sock);
-    void onTcpSocketClosed(boost::shared_ptr<TcpSocket> sock);
+    void onConnOpen(std::unique_ptr<RtmpConn> conn);
+    void onConnClosed(std::unique_ptr<RtmpConn> conn);
 };
 };

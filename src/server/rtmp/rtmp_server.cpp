@@ -1,13 +1,14 @@
+#include <boost/shared_ptr.hpp>
+
 #include "rtmp_server.hpp"
 
 namespace mms {
 
-void RtmpServer::onTcpSocketOpen(boost::shared_ptr<TcpSocket> sock) {
-    RtmpServerContext *ctx = new RtmpServerContext(sock);
-    ctx->run();
+void RtmpServer::onConnOpen(std::unique_ptr<RtmpConn> conn) {
+    conn->doService();
 }
 
-void RtmpServer::onTcpSocketClosed(boost::shared_ptr<TcpSocket> sock) {
+void RtmpServer::onConnClosed(std::unique_ptr<RtmpConn> sock) {
 
 }
 

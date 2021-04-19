@@ -10,23 +10,14 @@
 
 #include "rtmp_protocol.hpp"
 namespace mms {
-enum RtmpState {
-    RTMP_SERVER_STATE_WAIT_C0_C1    = 0,
-    RTMP_SERVER_STATE_WAIT_C2       = 1,
-    RTMP_SERVER_STATE_RECV_AV       = 2,
-};
-
-class RtmpServerContext {
+class RtmpConn : public TcpSocket {
 public:
-    RtmpServerContext(boost::shared_ptr<TcpSocket> sock) {
-        tcp_socket_ = sock;
+    RtmpConn(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y):TcpSocket(sock, worker, y) {
     }
 
-    void run();
+    void doService();
 private:
     void _genS0S1S2(char *c0c1, char *s0s1s2);
-    ThreadWorker *worker_;
-    boost::shared_ptr<TcpSocket> tcp_socket_;
     boost::array<char, 1024*1024> buffer_;
     std::unordered_map<uint32_t, std::shared_ptr<RtmpChunk>> chunk_streams_;
     boost::shared_ptr<RtmpMessage> rtmp_message_;
