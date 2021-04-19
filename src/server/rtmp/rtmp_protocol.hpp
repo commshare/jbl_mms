@@ -3,9 +3,19 @@
 namespace mms {
 class RtmpMessage {
 public:
-    char *payload_;
-    int32_t curr_size_;
-    int32_t payload_len_;
+    RtmpMessage(int32_t payload_size) {
+        payload_ = new char[payload_size];
+    }
+
+    virtual ~RtmpMessage() {
+        if(payload_) {
+            delete payload_;
+            payload_ = nullptr;
+        }
+    }
+public:
+    char *payload_ = nullptr;
+    int32_t curr_size_ = 0;
 };
 
 class ChunkMessageHeader {
@@ -18,8 +28,14 @@ public:
 
 class RtmpChunk {
 public:
-    ChunkMessageHeader chunk_message_header_;
+    RtmpChunk& operator=(RtmpChunk & c) {
+        memcpy(&this->chunk_message_header_, &c.chunk_message_header_, sizeof(ChunkMessageHeader));
+        this->rtmp_message_ = c.rtmp_message_;
+        c.rtmp_message_ = nullptr;
+        return *this;
+    }
 public:
+    ChunkMessageHeader chunk_message_header_;
     RtmpMessage *rtmp_message_ = nullptr;
 };
 
