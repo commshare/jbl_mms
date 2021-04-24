@@ -14,8 +14,8 @@ namespace mms {
 template <typename CONN>
 class ServerConnHandler {
 public:
-    virtual void onConnOpen(std::unique_ptr<CONN> conn) {};
-    virtual void onConnClosed(std::unique_ptr<CONN> conn) {};
+    virtual void onConnOpen(CONN *conn) {};
+    virtual void onConnClosed(CONN *conn) {};
 };
 
 template <typename CONN>
@@ -61,8 +61,8 @@ public:
                 }
                 
                 boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context yield) {
-                    auto client_conn = std::unique_ptr<CONN>(new CONN(tcp_sock, worker, yield));
-                    handler_->onConnOpen(std::move(client_conn));
+                    auto client_conn = new CONN(tcp_sock, worker, yield);
+                    handler_->onConnOpen(client_conn);
                 });
             }
         });

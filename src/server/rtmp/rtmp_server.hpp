@@ -23,7 +23,7 @@ public:
         stopListen();
     }
 private:
-    void onConnOpen(std::unique_ptr<RtmpConn> conn);
-    void onConnClosed(std::unique_ptr<RtmpConn> conn);
+    void onConnOpen(RtmpConn *conn);
+    void onConnClosed(RtmpConn *conn);
 };
 };

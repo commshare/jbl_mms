@@ -1,14 +1,15 @@
 #include <boost/shared_ptr.hpp>
 
 #include "rtmp_server.hpp"
-
+#include "rtmp_session.hpp"
 namespace mms {
 
-void RtmpServer::onConnOpen(std::unique_ptr<RtmpConn> conn) {
-    conn->doService();
+void RtmpServer::onConnOpen(RtmpConn *conn) {
+    RtmpSession *s = new RtmpSession(conn);
+    s->service();
 }
 
-void RtmpServer::onConnClosed(std::unique_ptr<RtmpConn> sock) {
+void RtmpServer::onConnClosed(RtmpConn *conn) {
 
 }
 
