@@ -20,16 +20,13 @@ enum AMF0_MARKER_TYPE {
     TYPED_OBJECT_MARKER =   0x10
 };
 
-template <typename T>
 class Amf0Data {
 public:
+    Amf0Data(AMF0_MARKER_TYPE type) : type_(type) {}
+    virtual ~Amf0Data() {}
     virtual int32_t decode(char *data, size_t len) = 0;
-    T & getValue() {
-        return value_;
-    }
 protected:
     AMF0_MARKER_TYPE type_;
-    T value_;
 };
 
 };

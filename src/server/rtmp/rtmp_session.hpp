@@ -17,6 +17,8 @@ public:
 
     void service();
 private:
+    bool handleAmf0Command(std::shared_ptr<RtmpChunk> chunk);
+    bool handleAmf0ConnectCommand(char *payload, size_t len);
     RtmpConn *conn_;
     RtmpHandshake handshake_;
     int32_t in_chunk_size_ = 128;

@@ -11,12 +11,19 @@
 namespace mms {
 class Amf0EcmaArray : public Amf0Data {
 public:
-    Amf0EcmaArray() : type_(ECMA_ARRAY_MARKER) {}
+    using value_type = std::vector<Amf0Data*>;
+    static const AMF0_MARKER_TYPE marker = ECMA_ARRAY_MARKER;
+
+    Amf0EcmaArray() : Amf0Data(ECMA_ARRAY_MARKER) {}
     virtual ~Amf0EcmaArray() {
         for(auto & p : values_) {
             delete p;
         }
         values_.clear();
+    }
+
+    const std::vector<Amf0Data*> & getValue() {
+        return values_;
     }
 public:
     int32_t decode(char *data, size_t len) {

@@ -3,7 +3,8 @@
 namespace mms {
 class Amf0ObjEnd : public Amf0Data {
 public:
-    Amf0ObjEnd() : type_(OBJECT_END_MARKER) {}
+    static const AMF0_MARKER_TYPE marker = OBJECT_END_MARKER;
+    Amf0ObjEnd() : Amf0Data(OBJECT_END_MARKER) {}
     virtual ~Amf0ObjEnd() {}
 public:
     int32_t decode(char *data, size_t len) {

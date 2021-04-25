@@ -1,9 +1,9 @@
 #include <iostream>
+#include "rtmp_define.hpp"
 #include "rtmp_session.hpp"
+#include "./amf0/amf0_object.hpp"
 
 namespace mms {
-
-
 void RtmpSession::service() {
     if (!handshake_.handshake()) {
         conn_->close(); // 关闭socket
@@ -147,10 +147,52 @@ void RtmpSession::service() {
         if (chunk->rtmp_message_->curr_size_ == chunk->chunk_message_header_.message_length_) {
             // process this chunk->rtmp_message_;
             std::cout << "got a rtmp message" << std::endl;
+            if (chunk->chunk_message_header_.message_type_id_ == RTMP_MESSAGE_AMF0_COMMAND) {
+                std::cout << "amf0 message" << std::endl;
+                handleAmf0Command(chunk);
+            }
+
             delete chunk->rtmp_message_;
             chunk->rtmp_message_ = nullptr;
             // release this chunk->rtmp_message_
         }
     }
 }
+
+
+bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpChunk> chunk) {
+    Amf0String command;
+    char * payload = chunk->rtmp_message_->payload_;
+    int32_t len = chunk->rtmp_message_->curr_size_;
+
+    int32_t consumed = command.decode(payload, len);
+    if (consumed < 0) {
+        return false;
+    }
+
+    payload += consumed;
+    len -= consumed;
+
+    auto command_name = command.getValue();
+    if (command_name == "connect") {
+        handleAmf0ConnectCommand(payload, len);
+    }
+
+    return true;
+}
+
+bool RtmpSession::handleAmf0ConnectCommand(char *payload, size_t len) {
+    Amf0Number transaction;
+    auto consumed = transaction.decode(payload, len);
+    if(consumed < 0) {
+        std::cout << "transaction decode failed, ret:" << consumed << std::endl;
+        return false;
+    }
+    payload += consumed;
+    len -= consumed;
+    auto transaction_id = transaction.getValue();
+    std::cout << "transaction_id:" << transaction_id << std::endl;
+    return true;
+}
+
 };

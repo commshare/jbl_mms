@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include "amf0_def.hpp"
 #include "amf0_number.hpp"
@@ -12,7 +13,10 @@
 namespace mms {
 class Amf0Object : public Amf0Data {
 public:
-    Amf0Object() : type_(OBJECT_MARKER) {}
+    using value_type = std::unordered_map<std::string, Amf0Data*>;
+    static const AMF0_MARKER_TYPE marker = OBJECT_MARKER;
+
+    Amf0Object() : Amf0Data(OBJECT_MARKER) {}
     virtual ~Amf0Object() {
         for(auto & p : values_map_) {
             delete p.second;
@@ -20,13 +24,17 @@ public:
         values_map_.clear();
     }
 
-    template <typename MARKER, typename T>
-    bool getProperty(const std::string & key, T & value) {
+    template <typename T>
+    boost::optional<typename T::value_type> getProperty(const std::string & key) {
         auto it = values_map_.find(key);
-        if (it->second->type_ != MARKER) {
-            return false;
+        if (it->second->type_ != T::marker) {
+            return boost::optional<typename T::value_type>();
         }
-        value = it->second->getValue();
+        return ((T*)it->second)->getValue();
+    }
+
+    const std::unordered_map<std::string, Amf0Data*> & getValue() {
+        return values_map_;
     }
 
     int32_t decode(char *data, size_t len) {
@@ -94,12 +102,12 @@ public:
                 }
                 len -= consumed;
                 pos += consumed;
-                auto it = values_map_.find(key.getString());
+                auto it = values_map_.find(key.getValue());
                 if (it != values_map_.end()) {
                     delete it->second;
                     it->second = value;
                 } else {
-                    values_map_[key.getString()] = value;
+                    values_map_[key.getValue()] = value;
                 }
             }
             

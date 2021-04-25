@@ -1,9 +1,11 @@
 #pragma once
 #include "amf0_def.hpp"
 namespace mms {
-class Amf0Boolean : public Amf0Data<bool> {
+class Amf0Boolean : public Amf0Data {
 public:
-    Amf0Boolean() : type_(BOOLEAN_MARKER) {}
+    using value_type = bool;
+    static const AMF0_MARKER_TYPE marker = BOOLEAN_MARKER;
+    Amf0Boolean() : Amf0Data(BOOLEAN_MARKER) {}
     virtual ~Amf0Boolean() {}
     int32_t decode(char *data, size_t len) {
         if(len < 1) {
@@ -17,5 +19,11 @@ public:
         }
         return 1;
     }
+
+    const bool & getValue() {
+        return value_;
+    }
+private:
+    bool value_;
 };
 };

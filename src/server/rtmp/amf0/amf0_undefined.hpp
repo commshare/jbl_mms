@@ -3,7 +3,8 @@
 namespace mms {
 class Amf0Undefined : public Amf0Data {
 public:
-    Amf0Undefined() : type_(UNDEFINED_MARKER){}
+    static const AMF0_MARKER_TYPE marker = UNDEFINED_MARKER;
+    Amf0Undefined() : Amf0Data(UNDEFINED_MARKER){}
     virtual ~Amf0Undefined() {}
 public:
     int32_t decode(char *data, size_t len) {

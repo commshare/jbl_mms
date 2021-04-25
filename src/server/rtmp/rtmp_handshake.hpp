@@ -29,6 +29,8 @@ public:
         if(!conn_->recv(c2.data(), 1536)) {
             return false;
         }
+
+        std::cout << "handshake done." << std::endl;
         return true;
     }
 

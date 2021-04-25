@@ -3,23 +3,47 @@
 namespace mms {
 class Amf0Number : public Amf0Data {
 public:
-    Amf0Number() : type_(NUMBER_MARKER) {}
+    using value_type = double;
+    static const AMF0_MARKER_TYPE marker = NUMBER_MARKER;
+
+    Amf0Number() : Amf0Data(NUMBER_MARKER) {}
     virtual ~Amf0Number() {}
 public:
     int32_t decode(char *data, size_t len){
-        if(len <= 8) {
+        int pos = 0;
+        if(len < 1) {
             return -1;
         }
+
+        auto marker = data[pos];
+        len--;
+        pos++;
+
+        if (marker != NUMBER_MARKER) {
+            return -2;
+        }
+
+        if (len < 8) {
+            return -3;
+        }
+        
+        char *d = data + pos;
         char *p = (char*)&value_;
-        p[0] = data[7];
-        p[1] = data[6];
-        p[2] = data[5];
-        p[3] = data[4];
-        p[4] = data[3];
-        p[5] = data[2];
-        p[6] = data[1];
-        p[7] = data[0];
-        return 8;
+        p[0] = d[7];
+        p[1] = d[6];
+        p[2] = d[5];
+        p[3] = d[4];
+        p[4] = d[3];
+        p[5] = d[2];
+        p[6] = d[1];
+        p[7] = d[0];
+        pos += 8;
+        len --;
+        return pos;
+    }
+
+    const double & getValue() {
+        return value_;
     }
 
     double value_;

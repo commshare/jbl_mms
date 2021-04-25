@@ -3,7 +3,8 @@
 namespace mms {
 class Amf0Null : public Amf0Data {
 public:
-    Amf0Null() : type_(NULL_MARKER) {}
+    static const AMF0_MARKER_TYPE marker = NULL_MARKER;
+    Amf0Null() : Amf0Data(NULL_MARKER) {}
     virtual ~Amf0Null() {}
 public:
     int32_t decode(char *data, size_t len) {
