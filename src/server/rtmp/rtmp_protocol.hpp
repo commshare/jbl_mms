@@ -14,9 +14,16 @@ public:
             payload_ = nullptr;
         }
     }
+
+    std::vector<boost::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
+        
+    }
 public:
     char *payload_ = nullptr;
     int32_t curr_size_ = 0;
+    int32_t timestamp_;
+    uint8_t message_type_id_;
+    int32_t message_stream_id_;
 };
 
 class ChunkMessageHeader {

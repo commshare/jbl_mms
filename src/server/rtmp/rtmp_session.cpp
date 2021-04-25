@@ -7,6 +7,7 @@
 #include "./amf0/amf0_object.hpp"
 
 #include "rtmp_command_message.hpp"
+#include "rtmp_window_ack_size_message.hpp"
 
 namespace mms {
 void RtmpSession::service() {
@@ -195,7 +196,8 @@ bool RtmpSession::handleAmf0ConnectCommand(char *payload, size_t len) {
     payload += consumed;
     len -= consumed;
     // send window ack size to client
-    
+    RtmpWindowAckSizeMessage ack(window_ack_size_);
+    std::vector<boost::shared_ptr<RtmpChunk>> chunks = ack.toChunk(out_chunk_size_);
 
     return true;
 }

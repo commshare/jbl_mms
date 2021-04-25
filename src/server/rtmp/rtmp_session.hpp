@@ -22,6 +22,7 @@ private:
     RtmpConn *conn_;
     RtmpHandshake handshake_;
     int32_t in_chunk_size_ = 128;
+    int32_t out_chunk_size_ = 128;
     int32_t window_ack_size_ = 2*1024*1024;
     boost::array<char, 1024*1024> buffer_;
     
