@@ -24,6 +24,9 @@ class Amf0Data {
 public:
     Amf0Data(AMF0_MARKER_TYPE type) : type_(type) {}
     virtual ~Amf0Data() {}
+    inline AMF0_MARKER_TYPE & getType() {
+        return type_;
+    }
     virtual int32_t decode(char *data, size_t len) = 0;
 protected:
     AMF0_MARKER_TYPE type_;

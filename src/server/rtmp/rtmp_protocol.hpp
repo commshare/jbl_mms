@@ -1,4 +1,5 @@
 #pragma once
+#include "./amf0/amf0_object.hpp"
 
 namespace mms {
 class RtmpMessage {
@@ -38,5 +39,4 @@ public:
     ChunkMessageHeader chunk_message_header_;
     RtmpMessage *rtmp_message_ = nullptr;
 };
-
 };

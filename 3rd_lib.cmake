@@ -17,3 +17,13 @@ ExternalProject_Add(libjemalloc
     BUILD_COMMAND make
     INSTALL_COMMAND make install
 )
+
+ExternalProject_Add(libjsoncpp
+    EXCLUDE_FROM_ALL 1
+    URL https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.8.4.tar.gz
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND cmake . -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+)
+

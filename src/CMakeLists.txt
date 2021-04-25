@@ -9,6 +9,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)       # 安装的执行文件加上R
 #include link
 include_directories("${MMS_SOURCE_DIR}/src" "${CMAKE_BINARY_DIR}/include")
 link_directories("${CMAKE_BINARY_DIR}/lib")
+link_directories("${CMAKE_BINARY_DIR}/lib64")
 #source files
 file(GLOB_RECURSE MMS_SOURCES "${MMS_SOURCE_DIR}/src/*.h" "${MMS_SOURCE_DIR}/src/*.c" "${MMS_SOURCE_DIR}/src/*.cpp" "${MMS_SOURCE_DIR}/src/*.cc")
 
@@ -16,6 +17,7 @@ add_executable(mms ${MMS_SOURCES})
 add_dependencies(mms 
     libboost
     libjemalloc
+    libjsoncpp
 )
 
 target_link_libraries(mms
@@ -28,6 +30,7 @@ target_link_libraries(mms
     boost_thread.a
     boost_context.a
     libjemalloc.a
+    libjsoncpp.a
     dl
     pthread
 )

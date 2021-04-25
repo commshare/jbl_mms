@@ -1,7 +1,12 @@
 #include <iostream>
 #include "rtmp_define.hpp"
 #include "rtmp_session.hpp"
+
+#include "./amf0/amf0_string.hpp"
+#include "./amf0/amf0_number.hpp"
 #include "./amf0/amf0_object.hpp"
+
+#include "rtmp_command_message.hpp"
 
 namespace mms {
 void RtmpSession::service() {
@@ -182,16 +187,16 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpChunk> chunk) {
 }
 
 bool RtmpSession::handleAmf0ConnectCommand(char *payload, size_t len) {
-    Amf0Number transaction;
-    auto consumed = transaction.decode(payload, len);
+    RtmpConnectCommandMessage connect_command;
+    auto consumed = connect_command.decode(payload, len);
     if(consumed < 0) {
-        std::cout << "transaction decode failed, ret:" << consumed << std::endl;
         return false;
     }
     payload += consumed;
     len -= consumed;
-    auto transaction_id = transaction.getValue();
-    std::cout << "transaction_id:" << transaction_id << std::endl;
+    // send window ack size to client
+    
+
     return true;
 }
 

@@ -1,5 +1,9 @@
 #pragma once
 
+// enum RTMP_MESSAGE_TYPE {
+//     RTMP_MESSAGE_AMF0_COMMAND = 20
+
+// };
 #define RTMP_MESSAGE_AMF0_COMMAND       20
 #define RTMP_MESSAGE_AMF3_COMMAND       17
 

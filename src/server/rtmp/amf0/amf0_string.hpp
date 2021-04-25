@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <iostream>
+
 #include "amf0_def.hpp"
 
 namespace mms {
@@ -19,6 +21,7 @@ public:
 
         auto marker = data[pos];
         if (marker != STRING_MARKER) {
+            std::cout << "marker is:" << uint32_t(marker) << std::endl;
             return -2;
         }
         len--;
