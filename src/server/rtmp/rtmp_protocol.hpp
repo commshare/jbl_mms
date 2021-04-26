@@ -2,6 +2,7 @@
 #include "./amf0/amf0_object.hpp"
 
 namespace mms {
+class RtmpChunk;
 class RtmpMessage {
 public:
     RtmpMessage(int32_t payload_size) {

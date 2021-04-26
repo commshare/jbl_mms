@@ -153,9 +153,41 @@ void RtmpSession::service() {
         if (chunk->rtmp_message_->curr_size_ == chunk->chunk_message_header_.message_length_) {
             // process this chunk->rtmp_message_;
             std::cout << "got a rtmp message" << std::endl;
-            if (chunk->chunk_message_header_.message_type_id_ == RTMP_MESSAGE_AMF0_COMMAND) {
-                std::cout << "amf0 message" << std::endl;
-                handleAmf0Command(chunk);
+            switch(chunk->chunk_message_header_.message_type_id_) {
+                case RTMP_MESSAGE_SET_CHUNK_SIZE: {
+                    if (!handleSetChunkSize(chunk)) {
+                        conn_->close();
+                        return;
+                    }
+                    break;
+                }
+                case RTMP_MESSAGE_ABORT_MSG: {
+                    if (!handleAbort(chunk)) {
+                        conn_->close();
+                        return;
+                    }
+                    break;
+                }
+                case RTMP_MESSAGE_USER_CONTROL: {
+                    if (!handleUserControlMsg(chunk)) {
+                        conn_->close();
+                        return;
+                    }
+                    break;
+                }
+                case RTMP_MESSAGE_ACKNOWLEDGEMENT: {
+                    if (!handleAcknowledgement(chunk)) {
+                        conn_->close();
+                        return;
+                    }
+                }
+                case RTMP_MESSAGE_AMF0_COMMAND: {
+                    if (!handleAmf0Command(chunk)) {
+                        conn_->close();
+                        return;
+                    }
+                    break;
+                }
             }
 
             delete chunk->rtmp_message_;
@@ -197,9 +229,56 @@ bool RtmpSession::handleAmf0ConnectCommand(char *payload, size_t len) {
     len -= consumed;
     // send window ack size to client
     RtmpWindowAckSizeMessage ack(window_ack_size_);
-    std::vector<boost::shared_ptr<RtmpChunk>> chunks = ack.toChunk(out_chunk_size_);
+    // std::vector<boost::shared_ptr<RtmpChunk>> chunks = ack.toChunk(out_chunk_size_);
 
     return true;
+}
+
+bool RtmpSession::handleSetChunkSize(std::shared_ptr<RtmpChunk> chunk) {
+    char * payload = chunk->rtmp_message_->payload_;
+    int32_t len = chunk->rtmp_message_->curr_size_;
+    if (len < 4) {
+        return false;
+    }
+
+    int32_t s = 0;
+    char *p = (char*)&s;
+    p[0] = payload[3];
+    p[1] = payload[2];
+    p[2] = payload[1];
+    p[3] = payload[0];
+    in_chunk_size_ = s;
+    return true;
+}
+
+bool RtmpSession::handleAbort(std::shared_ptr<RtmpChunk> chunk) {
+    char * payload = chunk->rtmp_message_->payload_;
+    int32_t len = chunk->rtmp_message_->curr_size_;
+    if (len < 4) {
+        return false;
+    }
+
+    uint32_t chunk_id = 0;
+    char *p = (char*)&chunk_id;
+    p[0] = payload[3];
+    p[1] = payload[2];
+    p[2] = payload[1];
+    p[3] = payload[0];
+
+    auto it = chunk_streams_.find(chunk_id);
+    if (it != chunk_streams_.end()) {
+        chunk_streams_.erase(it);
+    }
+    return true;
+}
+
+bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpChunk> chunk) {
+    // todo 
+    // nothing to do
+}
+
+bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpChunk> chunk) {
+
 }
 
 };

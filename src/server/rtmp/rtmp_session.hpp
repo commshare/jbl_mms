@@ -19,6 +19,12 @@ public:
 private:
     bool handleAmf0Command(std::shared_ptr<RtmpChunk> chunk);
     bool handleAmf0ConnectCommand(char *payload, size_t len);
+
+    bool handleSetChunkSize(std::shared_ptr<RtmpChunk> chunk);
+    bool handleAbort(std::shared_ptr<RtmpChunk> chunk);
+    bool handleAcknowledgement(std::shared_ptr<RtmpChunk> chunk);
+    bool handleUserControlMsg(std::shared_ptr<RtmpChunk> chunk);
+    
     RtmpConn *conn_;
     RtmpHandshake handshake_;
     int32_t in_chunk_size_ = 128;

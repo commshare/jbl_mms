@@ -8,7 +8,9 @@ public:
 
     }
 
-    uint32_t size();
+    uint32_t size() {
+        return 0;
+    }
 
     bool encode(char *data, size_t len) {
         return true;
