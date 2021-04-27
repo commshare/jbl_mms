@@ -15,6 +15,9 @@ public:
     bool recv(char *data, size_t len);
     int32_t recvSome(char *data, size_t len);
     void close();
+
+    uint64_t getRecvCount();
+    uint64_t getSendCount();
 private:
     boost::asio::ip::tcp::socket *socket_;
     ThreadWorker *worker_;

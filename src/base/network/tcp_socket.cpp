@@ -3,12 +3,20 @@
 
 namespace mms {
 
-TcpSocket::TcpSocket(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y) : socket_(sock), yield_(y) {
+TcpSocket::TcpSocket(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y) : socket_(sock), yield_(y), in_bytes_(0), out_bytes_(0) {
 
 }
 
 TcpSocket::~TcpSocket() {
     
+}
+
+uint64_t TcpSocket::getRecvCount() {
+    return in_bytes_;
+}
+
+uint64_t TcpSocket::getSendCount() {
+    return out_bytes_;
 }
 
 bool TcpSocket::send(const char *data, size_t len) {
@@ -17,6 +25,7 @@ bool TcpSocket::send(const char *data, size_t len) {
     if(ec) {
         return false;
     }
+    out_bytes_ += len;
     return true;
 }
 
@@ -26,6 +35,7 @@ bool TcpSocket::recv(char *data, size_t len) {
     if (ec) {
         return false;
     }
+    in_bytes_ += len;
     return true;
 }
 
@@ -35,6 +45,7 @@ int32_t TcpSocket::recvSome(char *data, size_t len) {
     if (ec) {
         return -1;
     }
+    in_bytes_ += s;
     return s;
 }
 

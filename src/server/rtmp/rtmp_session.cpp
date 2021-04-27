@@ -177,6 +177,10 @@ void RtmpSession::service() {
             std::cout << "got a rtmp message" << std::endl;
             if (!handleRtmpMessage(chunk)) {
                 conn_->close();
+            } else {
+                if (conn_->getRecvCount() >= window_ack_size_) {// send window ackledgement size message
+
+                }
             }
 
             delete chunk->rtmp_message_;
