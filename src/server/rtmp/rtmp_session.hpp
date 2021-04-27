@@ -8,8 +8,7 @@
 namespace mms {
 class RtmpSession {
 public:
-    RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn) {
-    }
+    RtmpSession(RtmpConn *conn);
 
     virtual ~RtmpSession() {
 
@@ -17,6 +16,7 @@ public:
 
     void service();
 private:
+    bool handleRtmpMessage(std::shared_ptr<RtmpChunk> chunk);
     bool handleAmf0Command(std::shared_ptr<RtmpChunk> chunk);
     bool handleAmf0ConnectCommand(char *payload, size_t len);
 
@@ -33,6 +33,7 @@ private:
     boost::array<char, 1024*1024> buffer_;
     
     std::unordered_map<uint32_t, std::shared_ptr<RtmpChunk>> chunk_streams_;
+    std::unordered_map<uint32_t, std::shared_ptr<RtmpChunk>> chunk_cache_;
 };
 
 };

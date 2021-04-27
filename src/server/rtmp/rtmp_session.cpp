@@ -10,6 +10,12 @@
 #include "rtmp_window_ack_size_message.hpp"
 
 namespace mms {
+RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn) {
+    for (uint32_t cid = 0; cid < 256; cid++) {
+        chunk_cache_[cid] = std::make_shared<RtmpChunk>();
+    }
+}
+
 void RtmpSession::service() {
     if (!handshake_.handshake()) {
         conn_->close(); // 关闭socket
@@ -49,7 +55,18 @@ void RtmpSession::service() {
             prev_chunk = cid_it->second;
         }
         // this chunk info
-        auto chunk = std::make_shared<RtmpChunk>();
+        // 优先从cache中获取chunk
+        std::shared_ptr<RtmpChunk> chunk;
+        auto cache_cid_it = chunk_cache_.find(cid);
+        if (cache_cid_it != chunk_cache_.end()) {
+            chunk = cache_cid_it->second;
+            chunk_cache_.erase(cache_cid_it);
+        }
+
+        if (!chunk) {
+            chunk = std::make_shared<RtmpChunk>();
+        }
+
         if (fmt == 0) {
             char t[4] = {0};
             if(!conn_->recv(t+1, 3)) {
@@ -115,7 +132,7 @@ void RtmpSession::service() {
 
             chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
         } else if (fmt == 2) {
-            if (!prev_chunk) {//type1 必须有前面的chunk作为基础
+            if (!prev_chunk) {//type2 必须有前面的chunk作为基础
                 conn_->close();
                 return;
             }
@@ -133,10 +150,15 @@ void RtmpSession::service() {
         }
         chunk_streams_[cid] = chunk;
 
+        if (prev_chunk) {
+            prev_chunk->clear();
+            chunk_cache_[cid] = prev_chunk;
+        }
+
         if (chunk->chunk_message_header_.message_length_ >= 2*1024*1024) {// packet too big
             conn_->close();
             return;
-        }   
+        }
 
         if (!chunk->rtmp_message_) {
             chunk->rtmp_message_ = new RtmpMessage(chunk->chunk_message_header_.message_length_);
@@ -147,47 +169,14 @@ void RtmpSession::service() {
             conn_->close();
             return;
         }
-        in_chunk_size_ = 4096;
+
         chunk->rtmp_message_->curr_size_ += this_chunk_payload_size;
         // if we get a rtmp message
         if (chunk->rtmp_message_->curr_size_ == chunk->chunk_message_header_.message_length_) {
             // process this chunk->rtmp_message_;
             std::cout << "got a rtmp message" << std::endl;
-            switch(chunk->chunk_message_header_.message_type_id_) {
-                case RTMP_MESSAGE_SET_CHUNK_SIZE: {
-                    if (!handleSetChunkSize(chunk)) {
-                        conn_->close();
-                        return;
-                    }
-                    break;
-                }
-                case RTMP_MESSAGE_ABORT_MSG: {
-                    if (!handleAbort(chunk)) {
-                        conn_->close();
-                        return;
-                    }
-                    break;
-                }
-                case RTMP_MESSAGE_USER_CONTROL: {
-                    if (!handleUserControlMsg(chunk)) {
-                        conn_->close();
-                        return;
-                    }
-                    break;
-                }
-                case RTMP_MESSAGE_ACKNOWLEDGEMENT: {
-                    if (!handleAcknowledgement(chunk)) {
-                        conn_->close();
-                        return;
-                    }
-                }
-                case RTMP_MESSAGE_AMF0_COMMAND: {
-                    if (!handleAmf0Command(chunk)) {
-                        conn_->close();
-                        return;
-                    }
-                    break;
-                }
+            if (!handleRtmpMessage(chunk)) {
+                conn_->close();
             }
 
             delete chunk->rtmp_message_;
@@ -197,6 +186,29 @@ void RtmpSession::service() {
     }
 }
 
+bool RtmpSession::handleRtmpMessage(std::shared_ptr<RtmpChunk> chunk) {
+    switch(chunk->chunk_message_header_.message_type_id_) {
+        case RTMP_MESSAGE_SET_CHUNK_SIZE: {
+            return handleSetChunkSize(chunk);
+        }
+        case RTMP_MESSAGE_ABORT_MSG: {
+            return handleAbort(chunk);
+        }
+        case RTMP_MESSAGE_USER_CONTROL: {
+            return handleUserControlMsg(chunk);
+        }
+        case RTMP_MESSAGE_ACKNOWLEDGEMENT: {
+            return handleAcknowledgement(chunk);
+        }
+        case RTMP_MESSAGE_AMF0_COMMAND: {
+            return handleAmf0Command(chunk);
+        }
+        default : {
+            return false;
+        }
+    }
+    return false;
+}
 
 bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpChunk> chunk) {
     Amf0String command;
@@ -275,10 +287,11 @@ bool RtmpSession::handleAbort(std::shared_ptr<RtmpChunk> chunk) {
 bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpChunk> chunk) {
     // todo 
     // nothing to do
+    return true;
 }
 
 bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpChunk> chunk) {
-
+    return true;
 }
 
 };

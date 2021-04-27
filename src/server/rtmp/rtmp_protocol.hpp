@@ -17,7 +17,7 @@ public:
     }
 
     std::vector<boost::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
-        
+        return {};
     }
 public:
     char *payload_ = nullptr;
@@ -42,6 +42,14 @@ public:
         this->rtmp_message_ = c.rtmp_message_;
         c.rtmp_message_ = nullptr;
         return *this;
+    }
+
+    void clear() {
+        memset(&chunk_message_header_, 0, sizeof(chunk_message_header_));
+        if (rtmp_message_) {
+            delete rtmp_message_;
+            rtmp_message_ = nullptr;
+        }
     }
 public:
     ChunkMessageHeader chunk_message_header_;
