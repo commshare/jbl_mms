@@ -164,15 +164,15 @@ void RtmpSession::service() {
             chunk->rtmp_message_ = new RtmpMessage(chunk->chunk_message_header_.message_length_);
         }
         // read the payload
-        int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->curr_size_);
-        if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->curr_size_, this_chunk_payload_size)) {
+        int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->payload_size_);
+        if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size)) {
             conn_->close();
             return;
         }
 
-        chunk->rtmp_message_->curr_size_ += this_chunk_payload_size;
+        chunk->rtmp_message_->payload_size_ += this_chunk_payload_size;
         // if we get a rtmp message
-        if (chunk->rtmp_message_->curr_size_ == chunk->chunk_message_header_.message_length_) {
+        if (chunk->rtmp_message_->payload_size_ == chunk->chunk_message_header_.message_length_) {
             // process this chunk->rtmp_message_;
             std::cout << "got a rtmp message" << std::endl;
             if (!handleRtmpMessage(chunk)) {
@@ -191,6 +191,10 @@ void RtmpSession::service() {
 }
 
 bool RtmpSession::handleRtmpMessage(std::shared_ptr<RtmpChunk> chunk) {
+    if (chunk->chunk_message_header_.message_type_id_ != RTMP_MESSAGE_ACKNOWLEDGEMENT) {
+
+    }
+
     switch(chunk->chunk_message_header_.message_type_id_) {
         case RTMP_MESSAGE_SET_CHUNK_SIZE: {
             return handleSetChunkSize(chunk);
@@ -217,7 +221,7 @@ bool RtmpSession::handleRtmpMessage(std::shared_ptr<RtmpChunk> chunk) {
 bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpChunk> chunk) {
     Amf0String command;
     char * payload = chunk->rtmp_message_->payload_;
-    int32_t len = chunk->rtmp_message_->curr_size_;
+    int32_t len = chunk->rtmp_message_->payload_size_;
 
     int32_t consumed = command.decode(payload, len);
     if (consumed < 0) {
@@ -252,7 +256,7 @@ bool RtmpSession::handleAmf0ConnectCommand(char *payload, size_t len) {
 
 bool RtmpSession::handleSetChunkSize(std::shared_ptr<RtmpChunk> chunk) {
     char * payload = chunk->rtmp_message_->payload_;
-    int32_t len = chunk->rtmp_message_->curr_size_;
+    int32_t len = chunk->rtmp_message_->payload_size_;
     if (len < 4) {
         return false;
     }
@@ -269,7 +273,7 @@ bool RtmpSession::handleSetChunkSize(std::shared_ptr<RtmpChunk> chunk) {
 
 bool RtmpSession::handleAbort(std::shared_ptr<RtmpChunk> chunk) {
     char * payload = chunk->rtmp_message_->payload_;
-    int32_t len = chunk->rtmp_message_->curr_size_;
+    int32_t len = chunk->rtmp_message_->payload_size_;
     if (len < 4) {
         return false;
     }

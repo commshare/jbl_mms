@@ -16,5 +16,7 @@ public:
     }
 
 private:
+    uint64_t recv_size_;
+    uint64_t send_size_;
 };
 };

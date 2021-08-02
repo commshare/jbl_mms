@@ -21,7 +21,7 @@ public:
     }
 public:
     char *payload_ = nullptr;
-    int32_t curr_size_ = 0;
+    int32_t payload_size_ = 0;
     int32_t timestamp_;
     uint8_t message_type_id_;
     int32_t message_stream_id_;
