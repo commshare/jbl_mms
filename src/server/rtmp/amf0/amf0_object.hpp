@@ -30,7 +30,7 @@ public:
     boost::optional<typename T::value_type> getProperty(const std::string& key)
     {
         auto it = properties_.find(key);
-        if (it->second->type_ != T::marker) {
+        if (it == properties_.end() || it->second->getType() != T::marker) {
             return boost::optional<typename T::value_type>();
         }
         return ((T*)it->second)->getValue();

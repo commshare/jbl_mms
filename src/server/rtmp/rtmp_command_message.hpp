@@ -32,13 +32,45 @@ public:
             payload += consumed;
             len -= consumed;
         }
-        std::cout << "connect command decode succeed." << std::endl;
+        
+        auto tcUrl = command_object_.getProperty<Amf0String>("tcUrl");
+        if (!tcUrl) {
+            return -4;
+        }
+        tc_url_ = *tcUrl;
+
+        auto pageUrl = command_object_.getProperty<Amf0String>("pageUrl");
+        if (pageUrl) {
+            page_url_ = *pageUrl;
+        }
+        
+        auto swfUrl = command_object_.getProperty<Amf0String>("swfUrl");
+        if (swfUrl) {
+            swf_url_ = *swfUrl;
+        }
+
+        auto app = command_object_.getProperty<Amf0String>("app");
+        if (app) {
+            app_ = *app;
+        }
+        
+        auto objectEncoding = command_object_.getProperty<Amf0Number>("objectEncoding");
+        if (objectEncoding) {
+            object_encoding_ = *objectEncoding;
+        }
+        
         return pos;
     }
 public:
     Amf0Number transaction_;
     Amf0Object command_object_;
     Amf0Object optional_user_args_;
+
+    std::string tc_url_;
+    std::string page_url_;
+    std::string swf_url_;
+    std::string app_;
+    double object_encoding_;
 };
 
 
