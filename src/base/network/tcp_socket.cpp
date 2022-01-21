@@ -50,7 +50,7 @@ int32_t TcpSocket::recvSome(char *data, size_t len) {
 }
 
 void TcpSocket::close() {
-    
+    socket_->close();
 }
 
 

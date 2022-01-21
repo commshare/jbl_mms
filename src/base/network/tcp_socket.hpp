@@ -5,6 +5,14 @@
 #include "base/thread/thread_pool.hpp"
 
 namespace mms {
+class TcpSocket;
+class TcpSocketHandler {
+public:
+    virtual ~TcpSocketHandler() {}
+    virtual void onTcpSocketOpen(TcpSocket *sock) = 0;
+    virtual void onTcpSocketClose(TcpSocket *sock) = 0;
+};
+
 class TcpSocket {
 public:
     TcpSocket(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y);
@@ -19,8 +27,8 @@ public:
     uint64_t getRecvCount();
     uint64_t getSendCount();
 private:
-    boost::asio::ip::tcp::socket *socket_;
-    ThreadWorker *worker_;
+    boost::asio::ip::tcp::socket *socket_ = nullptr;
+    ThreadWorker *worker_ = nullptr;
     boost::asio::yield_context yield_;
     boost::atomic_uint64_t in_bytes_;
     boost::atomic_uint64_t out_bytes_;

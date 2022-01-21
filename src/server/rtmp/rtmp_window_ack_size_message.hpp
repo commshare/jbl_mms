@@ -4,7 +4,7 @@
 namespace mms {
 class RtmpWindowAckSizeMessage : public RtmpMessage {
 public:
-    RtmpWindowAckSizeMessage(uint32_t size) : size_(size), RtmpMessage(sizeof(uint32_t)) {
+    RtmpWindowAckSizeMessage(uint32_t size) : RtmpMessage(sizeof(uint32_t)), size_(size) {
 
     }
 

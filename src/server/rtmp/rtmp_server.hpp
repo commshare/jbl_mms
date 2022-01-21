@@ -23,7 +23,7 @@ public:
         stopListen();
     }
 private:
-    void onConnOpen(RtmpConn *conn);
-    void onConnClosed(RtmpConn *conn);
+    void onConnOpen(RtmpConn *socket) override;
+    void onConnClosed(RtmpConn *socket) override;
 };
 };

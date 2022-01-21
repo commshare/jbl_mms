@@ -47,12 +47,11 @@ public:
     void clear() {
         memset(&chunk_message_header_, 0, sizeof(chunk_message_header_));
         if (rtmp_message_) {
-            delete rtmp_message_;
-            rtmp_message_ = nullptr;
+            rtmp_message_.reset();
         }
     }
 public:
     ChunkMessageHeader chunk_message_header_;
-    RtmpMessage *rtmp_message_ = nullptr;
+    std::shared_ptr<RtmpMessage> rtmp_message_;
 };
 };

@@ -14,19 +14,19 @@ public:
 
     bool handshake() {
         boost::array<char, 1537> c0c1;
-        if(!conn_->recv(c0c1.data(), 1537)) {
+        if (!conn_->recv(c0c1.data(), 1537)) {
             return false;
         }
 
         boost::array<char, 3073> s0s1s2;
         _genS0S1S2(c0c1.data(), s0s1s2.data());
         // send s0, s1, s2
-        if(!conn_->send(s0s1s2.data(), 3073)) {
+        if (!conn_->send(s0s1s2.data(), 3073)) {
             return false;
         }
 
         boost::array<char, 1536> c2;
-        if(!conn_->recv(c2.data(), 1536)) {
+        if (!conn_->recv(c2.data(), 1536)) {
             return false;
         }
 
