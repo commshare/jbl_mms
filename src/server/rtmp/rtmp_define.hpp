@@ -165,3 +165,18 @@ SOFTWARE.
 // 4.2.8. pause 
 // The client sends the pause command to tell the server to pause or start playing.
 #define RTMP_COMMAND_NAME_PAUSE                     "pause"
+
+#define RTMP_COMMAND_NAME_RESULT                    "_result"
+#define RTMP_COMMAND_NAME_ERROR                     "_error"
+
+// code value
+#define RTMP_RESULT_CONNECT_SUCCESS                 "NetConnection.Connect.Success"
+#define RTMP_RESULT_CONNECT_REJECTED                "NetConnection.Connect.Rejected"
+#define RTMP_STATUS_STREAM_PLAY_RESET               "NetStream.Play.Reset"
+#define RTMP_STATUS_STREAM_PLAY_START               "NetStream.Play.Start"
+#define RTMP_STATUS_STREAM_PAUSE_NOTIFY             "NetStream.Pause.Notify"
+#define RTMP_STATUS_STREAM_UNPAUSE_NOTIFY           "NetStream.Unpause.Notify"
+#define RTMP_STATUS_STREAM_PUBLISH_START            "NetStream.Publish.Start"
+#define RTMP_STATUS_STREAM_DATA_START               "NetStream.Data.Start"
+#define RTMP_STATUS_STREAM_UNPUBLISH_SUCCESS        "NetStream.Unpublish.Success"
+#define RTMP_STATUS_STREAM_NOT_FOUND                "NetStream.Play.StreamNotFound"
