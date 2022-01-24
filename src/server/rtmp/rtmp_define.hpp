@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #pragma once
-
+namespace mms {
 // rtmp chunk id spec(csid 2固定用作protocol control message)
 // @see rtmp_specification_1.0.pdf
 // 6.1.1. Chunk Basic Header 
@@ -180,3 +180,50 @@ SOFTWARE.
 #define RTMP_STATUS_STREAM_DATA_START               "NetStream.Data.Start"
 #define RTMP_STATUS_STREAM_UNPUBLISH_SUCCESS        "NetStream.Unpublish.Success"
 #define RTMP_STATUS_STREAM_NOT_FOUND                "NetStream.Play.StreamNotFound"
+
+class RtmpChunk;
+class RtmpMessage {
+public:
+    RtmpMessage(int32_t payload_size) {
+        payload_ = new char[payload_size];
+    }
+
+    virtual ~RtmpMessage() {
+        if(payload_) {
+            delete payload_;
+            payload_ = nullptr;
+        }
+    }
+
+    std::vector<boost::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
+        return {};
+    }
+public:
+    char *payload_ = nullptr;
+    int32_t payload_size_ = 0;
+    int32_t timestamp_;
+    uint8_t message_type_id_;
+    int32_t message_stream_id_;
+};
+
+class RtmpChunk {
+public:
+    RtmpChunk& operator=(RtmpChunk & c) {
+        memcpy(&this->chunk_message_header_, &c.chunk_message_header_, sizeof(ChunkMessageHeader));
+        this->rtmp_message_ = c.rtmp_message_;
+        c.rtmp_message_ = nullptr;
+        return *this;
+    }
+
+    void clear() {
+        memset(&chunk_message_header_, 0, sizeof(chunk_message_header_));
+        if (rtmp_message_) {
+            rtmp_message_.reset();
+        }
+    }
+public:
+    ChunkMessageHeader chunk_message_header_;
+    std::shared_ptr<RtmpMessage> rtmp_message_;
+};
+
+};

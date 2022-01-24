@@ -3,7 +3,8 @@
 
 namespace mms {
 
-TcpSocket::TcpSocket(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y) : socket_(sock), yield_(y), in_bytes_(0), out_bytes_(0) {
+TcpSocket::TcpSocket(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y) : 
+    socket_(sock), yield_(y), in_bytes_(0), out_bytes_(0) {
 
 }
 

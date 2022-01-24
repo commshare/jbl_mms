@@ -27,14 +27,6 @@ public:
     int32_t message_stream_id_;
 };
 
-class ChunkMessageHeader {
-public:
-    int32_t timestamp_;
-    int32_t message_length_;
-    uint8_t message_type_id_;
-    int32_t message_stream_id_;
-};
-
 class RtmpChunk {
 public:
     RtmpChunk& operator=(RtmpChunk & c) {
