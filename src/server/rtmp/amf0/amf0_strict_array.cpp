@@ -11,7 +11,7 @@
 
 namespace mms {
 
-int32_t Amf0StrictArray::decode(char *data, size_t len) {
+int32_t Amf0StrictArray::decode(const uint8_t *data, size_t len) {
     size_t pos = 0;
     if (len < 1) {
         return -1;

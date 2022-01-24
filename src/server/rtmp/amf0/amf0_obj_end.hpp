@@ -7,7 +7,7 @@ public:
     Amf0ObjEnd() : Amf0Data(OBJECT_END_MARKER) {}
     virtual ~Amf0ObjEnd() {}
 public:
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         if (len < 3) {
             return -1;
         }

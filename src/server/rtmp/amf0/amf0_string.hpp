@@ -12,7 +12,7 @@ public:
     Amf0String() : Amf0Data(STRING_MARKER){}
     virtual ~Amf0String() {}
 
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         // read marker
         int pos = 0;
         if(len < 1) {
@@ -41,7 +41,7 @@ public:
         if(len < string_len) {
             return -4;
         }
-        value_.assign(data + pos, string_len);
+        value_.assign((const char*)(data + pos), string_len);
         pos += string_len;
         len -= string_len;
         return pos;

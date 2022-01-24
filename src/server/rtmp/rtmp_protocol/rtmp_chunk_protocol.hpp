@@ -26,13 +26,17 @@ SOFTWARE.
 #include <unordered_map>
 
 #include "rtmp_define.hpp"
-#include "rtmp_conn.hpp"
-#include "rtmp_protocol.hpp"
+#include "server/rtmp/rtmp_conn/rtmp_conn.hpp"
+#include "server/rtmp/rtmp_message/chunk_message/rtmp_set_chunk_size_message.hpp"
+#include "server/rtmp/rtmp_message/chunk_message/rtmp_abort_message.hpp"
+
 namespace mms {
 class RtmpChunkProtocol {
 public:
     RtmpChunkProtocol(RtmpConn *conn):conn_(conn) {
-
+        for (uint32_t cid = 0; cid < 256; cid++) {
+            chunk_cache_[cid] = std::make_shared<RtmpChunk>();
+        }
     }
 
     virtual ~RtmpChunkProtocol() {
@@ -44,25 +48,25 @@ public:
 
         while(1) {// todo reduce read system call, use recvSome
             // read basic header
-            char d;
+            uint8_t d;
             bool ret = conn_->recv(&d, 1);
             if (!ret) {
                 conn_->close();
-                return;
+                return -1;
             }
             
             int32_t cid = (int32_t)(d & 0x3f);
             int8_t fmt = (d >> 6) & 0x03;
-            if (cid == 0) {
+            if (cid == RTMP_FMT_TYPE0) {
                 if (!conn_->recv(&d, 1)) {
                     cid += 64;
                     cid += (int32_t)d;
                 }
             } else if(cid == 1) {
-                char buf[2];
+                uint8_t buf[2];
                 if (!conn_->recv(buf, 2)) {
                     conn_->close();
-                    return;
+                    return -2;
                 }
                 cid = 64;
                 cid += (int32_t)(buf[0]);
@@ -88,29 +92,29 @@ public:
             }
 
             if (fmt == 0) {
-                char t[4] = {0};
+                uint8_t t[4] = {0};
                 if(!conn_->recv(t+1, 3)) {
                     conn_->close();
-                    return;
+                    return -3;
                 }
                 chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
 
                 memset(t, 0, 4);
                 if(!conn_->recv(t+1, 3)) {
                     conn_->close();
-                    return;
+                    return -4;
                 }
                 chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
 
-                if(!conn_->recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
                     conn_->close();
-                    return;
+                    return -5;
                 }
 
                 memset(t, 0, 4);
                 if(!conn_->recv(t, 4)) {
                     conn_->close();
-                    return;
+                    return -6;
                 }
                 chunk->chunk_message_header_.message_stream_id_ = ntohl(*(int32_t*)t);
 
@@ -118,21 +122,21 @@ public:
                     memset(t, 0, 4);
                     if(!conn_->recv(t, 4)) {
                         conn_->close();
-                        return;
+                        return -7;
                     }
                     chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
                 }
             } else if (fmt == 1) {
                 if (!prev_chunk) {//type1 必须有前面的chunk作为基础
                     conn_->close();
-                    return;
+                    return -8;
                 }
                 *chunk = *prev_chunk;
 
-                char t[4] = {0};
+                uint8_t t[4] = {0};
                 if(!conn_->recv(t+1, 3)) {
                     conn_->close();
-                    return;
+                    return -9;
                 }
 
                 int32_t time_delta = ntohl(*(int32_t*)t);
@@ -141,27 +145,27 @@ public:
                 memset(t, 0, 4);
                 if(!conn_->recv(t+1, 3)) {
                     conn_->close();
-                    return;
+                    return -10;
                 }
                 chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
 
-                if(!conn_->recv((char*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
                     conn_->close();
-                    return;
+                    return -11;
                 }
 
                 chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
             } else if (fmt == 2) {
                 if (!prev_chunk) {//type2 必须有前面的chunk作为基础
                     conn_->close();
-                    return;
+                    return -12;
                 }
                 *chunk = *prev_chunk;
 
-                char t[4] = {0};
+                uint8_t t[4] = {0};
                 if(!conn_->recv(t+1, 3)) {
                     conn_->close();
-                    return;
+                    return -13;
                 }
                 int32_t time_delta = ntohl(*(int32_t*)t);
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
@@ -177,7 +181,7 @@ public:
 
             if (chunk->chunk_message_header_.message_length_ >= 2*1024*1024) {// packet too big
                 conn_->close();
-                return;
+                return -14;
             }
 
             if (!chunk->rtmp_message_) {
@@ -187,29 +191,64 @@ public:
             int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->payload_size_);
             if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size)) {
                 conn_->close();
-                return;
+                return -15;
             }
 
             chunk->rtmp_message_->payload_size_ += this_chunk_payload_size;
             // if we get a rtmp message
             if (chunk->rtmp_message_->payload_size_ == chunk->chunk_message_header_.message_length_) {
-                // process this chunk->rtmp_message_;
                 // todo fill rtmp message type...
+                chunk->rtmp_message_->timestamp_ = chunk->chunk_message_header_.timestamp_;
+                chunk->rtmp_message_->message_type_id_ = chunk->chunk_message_header_.message_type_id_;
+                chunk->rtmp_message_->message_stream_id_ = chunk->chunk_message_header_.message_stream_id_;
+                // set chunk size and abort message command process in chunk level
+                if (chunk->rtmp_message_->message_type_id_ == RTMP_MESSAGE_TYPE_SET_CHUNK_SIZE) {  
+                    if (!handleSetChunkSize(chunk->rtmp_message_)) {
+                        conn_->close();
+                        return -16;
+                    }       
+                    continue;
+                } else if (chunk->rtmp_message_->message_type_id_ == RTMP_MESSAGE_TYPE_ABORT_MESSAGE) {
+                    if (!handleAbort(chunk->rtmp_message_)) {
+                        conn_->close();
+                        return -17;
+                    }       
+                    continue;
+                }
+
                 if (0 != recv_handler_(chunk->rtmp_message_)) {
                     conn_->close();
-                    return;
+                    return -18;
                 } 
-
-                if (conn_->getRecvCount() >= window_ack_size_) {// send window ackledgement size message
-
-                }
-                // release this chunk->rtmp_message_
             }
         }
     }
 private:
+    bool handleSetChunkSize(std::shared_ptr<RtmpMessage> msg) {
+        RtmpSetChunkSizeMessage cmd;
+        int ret = cmd.decode(msg);
+        if (ret <= 0) {// 解析成功时，返回解析成功字节数
+            return false;
+        }
+        in_chunk_size_ = cmd.chunk_size_;
+        return true;
+    }
+
+    bool handleAbort(std::shared_ptr<RtmpMessage> msg) {
+        RtmpAbortMessage cmd;
+        int ret = cmd.decode(msg);
+        if (ret <= 0) {// 解析成功时，返回解析成功字节数
+            return false;
+        }
+        auto it = chunk_streams_.find(cmd.chunk_id_);
+        if (it != chunk_streams_.end()) {
+            chunk_streams_.erase(it);
+        }
+        return true;
+    }
+private:
     RtmpConn *conn_;
-    std::function<void(std::shared_ptr<RtmpMessage>)> recv_handler_;
+    std::function<int32_t(std::shared_ptr<RtmpMessage>)> recv_handler_;
 
     boost::array<char, 1024*1024> buffer_;
     int32_t in_chunk_size_ = 128;

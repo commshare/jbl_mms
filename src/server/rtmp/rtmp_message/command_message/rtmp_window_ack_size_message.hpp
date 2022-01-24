@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "rtmp_protocol.hpp"
+#include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
+
 namespace mms {
 class RtmpWindowAckSizeMessage : public RtmpMessage {
 public:

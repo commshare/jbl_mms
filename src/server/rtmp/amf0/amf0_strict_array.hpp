@@ -20,7 +20,7 @@ public:
         return datas_;
     }
 
-    int32_t decode(char *data, size_t len);
+    int32_t decode(const uint8_t *data, size_t len);
 private:
     std::vector<Amf0Data*> datas_;
 };

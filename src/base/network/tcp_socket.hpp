@@ -19,9 +19,9 @@ public:
 
     virtual ~TcpSocket();
 
-    bool send(const char *data, size_t len);
-    bool recv(char *data, size_t len);
-    int32_t recvSome(char *data, size_t len);
+    bool send(const uint8_t *data, size_t len);
+    bool recv(uint8_t *data, size_t len);
+    int32_t recvSome(uint8_t *data, size_t len);
     void close();
 
     uint64_t getRecvCount();

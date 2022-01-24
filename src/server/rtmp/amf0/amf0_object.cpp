@@ -14,7 +14,7 @@
 #include "amf0_date.hpp"
 
 namespace mms {
-int32_t Amf0Object::decode(char* data, size_t len)
+int32_t Amf0Object::decode(const uint8_t* data, size_t len)
 {
     size_t pos = 0;
     Amf0ObjEnd obj_end;
@@ -59,7 +59,7 @@ int32_t Amf0Object::decode(char* data, size_t len)
         }
 
         std::string key;
-        key.assign(data, key_len);
+        key.assign((const char *)data, key_len);
 
         data += key_len;
         pos += key_len;

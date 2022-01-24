@@ -20,7 +20,7 @@ uint64_t TcpSocket::getSendCount() {
     return out_bytes_;
 }
 
-bool TcpSocket::send(const char *data, size_t len) {
+bool TcpSocket::send(const uint8_t *data, size_t len) {
     boost::system::error_code ec;
     socket_->async_send(boost::asio::buffer(data, len), 0, yield_[ec]);
     if(ec) {
@@ -30,7 +30,7 @@ bool TcpSocket::send(const char *data, size_t len) {
     return true;
 }
 
-bool TcpSocket::recv(char *data, size_t len) {
+bool TcpSocket::recv(uint8_t *data, size_t len) {
     boost::system::error_code ec;
     socket_->async_receive(boost::asio::buffer(data, len), yield_[ec]);
     if (ec) {
@@ -40,7 +40,7 @@ bool TcpSocket::recv(char *data, size_t len) {
     return true;
 }
 
-int32_t TcpSocket::recvSome(char *data, size_t len) {
+int32_t TcpSocket::recvSome(uint8_t *data, size_t len) {
     boost::system::error_code ec;
     auto s = socket_->async_read_some(boost::asio::buffer(data, len), yield_[ec]);
     if (ec) {

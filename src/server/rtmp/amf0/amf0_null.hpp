@@ -7,7 +7,7 @@ public:
     Amf0Null() : Amf0Data(NULL_MARKER) {}
     virtual ~Amf0Null() {}
 public:
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         return 0;
     }
 };

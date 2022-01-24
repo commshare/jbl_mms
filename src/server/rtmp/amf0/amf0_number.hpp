@@ -9,7 +9,7 @@ public:
     Amf0Number() : Amf0Data(NUMBER_MARKER) {}
     virtual ~Amf0Number() {}
 public:
-    int32_t decode(char *data, size_t len){
+    int32_t decode(const uint8_t *data, size_t len){
         int pos = 0;
         if(len < 1) {
             return -1;
@@ -27,8 +27,8 @@ public:
             return -3;
         }
         
-        char *d = data + pos;
-        char *p = (char*)&value_;
+        const uint8_t *d = data + pos;
+        uint8_t *p = (uint8_t*)&value_;
         p[0] = d[7];
         p[1] = d[6];
         p[2] = d[5];

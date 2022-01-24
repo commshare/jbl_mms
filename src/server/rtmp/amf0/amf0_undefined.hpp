@@ -7,7 +7,7 @@ public:
     Amf0Undefined() : Amf0Data(UNDEFINED_MARKER){}
     virtual ~Amf0Undefined() {}
 public:
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         return 0;
     }
 };

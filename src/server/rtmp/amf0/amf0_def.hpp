@@ -27,7 +27,7 @@ public:
     inline AMF0_MARKER_TYPE & getType() {
         return type_;
     }
-    virtual int32_t decode(char *data, size_t len) = 0;
+    virtual int32_t decode(const uint8_t *data, size_t len) = 0;
 protected:
     AMF0_MARKER_TYPE type_;
 };

@@ -8,7 +8,6 @@
 #include "base/thread/thread_worker.hpp"
 #include "base/network/tcp_socket.hpp"
 
-#include "rtmp_protocol.hpp"
 namespace mms {
 class RtmpConn : public TcpSocket {
 public:

@@ -22,7 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #pragma once
+#include <string.h>
+#include <vector>
+#include <memory>
+
 namespace mms {
+#define RTMP_FMT_TYPE0 0
+#define RTMP_FMT_TYPE1 1
+#define RTMP_FMT_TYPE2 2
+#define RTMP_FMT_TYPE3 3
 // rtmp chunk id spec(csid 2固定用作protocol control message)
 // @see rtmp_specification_1.0.pdf
 // 6.1.1. Chunk Basic Header 
@@ -185,7 +193,8 @@ class RtmpChunk;
 class RtmpMessage {
 public:
     RtmpMessage(int32_t payload_size) {
-        payload_ = new char[payload_size];
+        payload_ = new uint8_t[payload_size];
+        payload_size_ = payload_size;
     }
 
     virtual ~RtmpMessage() {
@@ -193,15 +202,28 @@ public:
             delete payload_;
             payload_ = nullptr;
         }
+        payload_size_ = 0;
     }
 
-    std::vector<boost::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
+    std::vector<std::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
         return {};
     }
+
+    uint8_t getMessageType() {
+        return message_type_id_;
+    }
 public:
-    char *payload_ = nullptr;
+    uint8_t *payload_ = nullptr;
     int32_t payload_size_ = 0;
     int32_t timestamp_;
+    uint8_t message_type_id_;
+    int32_t message_stream_id_;
+};
+
+class ChunkMessageHeader { 
+public:
+    int32_t timestamp_;
+    int32_t message_length_;
     uint8_t message_type_id_;
     int32_t message_stream_id_;
 };

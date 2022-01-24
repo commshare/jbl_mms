@@ -7,7 +7,7 @@ public:
     static const AMF0_MARKER_TYPE marker = REFERENCE_MARKER;
 public:
     Amf0Reference() : Amf0Data(REFERENCE_MARKER) {}
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         int pos = 0;
         if(len < 1) {
             return -1;
@@ -25,7 +25,7 @@ public:
             return -3;
         }
         
-        char *d = data + pos;
+        const uint8_t *d = data + pos;
         char *p = (char*)&obj_index_;
         p[0] = d[1];
         p[1] = d[0];

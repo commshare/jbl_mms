@@ -26,7 +26,7 @@ public:
         return values_;
     }
 public:
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         if (len < 4) {
             return -1;
         }

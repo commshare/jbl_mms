@@ -7,7 +7,7 @@ public:
     static const AMF0_MARKER_TYPE marker = BOOLEAN_MARKER;
     Amf0Boolean() : Amf0Data(BOOLEAN_MARKER) {}
     virtual ~Amf0Boolean() {}
-    int32_t decode(char *data, size_t len) {
+    int32_t decode(const uint8_t *data, size_t len) {
         int pos = 0;
         if(len < 1) {
             return -1;
