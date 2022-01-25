@@ -30,6 +30,19 @@ bool TcpSocket::send(const uint8_t *data, size_t len) {
     return true;
 }
 
+bool TcpSocket::send(const std::vector<boost::asio::const_buffer> &bufs) {
+    boost::system::error_code ec;
+    socket_->async_send(bufs, 0, yield_[ec]);
+    if(ec) {
+        return false;
+    }
+
+    for (size_t i = 0; i < bufs.size(); i++) {
+        out_bytes_ += bufs[i].size();
+    }
+    return true;
+}
+
 bool TcpSocket::recv(uint8_t *data, size_t len) {
     boost::system::error_code ec;
     socket_->async_receive(boost::asio::buffer(data, len), yield_[ec]);

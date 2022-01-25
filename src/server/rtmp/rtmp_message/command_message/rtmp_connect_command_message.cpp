@@ -10,13 +10,16 @@ RtmpConnectCommandMessage::~RtmpConnectCommandMessage() {
 
 int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
     int32_t consumed = 0;
-    int pos = 0;
+    int32_t pos = 0;
     const uint8_t *payload = rtmp_msg->payload_;
     int32_t len = rtmp_msg->payload_size_;
     consumed = command_name_.decode(payload, len);
     if (consumed < 0) {
         return -1;
     }
+    pos += consumed;
+    payload += consumed;
+    len -= consumed;
 
     consumed = transaction_.decode(payload, len);
     if(consumed < 0) {
@@ -33,6 +36,7 @@ int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg)
     pos += consumed;
     payload += consumed;
     len -= consumed;
+    
     Json::Value root = command_object_.toJson();
     std::cout << root.toStyledString() << std::endl;
     if (len > 0) {
@@ -50,6 +54,7 @@ int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg)
         return -5;
     }
     tc_url_ = *tcUrl;
+    std::cout << "tcUrl:" << *tcUrl << std::endl;
 
     auto pageUrl = command_object_.getProperty<Amf0String>("pageUrl");
     if (pageUrl) {

@@ -194,7 +194,6 @@ class RtmpMessage {
 public:
     RtmpMessage(int32_t payload_size) {
         payload_ = new uint8_t[payload_size];
-        payload_size_ = payload_size;
     }
 
     virtual ~RtmpMessage() {
@@ -215,6 +214,7 @@ public:
 public:
     uint8_t *payload_ = nullptr;
     int32_t payload_size_ = 0;
+    uint8_t chunk_stream_id_ = 0;
     int32_t timestamp_;
     uint8_t message_type_id_;
     int32_t message_stream_id_;

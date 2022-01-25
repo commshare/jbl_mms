@@ -32,6 +32,7 @@ public:
     int32_t decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
         uint8_t * payload = rtmp_msg->payload_;
         int32_t len = rtmp_msg->payload_size_;
+        std::cout << "payload_size:" << len << std::endl;
         if (len < 4) {
             return -1;
         }
@@ -42,6 +43,7 @@ public:
         p[1] = payload[2];
         p[2] = payload[1];
         p[3] = payload[0];
+        std::cout << "s:" << s << std::endl;
         chunk_size_ = s;
         return 4;
     }

@@ -60,8 +60,8 @@ public:
                     break;
                 }
                 
-                boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context yield) {
-                    auto client_conn = new CONN(tcp_sock, worker, yield);
+                boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context y) {
+                    auto client_conn = new CONN(tcp_sock, worker, y);
                     handler_->onConnOpen(client_conn);
                 });
             }

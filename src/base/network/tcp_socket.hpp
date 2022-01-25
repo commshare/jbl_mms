@@ -20,6 +20,7 @@ public:
     virtual ~TcpSocket();
 
     bool send(const uint8_t *data, size_t len);
+    bool send(const std::vector<boost::asio::const_buffer> &bufs);
     bool recv(uint8_t *data, size_t len);
     int32_t recvSome(uint8_t *data, size_t len);
     void close();
