@@ -21,7 +21,7 @@ int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg)
     payload += consumed;
     len -= consumed;
 
-    consumed = transaction_.decode(payload, len);
+    consumed = transaction_id_.decode(payload, len);
     if(consumed < 0) {
         return -2;
     }
@@ -54,8 +54,6 @@ int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg)
         return -5;
     }
     tc_url_ = *tcUrl;
-    std::cout << "tcUrl:" << *tcUrl << std::endl;
-
     auto pageUrl = command_object_.getProperty<Amf0String>("pageUrl");
     if (pageUrl) {
         page_url_ = *pageUrl;
@@ -75,6 +73,7 @@ int32_t RtmpConnectCommandMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg)
     if (objectEncoding) {
         object_encoding_ = *objectEncoding;
     }
+    std::cout << "tcUrl:" << *tcUrl << std::endl;
     
     return pos;
 }

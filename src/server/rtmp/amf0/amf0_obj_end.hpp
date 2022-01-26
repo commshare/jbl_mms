@@ -19,5 +19,9 @@ public:
 
         return 3;
     }
+
+    size_t size() const {
+        return 3;
+    }
 };
 };

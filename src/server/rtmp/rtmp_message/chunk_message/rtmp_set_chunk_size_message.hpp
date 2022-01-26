@@ -29,27 +29,34 @@ SOFTWARE.
 namespace mms {
 class RtmpSetChunkSizeMessage {
 public:
+    RtmpSetChunkSizeMessage(size_t s) : chunk_size_(s) {
+
+    }
+
+    RtmpSetChunkSizeMessage() {
+
+    }
+
     int32_t decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
         uint8_t * payload = rtmp_msg->payload_;
         int32_t len = rtmp_msg->payload_size_;
-        std::cout << "payload_size:" << len << std::endl;
         if (len < 4) {
             return -1;
         }
-
-        int32_t s = 0;
-        char *p = (char*)&s;
-        p[0] = payload[3];
-        p[1] = payload[2];
-        p[2] = payload[1];
-        p[3] = payload[0];
-        std::cout << "s:" << s << std::endl;
-        chunk_size_ = s;
+        chunk_size_ = ntohl(*(uint32_t*)payload);
         return 4;
     }
 
-    std::shared_ptr<RtmpMessage> encode() {
-        return nullptr;
+    std::shared_ptr<RtmpMessage> encode() const {
+        std::shared_ptr<RtmpMessage> rtmp_msg = std::make_shared<RtmpMessage>(sizeof(chunk_size_));
+        rtmp_msg->chunk_stream_id_ = RTMP_CHUNK_ID_PROTOCOL_CONTROL_MESSAGE;
+        rtmp_msg->timestamp_ = 0;
+        rtmp_msg->message_type_id_ = RTMP_MESSAGE_TYPE_SET_CHUNK_SIZE;
+        rtmp_msg->message_stream_id_ = RTMP_MESSAGE_ID_PROTOCOL_CONTROL;
+        // chunk_size_
+        *(uint32_t*)rtmp_msg->payload_ = htonl(chunk_size_);
+        rtmp_msg->payload_size_ = sizeof(chunk_size_);
+        return rtmp_msg;
     }
 public:
     int32_t chunk_size_;

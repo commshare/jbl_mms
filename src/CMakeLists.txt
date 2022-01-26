@@ -31,7 +31,6 @@ target_link_libraries(mms
     boost_context.a
     libjemalloc.a
     libjsoncpp.a
-    iconv
     dl
     pthread
 )

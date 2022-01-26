@@ -20,13 +20,7 @@ public:
             return -1;
         }
 
-        int32_t s = 0;
-        char *p = (char*)&s;
-        p[0] = payload[3];
-        p[1] = payload[2];
-        p[2] = payload[1];
-        p[3] = payload[0];
-        ack_window_size_ = s;
+        ack_window_size_ = ntohl(*(uint32_t*)payload);
         return 4;
     }
 
@@ -36,13 +30,8 @@ public:
         rtmp_msg->timestamp_ = 0;
         rtmp_msg->message_type_id_ = RTMP_MESSAGE_TYPE_WINDOW_ACK_SIZE;
         rtmp_msg->message_stream_id_ = RTMP_MESSAGE_ID_PROTOCOL_CONTROL;
-        char *p = (char *)&ack_window_size_;
-        uint8_t * payload = rtmp_msg->payload_;
-        payload[3] = p[0];
-        payload[2] = p[1];
-        payload[1] = p[2];
-        payload[0] = p[3];
-        rtmp_msg->payload_size_ = 4;
+         *(uint32_t*)rtmp_msg->payload_ = htonl(ack_window_size_);
+        rtmp_msg->payload_size_ = sizeof(ack_window_size_);
         return rtmp_msg;
     }
 private:

@@ -86,6 +86,7 @@ namespace mms {
 #define RTMP_MESSAGE_TYPE_ACKNOWLEDGEMENT           3
 #define RTMP_MESSAGE_TYPE_USER_CONTROL              4
 #define RTMP_MESSAGE_TYPE_WINDOW_ACK_SIZE           5
+#define RTMP_MESSAGE_TYPE_SET_PEER_BANDWIDTH        6
 // rtmp message id spec(rtmp 的protocol control message固定message id为0)
 #define RTMP_MESSAGE_ID_PROTOCOL_CONTROL            0
 // rtmp user event类型定义
@@ -192,6 +193,7 @@ namespace mms {
 class RtmpChunk;
 class RtmpMessage {
 public:
+    //todo payload最大长度和实际使用长度分开
     RtmpMessage(int32_t payload_size) {
         payload_ = new uint8_t[payload_size];
     }
@@ -244,6 +246,7 @@ public:
         }
     }
 public:
+    size_t chunk_payload_size_ = 0;//本chunk的payload大小
     ChunkMessageHeader chunk_message_header_;
     std::shared_ptr<RtmpMessage> rtmp_message_;
 };

@@ -37,6 +37,10 @@ public:
     uint16_t & getValue() {
         return obj_index_;
     }
+
+    size_t size() const {
+        return 3;
+    }
 private:
     uint16_t obj_index_;
 };

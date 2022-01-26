@@ -38,6 +38,14 @@ public:
     const bool & getValue() {
         return value_;
     }
+
+    void setValue(bool v) {
+        value_ = v;
+    }
+    
+    size_t size() const {
+        return 2;
+    }
 private:
     bool value_;
 };

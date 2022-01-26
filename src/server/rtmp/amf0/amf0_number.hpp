@@ -42,8 +42,16 @@ public:
         return pos;
     }
 
-    const double & getValue() {
+    double getValue() const {
         return value_;
+    }
+
+    void setValue(double d) {
+        value_ = d;
+    }
+
+    size_t size() const {
+        return 9;
     }
 
     double value_;

@@ -50,6 +50,14 @@ public:
     const std::string & getValue() {
         return value_;
     }
+
+    void setValue(const std::string & s) {
+        value_ = s;
+    }
+
+    size_t size() const {
+        return 1 + 2 + value_.size();
+    }
 public:
     std::string value_;
 };

@@ -36,16 +36,20 @@ public:
             return -1;
         }
 
-        char *p = (char*)&chunk_id_;
-        p[0] = payload[3];
-        p[1] = payload[2];
-        p[2] = payload[1];
-        p[3] = payload[0];
+        chunk_id_ = ntohl(*(uint32_t*)payload);
         return 4;
     }
     
     std::shared_ptr<RtmpMessage> encode() {
-        return nullptr;
+        std::shared_ptr<RtmpMessage> rtmp_msg = std::make_shared<RtmpMessage>(sizeof(chunk_id_));
+        rtmp_msg->chunk_stream_id_ = RTMP_CHUNK_ID_PROTOCOL_CONTROL_MESSAGE;
+        rtmp_msg->timestamp_ = 0;
+        rtmp_msg->message_type_id_ = RTMP_MESSAGE_TYPE_ABORT_MESSAGE;
+        rtmp_msg->message_stream_id_ = RTMP_MESSAGE_ID_PROTOCOL_CONTROL;
+        // chunk_size_
+        *(uint32_t*)rtmp_msg->payload_ = htonl(chunk_id_);
+        rtmp_msg->payload_size_ = sizeof(chunk_id_);
+        return rtmp_msg;
     }
 public:
     uint32_t chunk_id_;

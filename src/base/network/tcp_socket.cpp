@@ -27,6 +27,7 @@ bool TcpSocket::send(const uint8_t *data, size_t len) {
         return false;
     }
     out_bytes_ += len;
+    std::cout << "************* send:" << len << std::endl;
     return true;
 }
 

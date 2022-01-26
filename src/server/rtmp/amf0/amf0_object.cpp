@@ -164,4 +164,46 @@ Json::Value Amf0Object::toJson() {
     return root;
 }
 
+template<>
+void Amf0Object::setItemValue<bool>(const std::string & k, bool v) {
+    Amf0Boolean *d = new Amf0Boolean;
+    d->setValue(v);
+    auto it = properties_.find(k);
+    if (it != properties_.end()) {
+        delete it->second;
+    }
+    properties_[k] = d;
+}
+
+template<>
+void Amf0Object::setItemValue<const std::string&>(const std::string & k, const std::string &v) {
+    Amf0String *d = new Amf0String;
+    d->setValue(v);
+    auto it = properties_.find(k);
+    if (it != properties_.end()) {
+        delete it->second;
+    }
+    properties_[k] = d;
+}
+
+template<>
+void Amf0Object::setItemValue<const char*>(const std::string & k, const char *v) {
+    auto it = properties_.find(k);
+    if (it != properties_.end()) {
+        delete it->second;
+    }
+    Amf0String *d = new Amf0String;
+    d->setValue(v);
+    properties_[k] = d;
+}
+
+template<>
+void Amf0Object::setItemValue<Amf0Object*>(const std::string & k, Amf0Object *v) {
+    auto it = properties_.find(k);
+    if (it != properties_.end()) {
+        delete it->second;
+    }
+    properties_[k] = v;
+}
+
 };

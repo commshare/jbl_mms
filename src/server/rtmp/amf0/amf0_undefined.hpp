@@ -8,7 +8,24 @@ public:
     virtual ~Amf0Undefined() {}
 public:
     int32_t decode(const uint8_t *data, size_t len) {
-        return 0;
+        int pos = 0;
+        if(len < 1) {
+            return -1;
+        }
+
+        auto marker = data[0];
+        len--;
+        pos++;
+        data++;
+
+        if (marker != UNDEFINED_MARKER) {
+            return -2;
+        }
+        return pos;
+    }
+
+    size_t size() const {
+        return 1;
     }
 };
 };

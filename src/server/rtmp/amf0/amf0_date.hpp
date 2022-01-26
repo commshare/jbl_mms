@@ -56,6 +56,10 @@ public:
         data += 2;
         return pos;
     }
+
+    size_t size() const {
+        return 11;//1 + 8 + 2;
+    }
 public:
     double utc_;
     int16_t time_zone_;

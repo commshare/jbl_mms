@@ -28,6 +28,9 @@ public:
         return type_;
     }
     virtual int32_t decode(const uint8_t *data, size_t len) = 0;
+    virtual size_t size() const {
+        return 0;
+    };
 protected:
     AMF0_MARKER_TYPE type_;
 };

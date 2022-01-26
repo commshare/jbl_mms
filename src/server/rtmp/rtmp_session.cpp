@@ -8,9 +8,14 @@
 
 #include "rtmp_message/command_message/rtmp_connect_command_message.hpp"
 #include "rtmp_message/command_message/rtmp_window_ack_size_message.hpp"
+#include "rtmp_message/command_message/rtmp_set_peer_bandwidth_message.hpp"
+#include "rtmp_message/chunk_message/rtmp_set_chunk_size_message.hpp"
+#include "rtmp_message/command_message/rtmp_result_message.hpp"
+#include "rtmp_message/command_message/rtmp_connect_resp_message.hpp"
 
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
+    chunk_protocol_.setOutChunkSize(4096);
 }
 
 void RtmpSession::service() {
@@ -66,8 +71,26 @@ bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     }
     // send window ack size to client
     RtmpWindowAckSizeMessage window_ack_size_msg(window_ack_size_);
-    std::cout << "******************* send window ack ********************";
-    return chunk_protocol_.sendRtmpMessage(window_ack_size_msg);
+    if (!chunk_protocol_.sendRtmpMessage(window_ack_size_msg)) {
+        return false;
+    }
+
+    RtmpSetPeerBandwidthMessage set_peer_bandwidth_msg(800000000, LIMIT_TYPE_DYNAMIC);
+    if (!chunk_protocol_.sendRtmpMessage(set_peer_bandwidth_msg)) {
+        return false;
+    }
+
+    RtmpSetChunkSizeMessage set_chunk_size_msg(chunk_protocol_.getOutChunkSize());//todo set out chunk size in conf
+    if (!chunk_protocol_.sendRtmpMessage(set_chunk_size_msg)) {
+        return false;
+    }
+
+    RtmpConnectRespMessage result_msg(connect_command, "_result");
+    // result_msg.props().setItemValue("level", "status");
+    result_msg.props().setItemValue("status", false);
+    result_msg.props().setItemValue("key", 100);
+
+    return true;
     // std::vector<boost::shared_ptr<RtmpChunk>> chunks = ack.toChunk(out_chunk_size_);
 }
 
