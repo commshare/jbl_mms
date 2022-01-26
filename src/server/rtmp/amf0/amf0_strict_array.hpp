@@ -25,6 +25,7 @@ public:
     }
 
     int32_t decode(const uint8_t *data, size_t len);
+    int32_t encode(uint8_t *buf, size_t len) const;
 
     size_t size() const {
         size_t s = 0;
@@ -34,6 +35,8 @@ public:
         }
         return s;
     }
+
+
 private:
     std::vector<Amf0Data*> datas_;
 };

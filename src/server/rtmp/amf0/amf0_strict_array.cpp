@@ -103,4 +103,33 @@ int32_t Amf0StrictArray::decode(const uint8_t *data, size_t len) {
     return pos;
 }
 
+int32_t Amf0StrictArray::encode(uint8_t *buf, size_t len) const {
+    uint8_t *data = buf;
+    if (len < 1) {
+        return -1;
+    }
+    // marker
+    *data = STRICT_ARRAY_MARKER;
+    data++;
+    len--;
+
+    if (len < 4) {
+        return -2;
+    }
+    data += 4;
+    len -= 4;
+    
+    for (size_t i = 0; i < datas_.size(); i++) {
+        int32_t consumed = datas_[i]->encode(data, len);
+        if (consumed < 0) {
+            return -3;
+        }
+        data += consumed;
+        len -= consumed;
+    }
+
+    return data - buf;
+}
+
+
 };

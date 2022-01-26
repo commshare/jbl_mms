@@ -10,8 +10,9 @@
 #include "rtmp_message/command_message/rtmp_window_ack_size_message.hpp"
 #include "rtmp_message/command_message/rtmp_set_peer_bandwidth_message.hpp"
 #include "rtmp_message/chunk_message/rtmp_set_chunk_size_message.hpp"
-#include "rtmp_message/command_message/rtmp_result_message.hpp"
 #include "rtmp_message/command_message/rtmp_connect_resp_message.hpp"
+#include "rtmp_message/command_message/rtmp_release_stream_message.hpp"
+#include "rtmp_message/command_message/rtmp_release_stream_resp_message.hpp"
 
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
@@ -30,7 +31,7 @@ void RtmpSession::service() {
     }
 }
 
-int32_t RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
+bool RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
     switch(rtmp_msg->getMessageType()) {
         case RTMP_MESSAGE_TYPE_AMF0_COMMAND: {
             return handleAmf0Command(rtmp_msg);
@@ -45,7 +46,7 @@ int32_t RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
         }
     }
-    return 0;
+    return true;
 }
 
 bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
@@ -56,8 +57,11 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
     }
 
     auto name = command_name.getValue();
+    std::cout << "************ name:" << name << " *******************" << std::endl;
     if (name == "connect") {
         handleAmf0ConnectCommand(rtmp_msg);
+    } else if (name == "releaseStream") {
+        handleAmf0ReleaseStreamCommand(rtmp_msg);
     }
 
     return true;
@@ -86,12 +90,31 @@ bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     }
 
     RtmpConnectRespMessage result_msg(connect_command, "_result");
-    // result_msg.props().setItemValue("level", "status");
-    result_msg.props().setItemValue("status", false);
-    result_msg.props().setItemValue("key", 100);
+    result_msg.props().setItemValue("fmsVer", "FMS/3,0,1,123");
+    result_msg.props().setItemValue("capabilities", 31);
 
+    result_msg.info().setItemValue("level", "status");
+    result_msg.info().setItemValue("code", RTMP_RESULT_CONNECT_SUCCESS);
+    result_msg.info().setItemValue("description", "Connection succeed.");
+    result_msg.info().setItemValue("objEncoding", connect_command.object_encoding_);//todo objencoding需要自己判断
+    if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
+        return false;
+    }
     return true;
-    // std::vector<boost::shared_ptr<RtmpChunk>> chunks = ack.toChunk(out_chunk_size_);
+}
+
+bool RtmpSession::handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    RtmpReleaseStreamMessage release_command;
+    auto consumed = release_command.decode(rtmp_msg);
+    if(consumed < 0) {
+        return false;
+    }
+    std::cout << "send release stream resp" << std::endl;
+    RtmpReleaseStreamRespMessage result_msg(release_command, "_result");
+    if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
+        return false;
+    }
+    return true;
 }
 
 bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {

@@ -128,6 +128,47 @@ int32_t Amf0Object::decode(const uint8_t* data, size_t len)
     return pos;
 }
 
+int32_t Amf0Object::encode(uint8_t *buf, size_t len) const {
+    uint8_t *data = buf;
+    if (len < 1) {
+        return -1;
+    }
+    // marker
+    *data = OBJECT_MARKER;
+    data++;
+    len--;
+    
+    for (auto & p : properties_) {
+        // key
+        if (len < 2) {
+            return -3;
+        }
+        *(uint16_t*)data = htons(p.first.size());
+        data += 2;
+        len -= 2;
+
+        memcpy(data, p.first.data(), p.first.size());
+        data += p.first.size();
+        len -= p.first.size();
+
+        int32_t consumed = p.second->encode(data, len);
+        if (consumed < 0) {
+            return -3;
+        }
+        data += consumed;
+        len -= consumed;
+    }
+
+    Amf0ObjEnd end;
+    if (len < end.size()) {
+        return -4;
+    }
+    int32_t consumed = end.encode(data, len);
+    data += consumed;
+    len -= consumed;
+    return data - buf;
+}
+
 Json::Value Amf0Object::toJson() {
     Json::Value root;
     for (auto & p : properties_) {
@@ -162,48 +203,6 @@ Json::Value Amf0Object::toJson() {
         }
     }
     return root;
-}
-
-template<>
-void Amf0Object::setItemValue<bool>(const std::string & k, bool v) {
-    Amf0Boolean *d = new Amf0Boolean;
-    d->setValue(v);
-    auto it = properties_.find(k);
-    if (it != properties_.end()) {
-        delete it->second;
-    }
-    properties_[k] = d;
-}
-
-template<>
-void Amf0Object::setItemValue<const std::string&>(const std::string & k, const std::string &v) {
-    Amf0String *d = new Amf0String;
-    d->setValue(v);
-    auto it = properties_.find(k);
-    if (it != properties_.end()) {
-        delete it->second;
-    }
-    properties_[k] = d;
-}
-
-template<>
-void Amf0Object::setItemValue<const char*>(const std::string & k, const char *v) {
-    auto it = properties_.find(k);
-    if (it != properties_.end()) {
-        delete it->second;
-    }
-    Amf0String *d = new Amf0String;
-    d->setValue(v);
-    properties_[k] = d;
-}
-
-template<>
-void Amf0Object::setItemValue<Amf0Object*>(const std::string & k, Amf0Object *v) {
-    auto it = properties_.find(k);
-    if (it != properties_.end()) {
-        delete it->second;
-    }
-    properties_[k] = v;
 }
 
 };

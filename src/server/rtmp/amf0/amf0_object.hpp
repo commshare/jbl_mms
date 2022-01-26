@@ -47,9 +47,7 @@ public:
         properties_ = v;
     }
 
-    // int, uint32_t...
-    template<typename T,  typename std::enable_if<std::is_integral<T>::value, T>::type = 0>
-    void setItemValue(const std::string & k, T v) {
+    void setItemValue(const std::string & k, int v) {
         Amf0Number *d = new Amf0Number;
         d->setValue((double)v);
         auto it = properties_.find(k);
@@ -58,9 +56,46 @@ public:
         }
         properties_[k] = d;
     }
+
+    void setItemValue(const std::string & k, bool v) {
+        Amf0Boolean *d = new Amf0Boolean;
+        d->setValue(v);
+        auto it = properties_.find(k);
+        if (it != properties_.end()) {
+            delete it->second;
+        }
+        properties_[k] = d;
+    }
+
+    void setItemValue(const std::string & k, const std::string &v) {
+        Amf0String *d = new Amf0String;
+        d->setValue(v);
+        auto it = properties_.find(k);
+        if (it != properties_.end()) {
+            delete it->second;
+        }
+        properties_[k] = d;
+    }
+
+    void setItemValue(const std::string & k, const char *v) {
+        auto it = properties_.find(k);
+        if (it != properties_.end()) {
+            delete it->second;
+        }
+        Amf0String *d = new Amf0String;
+        d->setValue(v);
+        properties_[k] = d;
+    }
+
+    void setItemValue(const std::string & k, Amf0Object *v) {
+        auto it = properties_.find(k);
+        if (it != properties_.end()) {
+            delete it->second;
+        }
+        properties_[k] = v;
+    }
     // float, double ...
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value, T>::type = 0>
-    void setItemValue(const std::string & k, T v) {
+    void setItemValue(const std::string & k, double v) {
         Amf0Number *d = new Amf0Number;
         d->setValue(v);
         auto it = properties_.find(k);
@@ -74,6 +109,7 @@ public:
     void setItemValue(const std::string & k, T v);
 
     int32_t decode(const uint8_t* data, size_t len);
+    int32_t encode(uint8_t *buf, size_t len) const;
 
     size_t size() const {
         size_t s = 0;
@@ -82,6 +118,7 @@ public:
             s += 2 + p.first.size();// key_len + key_str
             s += p.second->size();
         }
+        s += 3;//obj end
         return s;
     }
 

@@ -57,6 +57,10 @@ public:
         return pos;
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        return 0;
+    }
+
     size_t size() const {
         return 11;//1 + 8 + 2;
     }

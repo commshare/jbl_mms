@@ -47,6 +47,9 @@ public:
     template<typename T>
     bool sendRtmpMessage(const T & msg) {
         std::shared_ptr<RtmpMessage> rtmp_msg = msg.encode();
+        if (!rtmp_msg) {
+            return false;
+        }
         return _sendRtmpMessage(rtmp_msg);
     }
 
@@ -179,7 +182,7 @@ public:
         return true;
     }
 
-    int32_t cycleRecvRtmpMessage(const std::function<int32_t(std::shared_ptr<RtmpMessage>)> & recv_handler) {
+    int32_t cycleRecvRtmpMessage(const std::function<bool(std::shared_ptr<RtmpMessage>)> & recv_handler) {
         recv_handler_ = recv_handler;
 
         while(1) {// todo reduce read system call, use recvSome
@@ -353,10 +356,12 @@ public:
                     continue;
                 }
 
-                if (0 != recv_handler_(chunk->rtmp_message_)) {
+                if (!recv_handler_(chunk->rtmp_message_)) {
                     conn_->close();
                     return -18;
-                } 
+                }
+
+                chunk->rtmp_message_.reset();
             }
         }
     }
@@ -393,7 +398,7 @@ private:
     }
 private:
     RtmpConn *conn_;
-    std::function<int32_t(std::shared_ptr<RtmpMessage>)> recv_handler_;
+    std::function<bool(std::shared_ptr<RtmpMessage>)> recv_handler_;
 
     boost::array<uint8_t, 1024*1024> recv_buffer_;
     boost::array<uint8_t, 1024*1024> send_buffer_;

@@ -24,6 +24,17 @@ public:
         return pos;
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        uint8_t *data = buf;
+        if (len < 1) {
+            return -1;
+        }
+        // marker
+        *data = NULL_MARKER;
+        data++;
+        return data - buf;
+    }
+
     size_t size() const {
         return 1;
     }

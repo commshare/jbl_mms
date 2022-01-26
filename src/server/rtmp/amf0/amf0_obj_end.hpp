@@ -20,6 +20,21 @@ public:
         return 3;
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        uint8_t *data = buf;
+        if (len < 3) {
+            return -1;
+        }
+        // marker
+        *data = 0x00;
+        data++;
+        *data = 0x00;
+        data++;
+        *data = OBJECT_END_MARKER;
+        data++;
+        return data - buf;
+    }
+
     size_t size() const {
         return 3;
     }

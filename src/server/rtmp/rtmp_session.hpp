@@ -16,10 +16,12 @@ public:
 
     void service();
 private:
-    int32_t onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg);
+    bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg);
 
     bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg);
     bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg);
+    bool handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+
     bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg);
     bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg);
     

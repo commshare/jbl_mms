@@ -27,21 +27,18 @@ SOFTWARE.
 #include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
 
 namespace mms {
-class RtmpResultMessage {
+class RtmpReleaseStreamMessage {
 public:
-    RtmpResultMessage(const std::string & name);
-    virtual ~RtmpResultMessage();
+    RtmpReleaseStreamMessage();
+    virtual ~RtmpReleaseStreamMessage();
 public:
     int32_t decode(std::shared_ptr<RtmpMessage> rtmp_msg);
     std::shared_ptr<RtmpMessage> encode();
-    Amf0Object & props() {
-        return command_object_;
-    }
 public:
     Amf0String command_name_;
     Amf0Number transaction_id_;
-    Amf0Object command_object_;
-    Amf0Number stream_id_;
+    Amf0Null null_;
+    Amf0String stream_name_;
 };
 
 

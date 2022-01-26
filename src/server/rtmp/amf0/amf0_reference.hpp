@@ -34,6 +34,10 @@ public:
         return pos;
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        return 0;
+    }
+
     uint16_t & getValue() {
         return obj_index_;
     }

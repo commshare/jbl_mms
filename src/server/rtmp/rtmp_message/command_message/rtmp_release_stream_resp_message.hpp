@@ -26,14 +26,14 @@ SOFTWARE.
 #include "server/rtmp/amf0/amf0_inc.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
 namespace mms {
-class RtmpConnectRespMessage {
+class RtmpReleaseStreamRespMessage {
 public:
-    RtmpConnectRespMessage(const RtmpConnectCommandMessage & conn_msg, const std::string & name) {
+    RtmpReleaseStreamRespMessage(const RtmpReleaseStreamMessage & rel_msg, const std::string & name) {
         command_name_.setValue(name);
-        transaction_id_.setValue(conn_msg.transaction_id_.getValue());
+        transaction_id_.setValue(rel_msg.transaction_id_.getValue());
     }
 
-    virtual ~RtmpConnectRespMessage() {
+    virtual ~RtmpReleaseStreamRespMessage() {
 
     }
 public:
@@ -45,8 +45,8 @@ public:
         size_t s = 0;
         s += command_name_.size();
         s += transaction_id_.size();
-        s += props_.size();
-        s += info_.size();
+        s += command_obj_.size();
+        s += udef_.size();
 
         std::shared_ptr<RtmpMessage> rtmp_msg = std::make_shared<RtmpMessage>(s);
         rtmp_msg->chunk_stream_id_ = RTMP_CHUNK_ID_PROTOCOL_CONTROL_MESSAGE;
@@ -70,15 +70,14 @@ public:
         payload += consumed;
         len -= consumed;
 
-        consumed = props_.encode(payload, len);
+        consumed = command_obj_.encode(payload, len);
         if (consumed < 0) {
-            std::cout << "failed to encode props, consumed:" << consumed << std::endl;
             return nullptr;
         }
         payload += consumed;
         len -= consumed;
 
-        consumed = info_.encode(payload, len);
+        consumed = udef_.encode(payload, len);
         if (consumed < 0) {
             return nullptr;
         }
@@ -88,17 +87,14 @@ public:
         return rtmp_msg;
     }
 
-    Amf0Object & props() {
-        return props_;
+    Amf0Object & cmdObj() {
+        return command_obj_;
     }
 
-    Amf0Object & info() {
-        return info_;
-    }
 private:
     Amf0String command_name_;
     Amf0Number transaction_id_;
-    Amf0Object props_;
-    Amf0Object info_;
+    Amf0Object command_obj_;
+    Amf0Undefined udef_;
 };
 };

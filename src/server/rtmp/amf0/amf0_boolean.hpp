@@ -35,6 +35,25 @@ public:
         return pos;
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        uint8_t *data = buf;
+        if (len < 1) {
+            return -1;
+        }
+        // marker
+        *data = BOOLEAN_MARKER;
+        data++;
+        len--;
+        // len
+        if (len < 1) {
+            return -2;
+        }
+        *data = value_;
+        data++;
+        len--;
+        return data - buf;
+    }
+
     const bool & getValue() {
         return value_;
     }

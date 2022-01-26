@@ -89,6 +89,10 @@ public:
         }
     }
 
+    int32_t encode(uint8_t *buf, size_t len) const {
+        return 0;
+    }
+
     std::vector<Amf0Data*> values_;
 };
 };

@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 #include <iostream>
-
+#include <string.h>
+#include <netinet/in.h>
 #include "amf0_def.hpp"
 
 namespace mms {
@@ -45,6 +46,32 @@ public:
         pos += string_len;
         len -= string_len;
         return pos;
+    }
+
+    int32_t encode(uint8_t *buf, size_t len) const {
+        uint8_t *data = buf;
+        if (len < 1) {
+            return -1;
+        }
+        // marker
+        *data = STRING_MARKER;
+        data++;
+        len--;
+        // len
+        if (len < 2) {
+            return -2;
+        }
+        *((uint16_t *)data) = htons(value_.size());
+        data += 2;
+        len -= 2;
+        if (len < value_.size()) {
+            return -3;
+        }
+        // data
+        memcpy(data, value_.data(), value_.size());
+        data += value_.size();
+        len -= value_.size();
+        return data - buf;
     }
 
     const std::string & getValue() {

@@ -28,6 +28,7 @@ public:
         return type_;
     }
     virtual int32_t decode(const uint8_t *data, size_t len) = 0;
+    virtual int32_t encode(uint8_t *data, size_t len) const = 0;
     virtual size_t size() const {
         return 0;
     };
