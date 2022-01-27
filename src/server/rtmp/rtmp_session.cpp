@@ -13,6 +13,13 @@
 #include "rtmp_message/command_message/rtmp_connect_resp_message.hpp"
 #include "rtmp_message/command_message/rtmp_release_stream_message.hpp"
 #include "rtmp_message/command_message/rtmp_release_stream_resp_message.hpp"
+#include "rtmp_message/command_message/rtmp_fcpublish_message.hpp"
+#include "rtmp_message/command_message/rtmp_fcpublish_resp_message.hpp"
+#include "rtmp_message/command_message/rtmp_create_stream_message.hpp"
+#include "rtmp_message/command_message/rtmp_create_stream_resp_message.hpp"
+#include "rtmp_message/command_message/rtmp_publish_message.hpp"
+#include "rtmp_message/command_message/rtmp_onstatus_message.hpp"
+#include "rtmp_message/data_message/rtmp_metadata_message.hpp"
 
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
@@ -36,6 +43,9 @@ bool RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
         case RTMP_MESSAGE_TYPE_AMF0_COMMAND: {
             return handleAmf0Command(rtmp_msg);
         }
+        case RTMP_MESSAGE_TYPE_AMF0_DATA: {
+            return handleAmf0Data(rtmp_msg);
+        }
         case RTMP_MESSAGE_TYPE_USER_CONTROL: {
             return handleUserControlMsg(rtmp_msg);
         }
@@ -57,11 +67,17 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
     }
 
     auto name = command_name.getValue();
-    std::cout << "************ name:" << name << " *******************" << std::endl;
+    std::cout << "name:" << name << std::endl;
     if (name == "connect") {
         handleAmf0ConnectCommand(rtmp_msg);
     } else if (name == "releaseStream") {
         handleAmf0ReleaseStreamCommand(rtmp_msg);
+    } else if (name == "FCPublish") {
+        handleAmf0FCPublishCommand(rtmp_msg);
+    } else if (name == "createStream") {
+        handleAmf0CreateStreamCommand(rtmp_msg);
+    } else if (name == "publish") {
+        handleAmf0PublishCommand(rtmp_msg);
     }
 
     return true;
@@ -109,11 +125,67 @@ bool RtmpSession::handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rt
     if(consumed < 0) {
         return false;
     }
-    std::cout << "send release stream resp" << std::endl;
+    
     RtmpReleaseStreamRespMessage result_msg(release_command, "_result");
     if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
         return false;
     }
+    return true;
+}
+
+bool RtmpSession::handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    RtmpFCPublishMessage fcpublish_cmd;
+    auto consumed = fcpublish_cmd.decode(rtmp_msg);
+    if(consumed < 0) {
+        return false;
+    }
+    
+    RtmpFCPublishRespMessage result_msg(fcpublish_cmd, "_result");
+    if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
+        return false;
+    }
+    return true;
+}
+
+bool RtmpSession::handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    RtmpCreateStreamMessage create_stream_cmd;
+    auto consumed = create_stream_cmd.decode(rtmp_msg);
+    if(consumed < 0) {
+        return false;
+    }
+
+    RtmpCreateStreamRespMessage result_msg(create_stream_cmd, "_result");
+    if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
+        return false;
+    }
+    return true;
+}
+
+bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    RtmpPublishMessage publish_cmd;
+    auto consumed = publish_cmd.decode(rtmp_msg);
+    if(consumed < 0) {
+        return false;
+    }
+
+    RtmpOnStatusRespMessage status_msg(publish_cmd.transaction_id_.getValue());
+    status_msg.data().setItemValue("level", "status");
+    status_msg.data().setItemValue("code", RTMP_STATUS_STREAM_PUBLISH_START);
+    status_msg.data().setItemValue("description", "publish start ok.");
+    status_msg.data().setItemValue("clientid", "mms");
+    if (!chunk_protocol_.sendRtmpMessage(status_msg)) {
+        return false;
+    }
+    return true;
+}
+
+bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usually is metadata
+    RtmpMetaDataMessage metadata_msg;
+    auto consumed = metadata_msg.decode(rtmp_msg);
+    if (consumed < 0) {
+        return false;
+    }
+    metadata_ = rtmp_msg;
     return true;
 }
 

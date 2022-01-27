@@ -26,14 +26,14 @@ SOFTWARE.
 #include "server/rtmp/amf0/amf0_inc.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
 namespace mms {
-class RtmpOnStatusRespMessage {
+class RtmpFCPublishRespMessage {
 public:
-    RtmpOnStatusRespMessage(double transaction_id) {
-        command_name_.setValue("onStatus");
-        transaction_id_.setValue(transaction_id);
+    RtmpFCPublishRespMessage(const RtmpFCPublishMessage & rel_msg, const std::string & name) {
+        command_name_.setValue(name);
+        transaction_id_.setValue(rel_msg.transaction_id_.getValue());
     }
 
-    virtual ~RtmpOnStatusRespMessage() {
+    virtual ~RtmpFCPublishRespMessage() {
 
     }
 public:
@@ -45,8 +45,8 @@ public:
         size_t s = 0;
         s += command_name_.size();
         s += transaction_id_.size();
-        s += args_.size();
-        s += data_.size();
+        s += command_obj_.size();
+        s += udef_.size();
 
         std::shared_ptr<RtmpMessage> rtmp_msg = std::make_shared<RtmpMessage>(s);
         rtmp_msg->chunk_stream_id_ = RTMP_CHUNK_ID_PROTOCOL_CONTROL_MESSAGE;
@@ -70,14 +70,14 @@ public:
         payload += consumed;
         len -= consumed;
 
-        consumed = args_.encode(payload, len);
+        consumed = command_obj_.encode(payload, len);
         if (consumed < 0) {
             return nullptr;
         }
         payload += consumed;
         len -= consumed;
 
-        consumed = data_.encode(payload, len);
+        consumed = udef_.encode(payload, len);
         if (consumed < 0) {
             return nullptr;
         }
@@ -87,14 +87,14 @@ public:
         return rtmp_msg;
     }
 
-    Amf0Object & data() {
-        return data_;
+    Amf0Object & cmdObj() {
+        return command_obj_;
     }
 
 private:
-    Amf0String  command_name_;
-    Amf0Number  transaction_id_;
-    Amf0Object  args_;
-    Amf0Object  data_;
+    Amf0String command_name_;
+    Amf0Number transaction_id_;
+    Amf0Object command_obj_;
+    Amf0Undefined udef_;
 };
 };

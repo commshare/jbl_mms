@@ -21,6 +21,11 @@ private:
     bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg);
     bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg);
     bool handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+    bool handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+    bool handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+    bool handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+
+    bool handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg);
 
     bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg);
     bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg);
@@ -29,6 +34,8 @@ private:
     RtmpHandshake handshake_;
     RtmpChunkProtocol chunk_protocol_;
     uint32_t window_ack_size_ = 80000000;
+
+    std::shared_ptr<RtmpMessage> metadata_;
 };
 
 };

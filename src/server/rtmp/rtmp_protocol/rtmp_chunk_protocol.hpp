@@ -244,6 +244,7 @@ public:
                     return -4;
                 }
                 chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
+                std::cout << "len:" << chunk->chunk_message_header_.message_length_ << std::endl;
 
                 if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
                     conn_->close();
@@ -267,6 +268,7 @@ public:
                 }
             } else if (fmt == RTMP_FMT_TYPE1) {
                 if (!prev_chunk) {//type1 必须有前面的chunk作为基础
+                    std::cout << "**************** prev chunk is null1, id:" << (uint32_t)cid << " ********************" << std::endl;
                     conn_->close();
                     return -8;
                 }
@@ -296,6 +298,7 @@ public:
                 chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
             } else if (fmt == RTMP_FMT_TYPE2) {
                 if (!prev_chunk) {//type2 必须有前面的chunk作为基础
+                    std::cout << "**************** prev chunk is null2, id:" << (uint32_t)cid << " ********************" << std::endl;
                     conn_->close();
                     return -12;
                 }
@@ -309,8 +312,18 @@ public:
                 int32_t time_delta = ntohl(*(int32_t*)t);
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
             } else if (fmt == RTMP_FMT_TYPE3) {
+                if (!prev_chunk) {
+                    std::cout << "**************** prev chunk is null3, id:" << (uint32_t)cid << " ********************" << std::endl;
+                    conn_->close();
+                    return -14;
+                }
                 *chunk = *prev_chunk;
             }
+            static FILE *fp = NULL;
+            if (!fp) {
+                fp = fopen("./cid.txt", "wt");
+            }
+            fprintf(fp, "%d\n", cid);
             recv_chunk_streams_[cid] = chunk;
 
             if (prev_chunk) {
@@ -328,6 +341,7 @@ public:
             }
             // read the payload
             int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->payload_size_);
+            std::cout << "payload_size:" << chunk->rtmp_message_->payload_size_ << ",this_chunk_payload_size:" << this_chunk_payload_size << std::endl;
             if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size)) {
                 conn_->close();
                 return -15;
@@ -346,13 +360,15 @@ public:
                     if (!handleSetChunkSize(chunk->rtmp_message_)) {
                         conn_->close();
                         return -16;
-                    }       
+                    }      
+                    chunk->rtmp_message_.reset(); 
                     continue;
                 } else if (chunk->rtmp_message_->message_type_id_ == RTMP_MESSAGE_TYPE_ABORT_MESSAGE) {
                     if (!handleAbort(chunk->rtmp_message_)) {
                         conn_->close();
                         return -17;
-                    }       
+                    }
+                    chunk->rtmp_message_.reset();       
                     continue;
                 }
 
