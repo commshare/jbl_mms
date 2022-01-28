@@ -212,10 +212,14 @@ public:
                 cid += (int32_t)(buf[1])*256;
             }
             // read chunk message header
-            auto cid_it = recv_chunk_streams_.find(cid);
             std::shared_ptr<RtmpChunk> prev_chunk;
+            auto cid_it = recv_chunk_streams_.find(cid);
             if (cid_it != recv_chunk_streams_.end()) {
                 prev_chunk = cid_it->second;
+            }
+
+            if (prev_chunk) {
+                std::cout << "find:" << cid << "'s prev chunk" << std::endl;
             }
             // this chunk info
             // 优先从cache中获取chunk
@@ -232,31 +236,44 @@ public:
 
             if (fmt == RTMP_FMT_TYPE0) {
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t+1, 3)) {
+                if(!conn_->recv(t, 3)) {
                     conn_->close();
                     return -3;
                 }
-                chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
+                uint8_t *p = (uint8_t*)&chunk->chunk_message_header_.timestamp_;
+                p[0] = t[2];
+                p[1] = t[1];
+                p[2] = t[0];
 
                 memset(t, 0, 4);
-                if(!conn_->recv(t+1, 3)) {
+                if(!conn_->recv(t, 3)) {
                     conn_->close();
                     return -4;
                 }
-                chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
-                std::cout << "len:" << chunk->chunk_message_header_.message_length_ << std::endl;
 
-                if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                chunk->chunk_message_header_.message_length_ = 0;
+                p = (uint8_t*)&chunk->chunk_message_header_.message_length_;
+                p[0] = t[2];
+                p[1] = t[1];
+                p[2] = t[0];
+
+                if(!conn_->recv(&chunk->chunk_message_header_.message_type_id_, 1)) {
                     conn_->close();
                     return -5;
                 }
+                std::cout << "msg len:" << chunk->chunk_message_header_.message_length_ << std::endl;
+                printf("%x %x %x, fmt:%x, cid:%x \n", t[0], t[1], t[2], fmt, cid);
 
                 memset(t, 0, 4);
                 if(!conn_->recv(t, 4)) {
                     conn_->close();
                     return -6;
                 }
-                chunk->chunk_message_header_.message_stream_id_ = ntohl(*(int32_t*)t);
+                p = (uint8_t*)&chunk->chunk_message_header_.message_stream_id_;
+                p[0] = t[3];
+                p[1] = t[2];
+                p[2] = t[1];
+                p[3] = t[0];
 
                 if (chunk->chunk_message_header_.timestamp_ == 0x00ffffff) {
                     memset(t, 0, 4);
@@ -264,31 +281,41 @@ public:
                         conn_->close();
                         return -7;
                     }
-                    chunk->chunk_message_header_.timestamp_ = ntohl(*(int32_t*)t);
+                    p = (uint8_t*)&chunk->chunk_message_header_.timestamp_;
+                    p[0] = t[3];
+                    p[1] = t[2];
+                    p[2] = t[1];
+                    p[3] = t[0];
                 }
             } else if (fmt == RTMP_FMT_TYPE1) {
                 if (!prev_chunk) {//type1 必须有前面的chunk作为基础
-                    std::cout << "**************** prev chunk is null1, id:" << (uint32_t)cid << " ********************" << std::endl;
                     conn_->close();
                     return -8;
                 }
                 *chunk = *prev_chunk;
 
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t+1, 3)) {
+                if(!conn_->recv(t, 3)) {
                     conn_->close();
                     return -9;
                 }
 
-                int32_t time_delta = ntohl(*(int32_t*)t);
+                int32_t time_delta = 0;
+                uint8_t *p = (uint8_t *)&time_delta;
+                p[0] = t[2];
+                p[1] = t[1];
+                p[2] = t[0];
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
                 
                 memset(t, 0, 4);
-                if(!conn_->recv(t+1, 3)) {
+                if(!conn_->recv(t, 3)) {
                     conn_->close();
                     return -10;
                 }
-                chunk->chunk_message_header_.message_length_ = ntohl(*(int32_t*)t);
+                p = (uint8_t *)&chunk->chunk_message_header_.message_length_;
+                p[0] = t[2];
+                p[1] = t[1];
+                p[2] = t[0];
 
                 if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
                     conn_->close();
@@ -298,32 +325,30 @@ public:
                 chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
             } else if (fmt == RTMP_FMT_TYPE2) {
                 if (!prev_chunk) {//type2 必须有前面的chunk作为基础
-                    std::cout << "**************** prev chunk is null2, id:" << (uint32_t)cid << " ********************" << std::endl;
                     conn_->close();
                     return -12;
                 }
                 *chunk = *prev_chunk;
 
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t+1, 3)) {
+                if(!conn_->recv(t, 3)) {
                     conn_->close();
                     return -13;
                 }
-                int32_t time_delta = ntohl(*(int32_t*)t);
+                int32_t time_delta = 0;
+                uint8_t *p = (uint8_t *)&time_delta;
+                p[0] = t[2];
+                p[1] = t[1];
+                p[2] = t[0];
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
             } else if (fmt == RTMP_FMT_TYPE3) {
+                printf("get type 3\n");
                 if (!prev_chunk) {
-                    std::cout << "**************** prev chunk is null3, id:" << (uint32_t)cid << " ********************" << std::endl;
                     conn_->close();
                     return -14;
                 }
                 *chunk = *prev_chunk;
             }
-            static FILE *fp = NULL;
-            if (!fp) {
-                fp = fopen("./cid.txt", "wt");
-            }
-            fprintf(fp, "%d\n", cid);
             recv_chunk_streams_[cid] = chunk;
 
             if (prev_chunk) {
@@ -351,6 +376,7 @@ public:
             // if we get a rtmp message
             if (chunk->rtmp_message_->payload_size_ == chunk->chunk_message_header_.message_length_) {
                 // todo fill rtmp message type...
+                std::cout << "get rtmp type:" << (uint32_t) chunk->chunk_message_header_.message_type_id_ << ", len:" << chunk->chunk_message_header_.message_length_ << ", cid:" << cid << ", fmt:" << (uint32_t)fmt << std::endl;
                 chunk->rtmp_message_->chunk_stream_id_ = cid;
                 chunk->rtmp_message_->timestamp_ = chunk->chunk_message_header_.timestamp_;
                 chunk->rtmp_message_->message_type_id_ = chunk->chunk_message_header_.message_type_id_;
