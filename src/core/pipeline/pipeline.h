@@ -1,21 +1,46 @@
 #pragma once
 
 namespace mms {
-template<typename T>
-class Pipeline {
+template<typename... ARGS> 
+class Pipeline;
+
+template<typename T, typename... ARGS>
+class Pipeline<T, ARGS...> : public Pipeline<ARGS...> {
 public:
-    template<typename Q>
-    void connectPipeLine(Q & q) {
-        next_handler_ = q;
+    Pipeline() {
     }
 
-    template<typename F, typename... ARGS>
-    void connectPipeLine(F& t, ARGS... args) {
-        next_handler_ = Pipeline<F>();
-        connectPipeLine(args...);
+    template<typename M>
+    bool processPkt(std::shared_ptr<M> msg) {
+        if (!cur_handler_.processPkt(msg)) {
+            return false;
+        }
+        
+        if (!Pipeline<ARGS...>::processPkt(msg)) {
+            return false;
+        }
+        return true;
     }
-private:
-    T next_handler_;
+
+    T cur_handler_;
+};
+
+template<typename T> 
+class Pipeline<T> {
+public:
+    Pipeline() {
+    }
+
+    template<typename M>
+    inline bool processPkt(std::shared_ptr<M> msg) {
+        if (!cur_handler_.processPkt(msg)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    T cur_handler_;
 };
 
 };

@@ -26,20 +26,18 @@ public:
     }
 
     bool processPkt(std::shared_ptr<RtmpMessage> pkt) {
-
+        return pipeline_.processPkt(pkt);
         return true;
     }
 
     void createPipeLine() {
-        pipeline_codec_parser_.connectPipeLine(
-            pipeline_bandwidth_handler_,
-            pipeline_stats_handler_
-        );
     }
 private:
     std::vector<std::shared_ptr<RtmpMessage>> pkts_;
-    Pipeline<RtmpCodecParser> pipeline_codec_parser_;
-    Pipeline<RtmpBandwidthHandler> pipeline_bandwidth_handler_;
-    Pipeline<RtmpStatsHandler> pipeline_stats_handler_;
+    Pipeline<
+        RtmpBandwidthHandler,
+        RtmpCodecParser,
+        RtmpStatsHandler
+    > pipeline_;
 };
 };
