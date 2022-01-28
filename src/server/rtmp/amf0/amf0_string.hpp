@@ -22,7 +22,6 @@ public:
 
         auto marker = data[pos];
         if (marker != STRING_MARKER) {
-            std::cout << "marker is:" << uint32_t(marker) << std::endl;
             return -2;
         }
         len--;

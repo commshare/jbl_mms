@@ -38,7 +38,9 @@ bool TcpSocket::recv(uint8_t *data, size_t len) {
     boost::system::error_code ec;
     size_t pos = 0;
     while (pos < len) {
+        std::cout << "start async_recv" << std::endl;
         size_t s = socket_->async_receive(boost::asio::buffer(data + pos, len - pos), yield_[ec]);
+        std::cout << "end async_recv" << std::endl;
         if (ec) {
             return false;
         }

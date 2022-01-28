@@ -395,6 +395,8 @@ public:
                 chunk->rtmp_message_.reset();
             }
         }
+
+        std::cout << "************************ exit cycle ********************" << std::endl;
     }
 
     inline size_t getOutChunkSize() {
@@ -403,6 +405,11 @@ public:
 
     inline void setOutChunkSize(size_t s) {
         out_chunk_size_ = s;
+    }
+
+    inline void close() {
+        std::cout << "****************** close chunk session *******************" << std::endl;
+        conn_->close();
     }
 private:
     bool handleSetChunkSize(std::shared_ptr<RtmpMessage> msg) {

@@ -4,6 +4,9 @@
 #include "server/rtmp/rtmp_conn/rtmp_conn.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_handshake.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_chunk_protocol.hpp"
+#include "core/media_stream.hpp"
+#include "core/media_source.hpp"
+#include "core/media_sink.hpp"
 
 namespace mms {
 class RtmpSession {
@@ -38,6 +41,8 @@ private:
     uint32_t window_ack_size_ = 80000000;
 
     std::shared_ptr<RtmpMessage> metadata_;
+private:
+    std::unique_ptr<MediaStream<RtmpMessage>> media_stream_; 
 };
 
 };

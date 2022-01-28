@@ -21,6 +21,8 @@
 #include "rtmp_message/command_message/rtmp_onstatus_message.hpp"
 #include "rtmp_message/data_message/rtmp_metadata_message.hpp"
 
+#include "core/rtmp_media_source.hpp"
+
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
     chunk_protocol_.setOutChunkSize(4096);
@@ -34,6 +36,7 @@ void RtmpSession::service() {
 
     int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1));
     if (0 != ret) {
+        std::cout << "***************** cycleRecvRtmpMessage end:" << ret << " ***********************" << std::endl;
         conn_->close();
     }
 }
@@ -73,7 +76,6 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
     }
 
     auto name = command_name.getValue();
-    std::cout << "name:" << name << std::endl;
     if (name == "connect") {
         handleAmf0ConnectCommand(rtmp_msg);
     } else if (name == "releaseStream") {
@@ -182,6 +184,9 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     if (!chunk_protocol_.sendRtmpMessage(status_msg)) {
         return false;
     }
+
+    media_stream_ = std::unique_ptr<RtmpMediaSource>(new RtmpMediaSource);
+    media_stream_->init();
     return true;
 }
 
@@ -196,11 +201,11 @@ bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usual
 }
 
 bool RtmpSession::handleVideoMsg(std::shared_ptr<RtmpMessage> msg) {
-
+    return media_stream_->processPkt(msg);
 }
 
 bool RtmpSession::handleAudioMsg(std::shared_ptr<RtmpMessage> msg) {
-
+    return media_stream_->processPkt(msg);
 }
 
 bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {
@@ -210,6 +215,7 @@ bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {
 }
 
 bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    // todo handle user control msg
     return true;
 }
 
