@@ -22,34 +22,29 @@ uint64_t TcpSocket::getSendCount() {
 
 bool TcpSocket::send(const uint8_t *data, size_t len) {
     boost::system::error_code ec;
-    socket_->async_send(boost::asio::buffer(data, len), 0, yield_[ec]);
-    if(ec) {
-        return false;
+    size_t pos = 0;
+    while (pos < len) {
+        size_t s = socket_->async_send(boost::asio::buffer(data + pos, len - pos), 0, yield_[ec]);
+        if(ec) {
+            return false;
+        }
+        pos += s;
     }
     out_bytes_ += len;
-    std::cout << "************* send:" << len << std::endl;
-    return true;
-}
-
-bool TcpSocket::send(const std::vector<boost::asio::const_buffer> &bufs) {
-    boost::system::error_code ec;
-    socket_->async_send(bufs, 0, yield_[ec]);
-    if(ec) {
-        return false;
-    }
-
-    for (size_t i = 0; i < bufs.size(); i++) {
-        out_bytes_ += bufs[i].size();
-    }
     return true;
 }
 
 bool TcpSocket::recv(uint8_t *data, size_t len) {
     boost::system::error_code ec;
-    socket_->async_receive(boost::asio::buffer(data, len), yield_[ec]);
-    if (ec) {
-        return false;
+    size_t pos = 0;
+    while (pos < len) {
+        size_t s = socket_->async_receive(boost::asio::buffer(data + pos, len - pos), yield_[ec]);
+        if (ec) {
+            return false;
+        }
+        pos += s;
     }
+    
     in_bytes_ += len;
     return true;
 }

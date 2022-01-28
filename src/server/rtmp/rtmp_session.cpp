@@ -52,6 +52,12 @@ bool RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
         case RTMP_MESSAGE_TYPE_ACKNOWLEDGEMENT: {
             return handleAcknowledgement(rtmp_msg);
         }
+        case RTMP_MESSAGE_TYPE_VIDEO: {
+            return handleVideoMsg(rtmp_msg);
+        }
+        case RTMP_MESSAGE_TYPE_AUDIO: {
+            return handleAudioMsg(rtmp_msg);
+        }
         default: {
 
         }
@@ -187,6 +193,14 @@ bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usual
     }
     metadata_ = rtmp_msg;
     return true;
+}
+
+bool RtmpSession::handleVideoMsg(std::shared_ptr<RtmpMessage> msg) {
+
+}
+
+bool RtmpSession::handleAudioMsg(std::shared_ptr<RtmpMessage> msg) {
+
 }
 
 bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {

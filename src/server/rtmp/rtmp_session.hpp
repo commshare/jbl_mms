@@ -24,6 +24,8 @@ private:
     bool handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
     bool handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
     bool handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
+    bool handleVideoMsg(std::shared_ptr<RtmpMessage> msg);
+    bool handleAudioMsg(std::shared_ptr<RtmpMessage> msg);
 
     bool handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg);
 

@@ -217,10 +217,6 @@ public:
             if (cid_it != recv_chunk_streams_.end()) {
                 prev_chunk = cid_it->second;
             }
-
-            if (prev_chunk) {
-                std::cout << "find:" << cid << "'s prev chunk" << std::endl;
-            }
             // this chunk info
             // 优先从cache中获取chunk
             std::shared_ptr<RtmpChunk> chunk;
@@ -261,8 +257,6 @@ public:
                     conn_->close();
                     return -5;
                 }
-                std::cout << "msg len:" << chunk->chunk_message_header_.message_length_ << std::endl;
-                printf("%x %x %x, fmt:%x, cid:%x \n", t[0], t[1], t[2], fmt, cid);
 
                 memset(t, 0, 4);
                 if(!conn_->recv(t, 4)) {
@@ -321,8 +315,6 @@ public:
                     conn_->close();
                     return -11;
                 }
-
-                chunk->chunk_message_header_.message_type_id_ = prev_chunk->chunk_message_header_.message_type_id_;
             } else if (fmt == RTMP_FMT_TYPE2) {
                 if (!prev_chunk) {//type2 必须有前面的chunk作为基础
                     conn_->close();
@@ -342,7 +334,6 @@ public:
                 p[2] = t[0];
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
             } else if (fmt == RTMP_FMT_TYPE3) {
-                printf("get type 3\n");
                 if (!prev_chunk) {
                     conn_->close();
                     return -14;
@@ -366,7 +357,6 @@ public:
             }
             // read the payload
             int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->payload_size_);
-            std::cout << "payload_size:" << chunk->rtmp_message_->payload_size_ << ",this_chunk_payload_size:" << this_chunk_payload_size << std::endl;
             if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size)) {
                 conn_->close();
                 return -15;
@@ -376,7 +366,6 @@ public:
             // if we get a rtmp message
             if (chunk->rtmp_message_->payload_size_ == chunk->chunk_message_header_.message_length_) {
                 // todo fill rtmp message type...
-                std::cout << "get rtmp type:" << (uint32_t) chunk->chunk_message_header_.message_type_id_ << ", len:" << chunk->chunk_message_header_.message_length_ << ", cid:" << cid << ", fmt:" << (uint32_t)fmt << std::endl;
                 chunk->rtmp_message_->chunk_stream_id_ = cid;
                 chunk->rtmp_message_->timestamp_ = chunk->chunk_message_header_.timestamp_;
                 chunk->rtmp_message_->message_type_id_ = chunk->chunk_message_header_.message_type_id_;

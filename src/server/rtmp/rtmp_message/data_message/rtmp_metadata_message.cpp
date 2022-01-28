@@ -20,13 +20,11 @@ int32_t RtmpMetaDataMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
     pos += consumed;
     payload += consumed;
     len -= consumed;
-    std::cout << "****************** name:" << name_.getValue() << " *****************" << std::endl;
     if (name_.getValue() == "@setDataFrame") {
         consumed = name_.decode(payload, len);
         if (consumed < 0) {
             return -2;
         }
-        std::cout << "****************** name:" << name_.getValue() << " *****************" << std::endl;
         pos += consumed;
         payload += consumed;
         len -= consumed;
@@ -34,7 +32,7 @@ int32_t RtmpMetaDataMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
     consumed = metadata_.decode(payload, len);
     if (consumed < 0) {
-        return consumed;
+        return -3;
     }
     pos += consumed;
     payload += consumed;
