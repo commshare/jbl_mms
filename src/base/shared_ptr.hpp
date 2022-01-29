@@ -5,10 +5,10 @@
 namespace mms {
 template<typename T>
 class SharedPtr {
-public:
+private:
     SharedPtr() {
     }
-
+public:
     ~SharedPtr() {
     }
 
