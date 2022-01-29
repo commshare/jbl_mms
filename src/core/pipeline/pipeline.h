@@ -11,18 +11,15 @@ public:
     }
 
     template<typename M>
-    bool processPkt(std::shared_ptr<M> msg) {
-        if (!cur_handler_.processPkt(msg)) {
+    inline bool processPkt(std::shared_ptr<M> msg) {
+        if (!handler_.processPkt(msg)) {
             return false;
         }
         
-        if (!Pipeline<ARGS...>::processPkt(msg)) {
-            return false;
-        }
-        return true;
+        return Pipeline<ARGS...>::processPkt(msg);
     }
 
-    T cur_handler_;
+    T handler_;
 };
 
 template<typename T> 
@@ -33,14 +30,14 @@ public:
 
     template<typename M>
     inline bool processPkt(std::shared_ptr<M> msg) {
-        if (!cur_handler_.processPkt(msg)) {
+        if (!handler_.processPkt(msg)) {
             return false;
         }
         
         return true;
     }
 
-    T cur_handler_;
+    T handler_;
 };
 
 };

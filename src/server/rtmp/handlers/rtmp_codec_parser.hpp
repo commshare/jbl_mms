@@ -13,7 +13,7 @@ public:
     }
 
     bool processPkt(std::shared_ptr<RtmpMessage> pkt) {
-        std::cout <<  "RtmpCodecParser" << std::endl;
+        
         return true;
     }
 };

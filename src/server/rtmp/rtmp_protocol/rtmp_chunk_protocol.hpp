@@ -26,6 +26,8 @@ SOFTWARE.
 #include <unordered_map>
 #include <vector>
 
+#include "base/shared_ptr.hpp"
+
 #include "rtmp_define.hpp"
 #include "server/rtmp/rtmp_conn/rtmp_conn.hpp"
 #include "server/rtmp/rtmp_message/chunk_message/rtmp_set_chunk_size_message.hpp"
