@@ -7,7 +7,6 @@
 #include "server/rtmp/rtmp_protocol/rtmp_chunk_protocol.hpp"
 
 namespace mms {
-template<typename PKT>
 class MediaStream {
 public:
     MediaStream() {
@@ -17,12 +16,10 @@ public:
     void init() {
     
     }
-
+ 
     virtual ~MediaStream() {
 
     }
-public:
-    virtual bool processPkt(std::shared_ptr<PKT> pkt) = 0;
 };
 
 };

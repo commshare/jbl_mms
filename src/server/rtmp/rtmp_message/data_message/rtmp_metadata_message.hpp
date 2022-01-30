@@ -37,6 +37,12 @@ public:
 public:
     Amf0String name_;
     Amf0EcmaArray metadata_;
+private:
+    bool has_video_ = false;
+    bool has_audio_ = false;
+    size_t width_ = 0;
+    size_t height_ = 0;
+    std::string video_codec_;
 };
 
 

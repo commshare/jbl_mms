@@ -60,7 +60,9 @@ int32_t TcpSocket::recvSome(uint8_t *data, size_t len) {
 }
 
 void TcpSocket::close() {
-    socket_->close();
+    worker_->dispatch([this]{
+        socket_->close();
+    });
 }
 
 

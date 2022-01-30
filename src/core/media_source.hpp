@@ -7,8 +7,7 @@
 #include "server/rtmp/rtmp_protocol/rtmp_chunk_protocol.hpp"
 
 namespace mms {
-template<typename PKT>
-class MediaSource : public MediaStream<PKT> {
+class MediaSource : public MediaStream {
 public:
     MediaSource() {
         

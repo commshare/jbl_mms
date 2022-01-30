@@ -7,9 +7,11 @@
 #include "core/media_stream.hpp"
 #include "core/media_source.hpp"
 #include "core/media_sink.hpp"
+#include "core/rtmp_media_source.hpp"
+#include "core/session.hpp"
 
 namespace mms {
-class RtmpSession {
+class RtmpSession : public Session {
 public:
     RtmpSession(RtmpConn *conn);
 
@@ -18,6 +20,7 @@ public:
     }
 
     void service();
+    void close();
 private:
     bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg);
 
@@ -39,10 +42,8 @@ private:
     RtmpHandshake handshake_;
     RtmpChunkProtocol chunk_protocol_;
     uint32_t window_ack_size_ = 80000000;
-
-    std::shared_ptr<RtmpMessage> metadata_;
 private:
-    std::unique_ptr<MediaStream<RtmpMessage>> media_stream_; 
+    std::shared_ptr<RtmpMediaSource> media_source_ = nullptr;
 };
 
 };

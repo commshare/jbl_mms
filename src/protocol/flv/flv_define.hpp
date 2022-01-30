@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #pragma once
+#include <arpa/inet.h>
 #include <string.h>
 #include <vector>
 #include <memory>
@@ -30,7 +31,7 @@ namespace mms {
 #pragma packed(1)
 #define FLV_IDENTIFIER  "FLV"
 struct FlvHeader {
-    uint8_t signature[3] = "FLV";
+    uint8_t signature[3];
     uint8_t version = 0x01;
     using Flags = struct {
         uint8_t reserved1:5;
@@ -185,7 +186,7 @@ struct FlvAudioTag {
         buf += consumed;
         len -= consumed;
 
-        if (audio_tag_header.sound_info.sound_format == AAC) {
+        if (audio_tag_header.sound_info.sound_format == AudioTagHeader::AAC) {
             if (audio_tag_header.aac_packet_type == 0) {
                 consumed = audio_tag_body.u.aac_audio_data.u.audio_specific_config.decode(buf, len);
             } else if (audio_tag_header.aac_packet_type == 1){
@@ -242,8 +243,8 @@ struct VideoTagHeader {
             return -1;
         }
 
-        frame_type = (*data)&0x0f;
-        codec_id = ((*data)>>4)&0x0f;
+        frame_type = (FrameType)((*data)&0x0f);
+        codec_id = CodecID(((*data)>>4)&0x0f);
         len--;
         data++;
 
