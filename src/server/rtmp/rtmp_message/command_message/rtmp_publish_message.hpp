@@ -34,6 +34,7 @@ public:
 public:
     int32_t decode(std::shared_ptr<RtmpMessage> rtmp_msg);
     std::shared_ptr<RtmpMessage> encode();
+    const std::string & streamName() const;
 public:
     Amf0String command_name_;
     Amf0Number transaction_id_;

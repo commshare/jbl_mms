@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <boost/array.hpp>
 
 #include "base/network/tcp_socket.hpp"

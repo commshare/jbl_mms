@@ -4,18 +4,24 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/array.hpp>
+#include <functional>
 
 #include "base/thread/thread_worker.hpp"
 #include "base/network/tcp_socket.hpp"
 
-namespace mms {
-class HttpConn : public TcpSocket {
-public:
-    HttpConn(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y):TcpSocket(sock, worker, y) {
-    }
 
+namespace mms {
+#define HTTP_MAX_BUF (1024*1024)
+class HttpSession;
+class HttpConn : public TcpSocket {
+    friend class HttpSession;
+public:
+    HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y);
+    void cycleRecv(const std::function<int32_t(const char *buf, size_t len)> & recv_handler);
 private:
-    uint64_t recv_size_ = 0;
-    uint64_t send_size_ = 0;
+    std::string buf_;
+    size_t buf_size_ = 0;
+    size_t buf_pos_ = 0;
+    HttpSession *session_;
 };
 };

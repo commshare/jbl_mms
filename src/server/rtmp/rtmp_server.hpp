@@ -6,10 +6,9 @@
 #include "base/thread/thread_pool.hpp"
 
 namespace mms {
-class RtmpServer : public TcpServer<RtmpConn>, ServerConnHandler<RtmpConn> {
+class RtmpServer : public TcpServer<RtmpConn> {
 public:
     RtmpServer(ThreadWorker *w):TcpServer(w) {
-        setConnHandler(this);
     }
     
     bool start() {
@@ -23,7 +22,7 @@ public:
         stopListen();
     }
 private:
-    void onConnOpen(RtmpConn *socket) override;
-    void onConnClosed(RtmpConn *socket) override;
+    void onTcpSocketOpen(TcpSocket *socket) override;
+    void onTcpSocketClose(TcpSocket *socket) override;
 };
 };

@@ -9,7 +9,7 @@
 namespace mms {
 class MediaSource : public MediaStream {
 public:
-    MediaSource() {
+    MediaSource(ThreadWorker *worker) : MediaStream(worker){
         
     }
 

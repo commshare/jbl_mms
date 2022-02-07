@@ -6,13 +6,14 @@
 #include "server/rtmp/rtmp_protocol/rtmp_handshake.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_chunk_protocol.hpp"
 
+#include "base/thread/thread_worker.hpp"
 namespace mms {
 class MediaStream {
 public:
-    MediaStream() {
+    MediaStream(ThreadWorker *worker) : worker_(worker) {
         
     }
-
+ 
     void init() {
     
     }
@@ -20,6 +21,14 @@ public:
     virtual ~MediaStream() {
 
     }
+
+    inline ThreadWorker* getWorker() {
+        return worker_;
+    }
+
+private:
+    ThreadWorker *worker_;
+    bool ready_;
 };
 
 };

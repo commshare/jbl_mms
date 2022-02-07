@@ -12,14 +12,7 @@
 
 namespace mms {
 template <typename CONN>
-class ServerConnHandler {
-public:
-    virtual void onConnOpen(CONN *conn) {};
-    virtual void onConnClosed(CONN *conn) {};
-};
-
-template <typename CONN>
-class TcpServer {
+class TcpServer : public TcpSocketHandler {
 public:
     TcpServer(ThreadWorker *worker):worker_(worker) {
 
@@ -29,10 +22,6 @@ public:
 
     }
 public:
-    void setConnHandler(ServerConnHandler<CONN> *handler) {
-        handler_ = handler;
-    }
-
     int32_t startListen(uint16_t port, const std::string & addr = "") {
         if (!worker_) {
             return -1;
@@ -61,8 +50,8 @@ public:
                 }
                 
                 boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context y) {
-                    auto client_conn = new CONN(tcp_sock, worker, y);
-                    handler_->onConnOpen(client_conn);
+                    auto client_conn = new CONN(this, tcp_sock, worker, y);
+                    client_conn->open();
                 });
             }
         });
@@ -78,7 +67,14 @@ public:
     }
 private:
     ThreadWorker *worker_;
-    ServerConnHandler<CONN> *handler_;
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
+private:
+    virtual void onTcpSocketOpen(TcpSocket *socket) override {
+
+    }
+
+    virtual void onTcpSocketClose(TcpSocket *socket) override {
+        
+    }
 };
 };

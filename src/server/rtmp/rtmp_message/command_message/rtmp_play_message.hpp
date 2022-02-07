@@ -25,48 +25,25 @@ SOFTWARE.
 #include <string>
 #include "server/rtmp/amf0/amf0_inc.hpp"
 #include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
-#include "protocol/flv/flv_define.hpp"
 
 namespace mms {
-class RtmpMetaDataMessage {
+class RtmpPlayMessage {
 public:
-    RtmpMetaDataMessage();
-    virtual ~RtmpMetaDataMessage();
+    RtmpPlayMessage();
+    virtual ~RtmpPlayMessage();
 public:
     int32_t decode(std::shared_ptr<RtmpMessage> rtmp_msg);
     std::shared_ptr<RtmpMessage> encode();
-
-    bool hasVideo() {
-        return has_video_;
-    }
-
-    bool hasAudio() {
-        return has_audio_;
-    }   
-
-    std::shared_ptr<RtmpMessage> msg() {
-        return cache_msg_;
-    }
-
-private:
-    std::shared_ptr<RtmpMessage> cache_msg_;
-    bool has_video_ = false;
-    bool has_audio_ = false;
-
-    AudioTagHeader::SoundFormat audio_codec_id_;
-    uint32_t audio_channels_;
-    uint32_t audio_datarate_;
-    uint32_t audio_sample_rate_;
-    uint32_t audio_sample_size_;
-    uint32_t duration_;
-    std::string encoder_;
-    uint32_t file_size_;
-    uint32_t frame_rate_;
-    uint32_t height_;
-    uint32_t width_;
-    bool stereo_;
-    VideoTagHeader::CodecID video_codec_id_;
-    uint32_t video_data_rate_;
+    const std::string & streamName() const;
+public:
+    Amf0String command_name_;
+    Amf0Number transaction_id_;
+    Amf0Object command_obj_;
+    Amf0Null null_;
+    Amf0String stream_name_;
+    Amf0Number start_;
+    Amf0Number duration_;
+    Amf0Boolean reset_;
 };
 
 

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <boost/algorithm/string.hpp>
+
 #include "server/rtmp/rtmp_protocol/rtmp_define.hpp"
 #include "rtmp_session.hpp"
 
@@ -6,7 +8,6 @@
 #include "amf0/amf0_number.hpp"
 #include "amf0/amf0_object.hpp"
 
-#include "rtmp_message/command_message/rtmp_connect_command_message.hpp"
 #include "rtmp_message/command_message/rtmp_window_ack_size_message.hpp"
 #include "rtmp_message/command_message/rtmp_set_peer_bandwidth_message.hpp"
 #include "rtmp_message/chunk_message/rtmp_set_chunk_size_message.hpp"
@@ -17,8 +18,10 @@
 #include "rtmp_message/command_message/rtmp_fcpublish_resp_message.hpp"
 #include "rtmp_message/command_message/rtmp_create_stream_message.hpp"
 #include "rtmp_message/command_message/rtmp_create_stream_resp_message.hpp"
-#include "rtmp_message/command_message/rtmp_publish_message.hpp"
 #include "rtmp_message/command_message/rtmp_onstatus_message.hpp"
+#include "rtmp_message/command_message/user_ctrl_message/stream_begin_message.hpp"
+#include "rtmp_message/command_message/rtmp_access_sample_message.hpp"
+
 #include "rtmp_message/data_message/rtmp_metadata_message.hpp"
 
 #include "core/rtmp_media_source.hpp"
@@ -27,6 +30,7 @@
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
     chunk_protocol_.setOutChunkSize(4096);
+    worker_ = conn->getWorker();
 }
 
 void RtmpSession::service() {
@@ -37,7 +41,6 @@ void RtmpSession::service() {
 
     int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1));
     if (0 != ret) {
-        std::cout << "***************** cycleRecvRtmpMessage end:" << ret << " ***********************" << std::endl;
         conn_->close();
     }
 }
@@ -78,18 +81,20 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
     auto name = command_name.getValue();
     if (name == "connect") {
-        handleAmf0ConnectCommand(rtmp_msg);
+        return handleAmf0ConnectCommand(rtmp_msg);
     } else if (name == "releaseStream") {
-        handleAmf0ReleaseStreamCommand(rtmp_msg);
+        return handleAmf0ReleaseStreamCommand(rtmp_msg);
     } else if (name == "FCPublish") {
-        handleAmf0FCPublishCommand(rtmp_msg);
+        return handleAmf0FCPublishCommand(rtmp_msg);
     } else if (name == "createStream") {
-        handleAmf0CreateStreamCommand(rtmp_msg);
+        return handleAmf0CreateStreamCommand(rtmp_msg);
     } else if (name == "publish") {
-        handleAmf0PublishCommand(rtmp_msg);
+        return handleAmf0PublishCommand(rtmp_msg);
+    } else if (name == "play") {
+        return handleAmf0PlayCommand(rtmp_msg);
     }
 
-    return true;
+    return false;
 }
 
 bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
@@ -98,6 +103,12 @@ bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     if(consumed < 0) {
         return false;
     }
+
+    // 获取domain, app, stream_name信息
+    if (!parseConnectCmd(connect_command)) {
+        return false;
+    }
+
     // send window ack size to client
     RtmpWindowAckSizeMessage window_ack_size_msg(window_ack_size_);
     if (!chunk_protocol_.sendRtmpMessage(window_ack_size_msg)) {
@@ -125,6 +136,42 @@ bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     if (!chunk_protocol_.sendRtmpMessage(result_msg)) {
         return false;
     }
+    return true;
+}
+
+bool RtmpSession::parseConnectCmd(RtmpConnectCommandMessage & connect_command) {
+    {// parse domain
+        std::vector<std::string> vs;
+        boost::split(vs, connect_command.tc_url_, boost::is_any_of("/"));
+        if (vs.size() < 3) {
+            return false;
+        }
+
+        if (vs[0] != "rtmp:") {
+            return false;
+        }
+
+        if (vs[1] != "") {
+            return false;
+        }
+
+        domain_ = vs[2];
+    }
+
+    {// parse app
+        std::vector<std::string> vs;
+        boost::split(vs, connect_command.app_, boost::is_any_of("/"));
+        if (vs.size() < 1) {
+            return false;
+        }
+
+        app_ = vs[0];
+        if (vs.size() >= 2) {// 兼容obs推流时，可能将流名写到前面
+            // todo 考虑带参数的情况
+            stream_name_ = vs[1];
+        }
+    }
+
     return true;
 }
 
@@ -177,6 +224,10 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
         return false;
     }
 
+    if (!parsePublishCmd(publish_cmd)) {
+        return false;
+    }
+
     RtmpOnStatusRespMessage status_msg(publish_cmd.transaction_id_.getValue());
     status_msg.data().setItemValue("level", "status");
     status_msg.data().setItemValue("code", RTMP_STATUS_STREAM_PUBLISH_START);
@@ -186,9 +237,62 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
         return false;
     }
 
-    media_source_ = std::make_shared<RtmpMediaSource>();
+    media_source_ = std::make_shared<RtmpMediaSource>(conn_->getWorker());
     media_source_->init();
-    return MediaManager::get_mutable_instance().addSource("", std::dynamic_pointer_cast<MediaSource>(media_source_));
+    return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(media_source_));
+}
+
+bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
+    auto & stream_name = pub_cmd.streamName();
+    if (stream_name_.empty()) {
+        stream_name_ = stream_name;
+    }
+
+    session_name_ = domain_ + "/" + app_ + "/" + stream_name_;
+    return true;
+}
+
+bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    RtmpPlayMessage play_cmd;
+    auto consumed = play_cmd.decode(rtmp_msg);
+    if(consumed < 0) {
+        return false;
+    }
+
+    if (!parsePlayCmd(play_cmd)) {
+        return false;
+    }
+
+    RtmpStreamBeginMessage stream_begin_msg(1);// 只用1这个stream_id
+    if (!chunk_protocol_.sendRtmpMessage(stream_begin_msg)) {
+        return false;
+    }
+
+    RtmpOnStatusRespMessage status_msg(play_cmd.transaction_id_.getValue());
+    status_msg.data().setItemValue("level", "status");
+    status_msg.data().setItemValue("code", RTMP_STATUS_STREAM_PLAY_START);
+    status_msg.data().setItemValue("description", "play start ok.");
+    status_msg.data().setItemValue("clientid", "mms");
+    if (!chunk_protocol_.sendRtmpMessage(status_msg)) {
+        return false;
+    }
+
+    RtmpAccessSampleMessage access_sample_msg;
+    if (!chunk_protocol_.sendRtmpMessage(access_sample_msg)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool RtmpSession::parsePlayCmd(RtmpPlayMessage & play_cmd) {
+    auto & stream_name = play_cmd.streamName();
+    if (stream_name_.empty()) {
+        stream_name_ = stream_name;
+    }
+
+    session_name_ = domain_ + "/" + app_ + "/" + stream_name_;
+    return true;
 }
 
 bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usually is metadata
@@ -224,7 +328,7 @@ bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg) {
 }
 
 void RtmpSession::close() {
-    
+      
 }
 
 };

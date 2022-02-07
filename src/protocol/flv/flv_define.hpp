@@ -98,12 +98,12 @@ struct AudioTagHeader {
         StereoSound      = 1,
     };
 
-    struct SoundInfo {
-        SoundFormat sound_format:4;
+    typedef struct {
+        enum SoundFormat sound_format:4;
         SoundRate sound_rate:2;
         SoundSize sound_size:1;
         SoundType sound_type:1;
-    };
+    }SoundInfo;
 
     SoundInfo sound_info;
     enum AACPacketType : uint8_t {
@@ -118,7 +118,10 @@ struct AudioTagHeader {
         if (len < 1) {
             return -1;
         }
-        sound_info = (SoundInfo)(*data);
+        sound_info.sound_format = (SoundFormat)((*data) & 0x0f);
+        sound_info.sound_rate = (SoundRate)(((*data) >> 4) & 0x03);
+        sound_info.sound_size = (SoundSize)(((*data) >> 6) & 0x01);
+        sound_info.sound_type = (SoundType)(((*data) >> 7) & 0x01);
         len--;
         data++;
 
@@ -165,7 +168,7 @@ struct AACAudioData {
 struct OtherAudioData {
     uint8_t data[1];
     size_t  payload_size;
-}
+};
 
 struct AudioTagBody {
     union {
@@ -198,12 +201,6 @@ struct FlvAudioTag {
             len -= consumed;
         }
 
-        consumed = audio_tag_body.decode(buf, len);
-        if (consumed < 0) {
-            return -2;
-        }
-        buf += consumed;
-        len -= consumed;
         return buf - buf_start;
     }
 };
@@ -324,8 +321,8 @@ struct FlvVideoTag {
         }
         data += consumed;
         len -= consumed;
-        if (video_tag_header.codec_id == AVC) {
-            if (video_tag_header.avc_packet_type == AVCSequenceHeader) {
+        if (video_tag_header.codec_id == VideoTagHeader::AVC) {
+            if (video_tag_header.avc_packet_type == VideoTagHeader::AVCSequenceHeader) {
                 consumed = video_tag_body.u.avc_video_packet.u.avc_decoder_config_record.decode(data, len);
             } else {
                 consumed = video_tag_body.u.avc_video_packet.u.avc_raw_frame.decode(data, len);

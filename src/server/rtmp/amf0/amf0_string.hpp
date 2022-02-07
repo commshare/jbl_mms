@@ -73,7 +73,7 @@ public:
         return data - buf;
     }
 
-    const std::string & getValue() {
+    const std::string & getValue() const {
         return value_;
     }
 

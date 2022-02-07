@@ -4,14 +4,17 @@
 #include "rtmp_server.hpp"
 #include "rtmp_session.hpp"
 namespace mms {
-
-void RtmpServer::onConnOpen(RtmpConn *conn) {
-    std::shared_ptr<RtmpSession> s = std::make_shared<RtmpSession>(conn);
+// conn属于server,session属于conn
+void RtmpServer::onTcpSocketOpen(TcpSocket *conn) {
+    RtmpConn *rtmp_conn = (RtmpConn*)conn;
+    std::shared_ptr<RtmpSession> s = rtmp_conn->createSession();
     s->service();
 }
 
-void RtmpServer::onConnClosed(RtmpConn *conn) {
-
+void RtmpServer::onTcpSocketClose(TcpSocket *conn) {
+    RtmpConn *rtmp_conn = (RtmpConn*)conn;
+    std::shared_ptr<RtmpSession> s = rtmp_conn->getSession();
+    s->close();
 }
 
 };

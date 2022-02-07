@@ -31,6 +31,7 @@ public:
     RtmpCreateStreamRespMessage(const RtmpCreateStreamMessage & rel_msg, const std::string & name) {
         command_name_.setValue(name);
         transaction_id_.setValue(rel_msg.transaction_id_.getValue());
+        stream_id_.setValue("1");
     }
 
     virtual ~RtmpCreateStreamRespMessage() {

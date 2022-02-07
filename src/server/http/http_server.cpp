@@ -5,12 +5,13 @@
 #include "http_session.hpp"
 namespace mms {
 
-void HttpServer::onConnOpen(HttpConn *conn) {
-    std::shared_ptr<HttpSession> s = std::make_shared<HttpSession>(conn);
+void HttpServer::onTcpSocketOpen(TcpSocket *conn) {
+    HttpConn * http_conn = (HttpConn*)conn;
+    std::shared_ptr<HttpSession> s = std::make_shared<HttpSession>(http_conn);
     s->service();
 }
 
-void HttpServer::onConnClosed(HttpConn *conn) {
+void HttpServer::onTcpSocketClose(TcpSocket *conn) {
 
 }
 

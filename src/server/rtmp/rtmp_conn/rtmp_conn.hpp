@@ -9,12 +9,16 @@
 #include "base/network/tcp_socket.hpp"
 
 namespace mms {
+class RtmpSession;
 class RtmpConn : public TcpSocket {
+    friend class RtmpSession;
 public:
-    RtmpConn(boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y):TcpSocket(sock, worker, y) {
+    RtmpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker, boost::asio::yield_context y):TcpSocket(handler, sock, worker, y) {
     }
-
+    std::shared_ptr<RtmpSession> createSession();
+    std::shared_ptr<RtmpSession> getSession();
 private:
+    std::shared_ptr<RtmpSession> session_ = nullptr;
     uint64_t recv_size_;
     uint64_t send_size_;
 };

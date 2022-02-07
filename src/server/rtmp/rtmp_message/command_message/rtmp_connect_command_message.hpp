@@ -28,6 +28,7 @@ SOFTWARE.
 
 namespace mms {
 class RtmpConnectCommandMessage {
+    friend class RtmpSession;
 public:
     RtmpConnectCommandMessage();
     virtual ~RtmpConnectCommandMessage();
