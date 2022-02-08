@@ -9,7 +9,7 @@ private:
     SharedPtr() {
     }
 public:
-    ~SharedPtr() {
+    virtual ~SharedPtr() {
     }
 
     uint32_t refCount() {

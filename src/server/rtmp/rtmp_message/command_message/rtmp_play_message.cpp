@@ -1,7 +1,9 @@
 #include "rtmp_play_message.hpp"
 using namespace mms;
 RtmpPlayMessage::RtmpPlayMessage() {
-
+    start_.setValue(-2);
+    duration_.setValue(-1);
+    reset_.setValue(true);
 }
 
 RtmpPlayMessage::~RtmpPlayMessage() {
@@ -50,7 +52,7 @@ int32_t RtmpPlayMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
     consumed = start_.decode(payload, len);
     if(consumed < 0) {
-        return -6;
+        return pos;
     }
     pos += consumed;
     payload += consumed;
@@ -58,7 +60,7 @@ int32_t RtmpPlayMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
     consumed = duration_.decode(payload, len);
     if(consumed < 0) {
-        return -7;
+        return pos;
     }
     pos += consumed;
     payload += consumed;
@@ -66,7 +68,7 @@ int32_t RtmpPlayMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
 
     consumed = reset_.decode(payload, len);
     if(consumed < 0) {
-        return -8;
+        return pos;
     }
     pos += consumed;
     payload += consumed;

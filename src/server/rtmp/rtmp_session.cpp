@@ -28,7 +28,7 @@
 #include "core/media_manager.hpp"
 
 namespace mms {
-RtmpSession::RtmpSession(RtmpConn *conn):conn_(conn), handshake_(conn), chunk_protocol_(conn) {
+RtmpSession::RtmpSession(RtmpConn *conn) : RtmpMediaSource(conn->getWorker()), RtmpMediaSink(conn->getWorker()), conn_(conn), handshake_(conn), chunk_protocol_(conn) {
     chunk_protocol_.setOutChunkSize(4096);
     worker_ = conn->getWorker();
 }
@@ -80,6 +80,7 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
     }
 
     auto name = command_name.getValue();
+    std::cout << "******************* get cmd:" << name << " ******************" << std::endl;
     if (name == "connect") {
         return handleAmf0ConnectCommand(rtmp_msg);
     } else if (name == "releaseStream") {
@@ -94,7 +95,7 @@ bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
         return handleAmf0PlayCommand(rtmp_msg);
     }
 
-    return false;
+    return true;
 }
 
 bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
@@ -156,6 +157,13 @@ bool RtmpSession::parseConnectCmd(RtmpConnectCommandMessage & connect_command) {
         }
 
         domain_ = vs[2];
+        if (domain_.find(":") != std::string::npos) {// 去掉端口号
+            std::vector<std::string> tmp;
+            boost::split(tmp, domain_, boost::is_any_of(":"));
+            if (tmp.size() > 1) {
+                domain_ = tmp[0];
+            }
+        }
     }
 
     {// parse app
@@ -237,9 +245,8 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
         return false;
     }
 
-    media_source_ = std::make_shared<RtmpMediaSource>(conn_->getWorker());
-    media_source_->init();
-    return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(media_source_));
+    std::cout << "************************ addSource:" << session_name_ << " *********************" << std::endl;
+    return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
 }
 
 bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
@@ -253,18 +260,22 @@ bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
 }
 
 bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
+    std::cout << "********************* handleAmf0PlayCommand *******************" << std::endl;
     RtmpPlayMessage play_cmd;
     auto consumed = play_cmd.decode(rtmp_msg);
     if(consumed < 0) {
+        std::cout << "********************* play344444:" << session_name_ << " *******************" << std::endl;
         return false;
     }
 
     if (!parsePlayCmd(play_cmd)) {
+        std::cout << "********************* play3333:" << session_name_ << " *******************" << std::endl;
         return false;
     }
 
     RtmpStreamBeginMessage stream_begin_msg(1);// 只用1这个stream_id
     if (!chunk_protocol_.sendRtmpMessage(stream_begin_msg)) {
+        std::cout << "********************* aaaaaa:" << session_name_ << " *******************" << std::endl;
         return false;
     }
 
@@ -274,15 +285,23 @@ bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     status_msg.data().setItemValue("description", "play start ok.");
     status_msg.data().setItemValue("clientid", "mms");
     if (!chunk_protocol_.sendRtmpMessage(status_msg)) {
+        std::cout << "********************* play111:" << session_name_ << " *******************" << std::endl;
         return false;
     }
 
     RtmpAccessSampleMessage access_sample_msg;
     if (!chunk_protocol_.sendRtmpMessage(access_sample_msg)) {
+        std::cout << "********************* play222:" << session_name_ << " *******************" << std::endl;
         return false;
     }
-
-    return true;
+    std::cout << "********************* play:" << session_name_ << " *******************" << std::endl;
+    // todo: how to record 404 error to log.
+    auto s = MediaManager::get_mutable_instance().getSource(session_name_);
+    if (!s) {
+        return false;
+    }
+    std::cout << "********************* start add media sink *******************" << std::endl;
+    return s->addMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
 }
 
 bool RtmpSession::parsePlayCmd(RtmpPlayMessage & play_cmd) {
@@ -302,18 +321,16 @@ bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usual
         return false;
     }
 
-    if (media_source_) {
-        media_source_->onMetadata(metadata);
-    }
+    RtmpMediaSource::onMetadata(metadata);
     return true;
 }
 
 bool RtmpSession::handleVideoMsg(std::shared_ptr<RtmpMessage> msg) {
-    return media_source_->onVideoPacket(msg);
+    return RtmpMediaSource::onVideoPacket(msg);
 }
 
 bool RtmpSession::handleAudioMsg(std::shared_ptr<RtmpMessage> msg) {
-    return media_source_->onAudioPacket(msg);
+    return RtmpMediaSource::onAudioPacket(msg);
 }
 
 bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {
@@ -327,8 +344,16 @@ bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg) {
     return true;
 }
 
+bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
+    return chunk_protocol_._sendRtmpMessage(msg);
+}
+
+bool RtmpSession::onRtmpPacket(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context y) {
+    return chunk_protocol_._sendRtmpMessage(msg, y);
+}
+
 void RtmpSession::close() {
-      
+
 }
 
 };

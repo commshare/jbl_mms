@@ -103,13 +103,13 @@ int32_t RtmpMetaDataMessage::decode(std::shared_ptr<RtmpMessage> rtmp_msg) {
             stereo_ = *t;
         }
 
-        t = metadata.getProperty<Amf0Boolean>("videocodecid");
+        t = metadata.getProperty<Amf0Number>("videocodecid");
         if (t) {
             video_codec_id_ = (VideoTagHeader::CodecID)*t;
             has_video_ = true;
         }
 
-        t = metadata.getProperty<Amf0Boolean>("videodatarate");
+        t = metadata.getProperty<Amf0Number>("videodatarate");
         if (t) {
             video_data_rate_ = *t;
         }        

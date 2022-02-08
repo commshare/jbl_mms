@@ -41,6 +41,20 @@ bool TcpSocket::send(const uint8_t *data, size_t len) {
     return true;
 }
 
+bool TcpSocket::send(const uint8_t *data, size_t len, boost::asio::yield_context y) {
+    boost::system::error_code ec;
+    size_t pos = 0;
+    while (pos < len) {
+        size_t s = socket_->async_send(boost::asio::buffer(data + pos, len - pos), 0, y[ec]);
+        if(ec) {
+            return false;
+        }
+        pos += s;
+    }
+    out_bytes_ += len;
+    return true;
+}
+
 bool TcpSocket::recv(uint8_t *data, size_t len) {
     boost::system::error_code ec;
     size_t pos = 0;
@@ -72,6 +86,7 @@ void TcpSocket::close() {
             handler_->onTcpSocketClose(this);
         }
         socket_->close();
+        delete this;
     });
 }
 

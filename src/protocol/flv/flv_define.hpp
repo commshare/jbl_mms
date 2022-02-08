@@ -111,6 +111,10 @@ struct AudioTagHeader {
         AACRaw            = 1,  
     };
 
+    bool isSeqHeader() {
+        return aac_packet_type == AACSequenceHeader;
+    }
+
     AACPacketType aac_packet_type;//IF SoundFormat == 10
 
     int32_t decode(const uint8_t *data, size_t len) {
@@ -118,10 +122,11 @@ struct AudioTagHeader {
         if (len < 1) {
             return -1;
         }
-        sound_info.sound_format = (SoundFormat)((*data) & 0x0f);
-        sound_info.sound_rate = (SoundRate)(((*data) >> 4) & 0x03);
-        sound_info.sound_size = (SoundSize)(((*data) >> 6) & 0x01);
-        sound_info.sound_type = (SoundType)(((*data) >> 7) & 0x01);
+        sound_info.sound_type = (SoundType)((*data) & 0x01);
+        sound_info.sound_size = (SoundSize)(((*data) >> 1) & 0x01);
+        sound_info.sound_rate = (SoundRate)(((*data) >> 2) & 0x03);
+        sound_info.sound_format = (SoundFormat)((*data >> 4) & 0x0f);
+
         len--;
         data++;
 
@@ -229,6 +234,14 @@ struct VideoTagHeader {
         AVCEofSequence      = 2,
     };
 
+    bool isKeyFrame() {
+        return frame_type == KeyFrame;
+    }
+
+    bool isSeqHeader() {
+        return avc_packet_type == AVCSequenceHeader;
+    }
+
     FrameType       frame_type:4;
     CodecID         codec_id:4;
     AVCPacketType   avc_packet_type;
@@ -240,8 +253,8 @@ struct VideoTagHeader {
             return -1;
         }
 
-        frame_type = (FrameType)((*data)&0x0f);
-        codec_id = CodecID(((*data)>>4)&0x0f);
+        frame_type = (FrameType)((*data>>4)&0x0f);
+        codec_id = CodecID(((*data))&0x0f);
         len--;
         data++;
 

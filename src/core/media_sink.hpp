@@ -1,11 +1,13 @@
 #pragma once
 #include <memory>
-#include "media_stream.hpp"
+
+#include "base/thread/thread_worker.hpp"
 namespace mms {
 class MediaSource;
-class MediaSink : public MediaStream {
+class MediaSink {
+    friend class MediaSource;
 public:
-    MediaSink(ThreadWorker *worker) : MediaStream(worker) {
+    MediaSink(ThreadWorker *worker) : worker_(worker) {
 
     }
 
@@ -18,8 +20,13 @@ public:
     virtual void active() {
 
     }
-private:
+
+    virtual void close() {
+
+    }
+protected:
     MediaSource *source_;
+    ThreadWorker *worker_;
 };
 
 };

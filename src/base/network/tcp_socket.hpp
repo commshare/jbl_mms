@@ -20,6 +20,7 @@ public:
     virtual ~TcpSocket();
 
     bool send(const uint8_t *data, size_t len);
+    bool send(const uint8_t *data, size_t len, boost::asio::yield_context y);
     bool recv(uint8_t *data, size_t len);
     int32_t recvSome(uint8_t *data, size_t len);
     void open();

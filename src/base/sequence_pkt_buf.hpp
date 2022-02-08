@@ -23,6 +23,10 @@ public:
         boost::shared_lock<boost::shared_mutex> rlock(rw_mutex_);
         return pkt_buf_[index%max_size_].second;
     }
+
+    uint64_t latestIndex() {
+        return indexes_;
+    }
 private:
     size_t max_size_;
     boost::shared_mutex rw_mutex_;

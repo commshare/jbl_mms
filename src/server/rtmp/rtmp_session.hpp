@@ -9,14 +9,12 @@
 #include "rtmp_message/command_message/rtmp_publish_message.hpp"
 #include "rtmp_message/command_message/rtmp_play_message.hpp"
 
-#include "core/media_stream.hpp"
-#include "core/media_source.hpp"
-#include "core/media_sink.hpp"
 #include "core/rtmp_media_source.hpp"
+#include "core/rtmp_media_sink.hpp"
 #include "core/session.hpp"
 
 namespace mms {
-class RtmpSession : public Session {
+class RtmpSession : public Session, public RtmpMediaSource, public RtmpMediaSink, public std::enable_shared_from_this<RtmpSession> {
 public:
     RtmpSession(RtmpConn *conn);
 
@@ -44,7 +42,8 @@ private:
 
     bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg);
     bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg);
-    
+    bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context y);
+
     RtmpConn *conn_;
     RtmpHandshake handshake_;
     RtmpChunkProtocol chunk_protocol_;
@@ -55,7 +54,6 @@ private:
     bool parsePlayCmd(RtmpPlayMessage & pub_cmd);
 private:
     ThreadWorker *worker_;
-    std::shared_ptr<RtmpMediaSource> media_source_ = nullptr;
     std::string domain_;
     std::string app_;
     std::string stream_name_;
