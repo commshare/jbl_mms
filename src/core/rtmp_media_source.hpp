@@ -54,9 +54,11 @@ public:
         }
         latest_audio_timestamp_ = audio_pkt->timestamp_;
 
-        std::lock_guard<std::mutex> lck(sinks_mtx_);
-        for (auto & sink : sinks_) {
-            sink->active();
+        if (latest_frame_index_ >= 300 || latest_frame_index_%5 == 0) {
+            std::lock_guard<std::mutex> lck(sinks_mtx_);
+            for (auto & sink : sinks_) {
+                sink->active();
+            }
         }
 
         return true;
@@ -86,10 +88,13 @@ public:
         }
         latest_video_timestamp_ = video_pkt->timestamp_;
 
-        std::lock_guard<std::mutex> lck(sinks_mtx_);
-        for (auto & sink : sinks_) {
-            sink->active();
+        if (latest_frame_index_ >= 300 || latest_frame_index_%5 == 0) {
+            std::lock_guard<std::mutex> lck(sinks_mtx_);
+            for (auto & sink : sinks_) {
+                sink->active();
+            }
         }
+        
         return true;
     }
 
@@ -108,7 +113,7 @@ public:
         return true;
     }
 
-    std::vector<std::shared_ptr<RtmpMessage>> getPkts(uint64_t &last_pkt_index) {
+    std::vector<std::shared_ptr<RtmpMessage>> getPkts(uint64_t &last_pkt_index, uint32_t max_count) {
         std::cout << "**************** last_pkt_index:" << last_pkt_index << " ,latest_frame_index_:" << latest_frame_index_ << " *******************" << std::endl;
         std::vector<std::shared_ptr<RtmpMessage>> pkts;
         if (last_pkt_index == -1) {
@@ -136,21 +141,33 @@ public:
                 }
 
                 uint64_t start_idx = *it;
-                while(start_idx <= latest_frame_index_) {
+                uint32_t pkt_count = 0;
+                while(start_idx <= latest_frame_index_ && pkt_count < max_count) {
                     auto t = av_pkts_.getPkt(start_idx);
                     if (t) {
                         pkts.emplace_back(av_pkts_.getPkt(start_idx));
+                        pkt_count++;
                     }
                     
                     start_idx++;
                 }
                 last_pkt_index = start_idx;
-            } else {
-
             }
+        } else {
+            uint64_t start_idx = last_pkt_index;
+            uint32_t pkt_count = 0;
+            while(start_idx <= latest_frame_index_ && pkt_count < max_count) {
+                auto t = av_pkts_.getPkt(start_idx);
+                if (t) {
+                    pkts.emplace_back(av_pkts_.getPkt(start_idx));
+                    pkt_count++;
+                }
+                
+                start_idx++;
+            }
+            last_pkt_index = start_idx;
         }
 
-        std::cout << "**************** getPkts, size:" << pkts.size() << " has_video_:" << has_video_ << " ******************" << std::endl;
         return pkts;
     }
 
