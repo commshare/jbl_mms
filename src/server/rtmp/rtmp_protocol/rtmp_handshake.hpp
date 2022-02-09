@@ -13,25 +13,24 @@ public:
     virtual ~RtmpHandshake() {
     }
 
-    bool handshake() {
+    bool handshake(boost::asio::yield_context & yield) {
         boost::array<uint8_t, 1537> c0c1;
-        if (!conn_->recv(c0c1.data(), 1537)) {
+        if (!conn_->recv(c0c1.data(), 1537, yield)) {
             return false;
         }
 
         boost::array<uint8_t, 3073> s0s1s2;
         _genS0S1S2(c0c1.data(), s0s1s2.data());
         // send s0, s1, s2
-        if (!conn_->send(s0s1s2.data(), 3073)) {
+        if (!conn_->send(s0s1s2.data(), 3073, yield)) {
             return false;
         }
 
         boost::array<uint8_t, 1536> c2;
-        if (!conn_->recv(c2.data(), 1536)) {
+        if (!conn_->recv(c2.data(), 1536, yield)) {
             return false;
         }
 
-        std::cout << "handshake done." << std::endl;
         return true;
     }
 private:

@@ -9,7 +9,7 @@ HttpSession::HttpSession(HttpConn *conn):conn_(conn) {
 HttpSession::~HttpSession() {
 }
 
-void HttpSession::service() {
+void HttpSession::service(boost::asio::yield_context & yield) {
     http_parser_.onHttpRequest([this](std::shared_ptr<HttpRequest> req) {
         std::cout << "get http req" << std::endl;
         std::cout << "path:" << req->path_ << std::endl;
@@ -18,7 +18,7 @@ void HttpSession::service() {
         }
     });
 
-    conn_->cycleRecv([this](const char *buf, size_t len)->int32_t {
+    conn_->cycleRecv([this](const char *buf, size_t len, boost::asio::yield_context & yield)->int32_t {
         int32_t total_consumed = 0;
         int32_t consumed = 0;
         do {
@@ -31,7 +31,7 @@ void HttpSession::service() {
         } while(consumed > 0 && len > 0);
 
         return total_consumed;
-    });
+    }, yield);
 }
 
 void HttpSession::close() {

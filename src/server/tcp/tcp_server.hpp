@@ -49,9 +49,9 @@ public:
                     break;
                 }
                 
-                boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context y) {
-                    auto client_conn = new CONN(this, tcp_sock, worker, y);
-                    client_conn->open();
+                boost::asio::spawn(worker->getIOContext(), [this, tcp_sock, worker](boost::asio::yield_context yield) {
+                    auto client_conn = new CONN(this, tcp_sock, worker);
+                    client_conn->open(yield);
                 });
             }
         });
@@ -68,13 +68,5 @@ public:
 private:
     ThreadWorker *worker_;
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
-private:
-    virtual void onTcpSocketOpen(TcpSocket *socket) override {
-
-    }
-
-    virtual void onTcpSocketClose(TcpSocket *socket) override {
-        
-    }
 };
 };

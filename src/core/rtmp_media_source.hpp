@@ -35,7 +35,6 @@ public:
     }
 
     bool onAudioPacket(std::shared_ptr<RtmpMessage> audio_pkt) {
-        // std::cout << " *********** onAudioPacket **************" << std::endl;
         latest_frame_index_ = av_pkts_.addPkt(audio_pkt);
         AudioTagHeader audio_tag_header;
         int32_t consumed = audio_tag_header.decode(audio_pkt->payload_, audio_pkt->payload_size_);
@@ -46,7 +45,6 @@ public:
         if (audio_tag_header.isSeqHeader()) {
             audio_ready_ = true;
             audio_header_ = audio_pkt;
-            std::cout << " *********** audio is ready **************" << std::endl;
         }
 
         if (!stream_ready_) {
@@ -65,7 +63,6 @@ public:
     }
 
     bool onVideoPacket(std::shared_ptr<RtmpMessage> video_pkt) {
-        // std::cout << " *********** onVideoPacket **************" << std::endl;
         latest_frame_index_ = av_pkts_.addPkt(video_pkt);
         // 解析头部
         VideoTagHeader video_tag_header;
@@ -75,11 +72,9 @@ public:
         }
 
         if (video_tag_header.isKeyFrame() && !video_tag_header.isSeqHeader()) {// 关键帧索引
-            // std::cout << "*************************** video is key *******************" << std::endl;
             keyframe_indexes_.push_back(latest_frame_index_);
         }  else if (video_tag_header.isSeqHeader()) {
             video_ready_ = true;
-            // std::cout << "*************************** video is ready *******************" << std::endl;
             video_header_ = video_pkt;
         }
 
@@ -99,7 +94,6 @@ public:
     }
 
     bool onMetadata(std::shared_ptr<RtmpMetaDataMessage> metadata_pkt) {
-        std::cout << " *********** onMetadata **************" << std::endl;
         metadata_ = metadata_pkt;
         has_video_ = metadata_->hasVideo();
         has_audio_ = metadata_->hasAudio();
@@ -114,7 +108,6 @@ public:
     }
 
     std::vector<std::shared_ptr<RtmpMessage>> getPkts(uint64_t &last_pkt_index, uint32_t max_count) {
-        std::cout << "**************** last_pkt_index:" << last_pkt_index << " ,latest_frame_index_:" << latest_frame_index_ << " *******************" << std::endl;
         std::vector<std::shared_ptr<RtmpMessage>> pkts;
         if (last_pkt_index == -1) {
             pkts.emplace_back(metadata_->msg());
@@ -148,7 +141,6 @@ public:
                         pkts.emplace_back(av_pkts_.getPkt(start_idx));
                         pkt_count++;
                     }
-                    
                     start_idx++;
                 }
                 last_pkt_index = start_idx;
@@ -156,16 +148,17 @@ public:
         } else {
             uint64_t start_idx = last_pkt_index;
             uint32_t pkt_count = 0;
+            // std::cout << "***************** last_pkt_index1:" << last_pkt_index << " latest_frame_index_：" << latest_frame_index_ << " *****************" << std::endl;
             while(start_idx <= latest_frame_index_ && pkt_count < max_count) {
                 auto t = av_pkts_.getPkt(start_idx);
                 if (t) {
                     pkts.emplace_back(av_pkts_.getPkt(start_idx));
                     pkt_count++;
                 }
-                
                 start_idx++;
             }
             last_pkt_index = start_idx;
+            // std::cout << "***************** last_pkt_index2:" << last_pkt_index << " *****************" << std::endl;
         }
 
         return pkts;

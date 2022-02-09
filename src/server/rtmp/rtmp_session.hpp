@@ -22,27 +22,27 @@ public:
 
     }
 
-    void service();
+    void service(boost::asio::yield_context & yield);
     void close();
 private:
-    bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg);
-    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg);
+    bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
 
-    bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg);
-    bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg);
-    bool handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
-    bool handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
-    bool handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
-    bool handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
-    bool handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg);
-    bool handleVideoMsg(std::shared_ptr<RtmpMessage> msg);
-    bool handleAudioMsg(std::shared_ptr<RtmpMessage> msg);
+    bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
+    bool handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
+    bool handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
+    bool handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
+    bool handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
+    bool handleVideoMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool handleAudioMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
 
-    bool handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg);
+    bool handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield);
 
-    bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg);
-    bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg);
-    bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context y);
+    bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context & yield);
 
     RtmpConn *conn_;
     RtmpHandshake handshake_;

@@ -17,7 +17,7 @@ public:
         std::shared_ptr<RtmpMessage> rtmp_msg = std::make_shared<RtmpMessage>(s);
         rtmp_msg->chunk_stream_id_ = RTMP_CHUNK_ID_PROTOCOL_CONTROL_MESSAGE;
         rtmp_msg->timestamp_ = 0;
-        rtmp_msg->message_type_id_ = RTMP_MESSAGE_TYPE_AMF0_COMMAND;
+        rtmp_msg->message_type_id_ = RTMP_MESSAGE_TYPE_USER_CONTROL;
         rtmp_msg->message_stream_id_ = RTMP_MESSAGE_ID_PROTOCOL_CONTROL;
 
         uint8_t * payload = rtmp_msg->payload_;

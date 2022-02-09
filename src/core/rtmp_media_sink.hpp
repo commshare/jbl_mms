@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <set>
+#include <atomic>
 
 #include "media_source.hpp"
 #include "media_sink.hpp"
@@ -22,7 +23,7 @@ namespace mms {
 class RtmpMediaSink : public MediaSink {
 public:
     RtmpMediaSink(ThreadWorker *worker) : MediaSink(worker) {
-
+        sending_ = false;
     }
 
     bool init() {
@@ -41,7 +42,7 @@ public:
         return true;
     }
 
-    virtual bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context y) {
+    virtual bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context & y) {
         return true;
     }
 
@@ -58,5 +59,6 @@ protected:
     bool has_video_; 
     bool has_audio_;
     bool stream_ready_;
+    std::atomic<bool> sending_;
 };
 };

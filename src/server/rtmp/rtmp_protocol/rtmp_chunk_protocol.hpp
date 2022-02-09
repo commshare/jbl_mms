@@ -47,18 +47,23 @@ public:
     }
 
     template<typename T>
-    bool sendRtmpMessage(const T & msg) {
+    bool sendRtmpMessage(const T & msg, boost::asio::yield_context & yield) {
         std::shared_ptr<RtmpMessage> rtmp_msg = msg.encode();
         if (!rtmp_msg) {
             return false;
         }
-        return _sendRtmpMessage(rtmp_msg);
+        return _sendRtmpMessage(rtmp_msg, yield);
     }
 
-    bool _sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context y) {
+    bool _sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield, bool print = false) {
         size_t left_size = rtmp_msg->payload_size_;
+        if (print) {
+            std::cout << "payload size:" << left_size << ", rtmp_msg->message_stream_id_：" << (uint32_t)rtmp_msg->message_stream_id_ << ", csid:" << (uint32_t)rtmp_msg->chunk_stream_id_ << ", timestamp:" << rtmp_msg->timestamp_ << std::endl;
+        }
+        
         size_t cur_pos = 0;
         uint8_t fmt = RTMP_FMT_TYPE0;
+        bool first_pkt = true;
         while (left_size > 0) {
             // 判断fmt类型
             auto prev_chunk = send_chunk_streams_[rtmp_msg->chunk_stream_id_];
@@ -73,7 +78,22 @@ public:
                     }
                 }
             }
-            // +--------------+----------------+--------------------+--------------+
+
+            if (first_pkt) {
+                first_pkt = false;
+                fmt = RTMP_FMT_TYPE0;
+            } else {
+                fmt = RTMP_FMT_TYPE3;
+            }
+
+            if (print) {
+                if (fmt == RTMP_FMT_TYPE1) {
+                    // std::cout << "*************************** RTMP_FMT_TYPE1 ************************" << std::endl;
+                } else if (fmt == RTMP_FMT_TYPE2) {
+                    std::cout << "*************************** RTMP_FMT_TYPE2 ************************" << std::endl;
+                }
+            }
+            //  +--------------+----------------+--------------------+--------------+
             //  | Basic Header | Message Header | Extended Timestamp | Chunk Data |
             //  +--------------+----------------+--------------------+--------------+
             // 发送basic header
@@ -82,14 +102,14 @@ public:
             // Chunk stream IDs 2-63 can be encoded in the 1-byte version of this field.
             if (rtmp_msg->chunk_stream_id_ >= 2 && rtmp_msg->chunk_stream_id_ <= 63) {
                 uint8_t d = ((fmt&0x03)<<6) | (rtmp_msg->chunk_stream_id_&0x3f);
-                if (!conn_->send(&d, 1, y)) {
+                if (!conn_->send(&d, 1, yield)) {
                     return false;
                 }
             } else if (rtmp_msg->chunk_stream_id_ >= 64 && rtmp_msg->chunk_stream_id_ <= 319) {
                 uint8_t buf[2];
                 buf[0] = ((fmt&0x03)<<6) | 0x00;
                 buf[1] = (rtmp_msg->chunk_stream_id_ - 64) & 0xff;
-                if (!conn_->send(buf, 2, y)) {
+                if (!conn_->send(buf, 2, yield)) {
                     return false;
                 }
             } else if (rtmp_msg->chunk_stream_id_ >= 64 && rtmp_msg->chunk_stream_id_ <= 65599) {//这里真是奇葩，64有重叠
@@ -98,7 +118,7 @@ public:
                 auto csid = rtmp_msg->chunk_stream_id_ - 64;
                 buf[1] = (csid%256) & 0xff;
                 buf[2] = (csid/256) & 0xff;
-                if (!conn_->send(buf, 3, y)) {
+                if (!conn_->send(buf, 3, yield)) {
                     return false;
                 }
             }
@@ -106,42 +126,42 @@ public:
             int this_chunk_payload_size = std::min(out_chunk_size_, left_size);
             if (fmt == RTMP_FMT_TYPE0) {
                 uint32_t t = htonl(rtmp_msg->timestamp_&0xffffff);
-                if(!conn_->send((uint8_t*)&t + 1, 3, y)) {
+                if (!conn_->send((uint8_t*)&t + 1, 3, yield)) {
                     return false;
                 }
 
                 t = htonl(rtmp_msg->payload_size_);
-                if(!conn_->send((uint8_t*)&t + 1, 3, y)) {
+                if (!conn_->send((uint8_t*)&t + 1, 3, yield)) {
                     return false;
                 }
                 
-                if(!conn_->send(&rtmp_msg->message_type_id_, 1, y)) {
+                if (!conn_->send(&rtmp_msg->message_type_id_, 1, yield)) {
                     return false;
                 }
 
                 t = htonl(rtmp_msg->message_stream_id_);
-                if(!conn_->send((uint8_t*)&t, 4, y)) {
+                if (!conn_->send((uint8_t*)&t, 4, yield)) {
                     return false;
                 }
             } else if (fmt == RTMP_FMT_TYPE1) {
                 uint32_t timestamp_delta = rtmp_msg->timestamp_ - prev_chunk->rtmp_message_->timestamp_;
                 uint32_t t = htonl(timestamp_delta);
-                if(!conn_->send((uint8_t*)&t + 1, 3, y)) {
+                if (!conn_->send((uint8_t*)&t + 1, 3, yield)) {
                     return false;
                 }
 
                 t = htonl(rtmp_msg->payload_size_);
-                if(!conn_->send((uint8_t*)&t + 1, 3, y)) {
+                if(!conn_->send((uint8_t*)&t + 1, 3, yield)) {
                     return false;
                 }
                 
-                if(!conn_->send(&rtmp_msg->message_type_id_, 1, y)) {
+                if (!conn_->send(&rtmp_msg->message_type_id_, 1, yield)) {
                     return false;
                 }
             } else if (fmt == RTMP_FMT_TYPE2) {
                 uint32_t timestamp_delta = rtmp_msg->timestamp_ - prev_chunk->rtmp_message_->timestamp_;
                 uint32_t t = htonl(timestamp_delta);
-                if(!conn_->send((uint8_t*)&t + 1, 3, y)) {
+                if (!conn_->send((uint8_t*)&t + 1, 3, yield)) {
                     return false;
                 }
             } else if (fmt == RTMP_FMT_TYPE3) {// no header
@@ -150,12 +170,12 @@ public:
             // 发送exttimestamp
             if (rtmp_msg->timestamp_ >= 0x00ffffff) {
                 uint32_t t = htonl(rtmp_msg->timestamp_);
-                if(!conn_->send((uint8_t*)&t, 4, y)) {
+                if(!conn_->send((uint8_t*)&t, 4, yield)) {
                     return false;
                 }
             }
             // 发送chunk data
-            if (!conn_->send(rtmp_msg->payload_ + cur_pos, this_chunk_payload_size, y)) {
+            if (!conn_->send(rtmp_msg->payload_ + cur_pos, this_chunk_payload_size, yield)) {
                 return false;
             }
 
@@ -168,126 +188,13 @@ public:
         return true;
     }
 
-    bool _sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
-        size_t left_size = rtmp_msg->payload_size_;
-        size_t cur_pos = 0;
-        uint8_t fmt = RTMP_FMT_TYPE0;
-        while (left_size > 0) {
-            // 判断fmt类型
-            auto prev_chunk = send_chunk_streams_[rtmp_msg->chunk_stream_id_];
-            if (prev_chunk) {
-                // 不使用fmt3
-                if (rtmp_msg->message_stream_id_ == prev_chunk->rtmp_message_->message_stream_id_) {
-                    fmt = RTMP_FMT_TYPE1;
-                    if (rtmp_msg->timestamp_ < prev_chunk->rtmp_message_->timestamp_) {
-                        fmt = RTMP_FMT_TYPE0;
-                    } else if (rtmp_msg->payload_size_ == prev_chunk->rtmp_message_->payload_size_) {
-                        fmt = RTMP_FMT_TYPE2;
-                    }
-                }
-            }
-            // +--------------+----------------+--------------------+--------------+
-            //  | Basic Header | Message Header | Extended Timestamp | Chunk Data |
-            //  +--------------+----------------+--------------------+--------------+
-            // 发送basic header
-            std::shared_ptr<RtmpChunk> chunk = std::make_shared<RtmpChunk>();
-            chunk->rtmp_message_ = rtmp_msg;
-            // Chunk stream IDs 2-63 can be encoded in the 1-byte version of this field.
-            if (rtmp_msg->chunk_stream_id_ >= 2 && rtmp_msg->chunk_stream_id_ <= 63) {
-                uint8_t d = ((fmt&0x03)<<6) | (rtmp_msg->chunk_stream_id_&0x3f);
-                if (!conn_->send(&d, 1)) {
-                    return false;
-                }
-            } else if (rtmp_msg->chunk_stream_id_ >= 64 && rtmp_msg->chunk_stream_id_ <= 319) {
-                uint8_t buf[2];
-                buf[0] = ((fmt&0x03)<<6) | 0x00;
-                buf[1] = (rtmp_msg->chunk_stream_id_ - 64) & 0xff;
-                if (!conn_->send(buf, 2)) {
-                    return false;
-                }
-            } else if (rtmp_msg->chunk_stream_id_ >= 64 && rtmp_msg->chunk_stream_id_ <= 65599) {//这里真是奇葩，64有重叠
-                uint8_t buf[3];
-                buf[0] = ((fmt&0x03)<<6) | 0x01;
-                auto csid = rtmp_msg->chunk_stream_id_ - 64;
-                buf[1] = (csid%256) & 0xff;
-                buf[2] = (csid/256) & 0xff;
-                if (!conn_->send(buf, 3)) {
-                    return false;
-                }
-            }
-            // 发送message header
-            int this_chunk_payload_size = std::min(out_chunk_size_, left_size);
-            if (fmt == RTMP_FMT_TYPE0) {
-                uint32_t t = htonl(rtmp_msg->timestamp_&0xffffff);
-                if(!conn_->send((uint8_t*)&t + 1, 3)) {
-                    return false;
-                }
-
-                t = htonl(rtmp_msg->payload_size_);
-                if(!conn_->send((uint8_t*)&t + 1, 3)) {
-                    return false;
-                }
-                
-                if(!conn_->send(&rtmp_msg->message_type_id_, 1)) {
-                    return false;
-                }
-
-                t = htonl(rtmp_msg->message_stream_id_);
-                if(!conn_->send((uint8_t*)&t, 4)) {
-                    return false;
-                }
-            } else if (fmt == RTMP_FMT_TYPE1) {
-                uint32_t timestamp_delta = rtmp_msg->timestamp_ - prev_chunk->rtmp_message_->timestamp_;
-                uint32_t t = htonl(timestamp_delta);
-                if(!conn_->send((uint8_t*)&t + 1, 3)) {
-                    return false;
-                }
-
-                t = htonl(rtmp_msg->payload_size_);
-                if(!conn_->send((uint8_t*)&t + 1, 3)) {
-                    return false;
-                }
-                
-                if(!conn_->send(&rtmp_msg->message_type_id_, 1)) {
-                    return false;
-                }
-            } else if (fmt == RTMP_FMT_TYPE2) {
-                uint32_t timestamp_delta = rtmp_msg->timestamp_ - prev_chunk->rtmp_message_->timestamp_;
-                uint32_t t = htonl(timestamp_delta);
-                if(!conn_->send((uint8_t*)&t + 1, 3)) {
-                    return false;
-                }
-            } else if (fmt == RTMP_FMT_TYPE3) {// no header
-
-            }
-            // 发送exttimestamp
-            if (rtmp_msg->timestamp_ >= 0x00ffffff) {
-                uint32_t t = htonl(rtmp_msg->timestamp_);
-                if(!conn_->send((uint8_t*)&t, 4)) {
-                    return false;
-                }
-            }
-            // 发送chunk data
-            if (!conn_->send(rtmp_msg->payload_ + cur_pos, this_chunk_payload_size)) {
-                return false;
-            }
-
-            left_size -= this_chunk_payload_size;
-            cur_pos += this_chunk_payload_size;
-            // 发送结束，记录本次发送的chunk
-            chunk->chunk_payload_size_ = this_chunk_payload_size;
-            send_chunk_streams_[rtmp_msg->chunk_stream_id_] = chunk;
-        }
-        return true;
-    }
-
-    int32_t cycleRecvRtmpMessage(const std::function<bool(std::shared_ptr<RtmpMessage>)> & recv_handler) {
+    int32_t cycleRecvRtmpMessage(const std::function<bool(std::shared_ptr<RtmpMessage>, boost::asio::yield_context &)> & recv_handler, boost::asio::yield_context & yield) {
         recv_handler_ = recv_handler;
 
         while(1) {// todo reduce read system call, use recvSome
             // read basic header
             uint8_t d;
-            bool ret = conn_->recv(&d, 1);
+            bool ret = conn_->recv(&d, 1, yield);
             if (!ret) {
                 return -1;
             }
@@ -295,13 +202,13 @@ public:
             int32_t cid = (int32_t)(d & 0x3f);
             int8_t fmt = (d >> 6) & 0x03;
             if (cid == 0) {
-                if (!conn_->recv(&d, 1)) {
+                if (!conn_->recv(&d, 1, yield)) {
                     cid += 64;
                     cid += (int32_t)d;
                 }
             } else if(cid == 1) {
                 uint8_t buf[2];
-                if (!conn_->recv(buf, 2)) {
+                if (!conn_->recv(buf, 2, yield)) {
                     return -2;
                 }
                 cid = 64;
@@ -329,7 +236,7 @@ public:
 
             if (fmt == RTMP_FMT_TYPE0) {
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t, 3)) {
+                if (!conn_->recv(t, 3, yield)) {
                     return -3;
                 }
                 uint8_t *p = (uint8_t*)&chunk->chunk_message_header_.timestamp_;
@@ -338,7 +245,7 @@ public:
                 p[2] = t[0];
 
                 memset(t, 0, 4);
-                if(!conn_->recv(t, 3)) {
+                if (!conn_->recv(t, 3, yield)) {
                     return -4;
                 }
 
@@ -348,12 +255,12 @@ public:
                 p[1] = t[1];
                 p[2] = t[0];
 
-                if(!conn_->recv(&chunk->chunk_message_header_.message_type_id_, 1)) {
+                if (!conn_->recv(&chunk->chunk_message_header_.message_type_id_, 1, yield)) {
                     return -5;
                 }
 
                 memset(t, 0, 4);
-                if(!conn_->recv(t, 4)) {
+                if(!conn_->recv(t, 4, yield)) {
                     return -6;
                 }
                 p = (uint8_t*)&chunk->chunk_message_header_.message_stream_id_;
@@ -364,7 +271,7 @@ public:
 
                 if (chunk->chunk_message_header_.timestamp_ == 0x00ffffff) {
                     memset(t, 0, 4);
-                    if(!conn_->recv(t, 4)) {
+                    if(!conn_->recv(t, 4, yield)) {
                         return -7;
                     }
                     p = (uint8_t*)&chunk->chunk_message_header_.timestamp_;
@@ -380,7 +287,7 @@ public:
                 *chunk = *prev_chunk;
 
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t, 3)) {
+                if(!conn_->recv(t, 3, yield)) {
                     return -9;
                 }
 
@@ -392,7 +299,7 @@ public:
                 chunk->chunk_message_header_.timestamp_ = prev_chunk->chunk_message_header_.timestamp_ + time_delta;
                 
                 memset(t, 0, 4);
-                if(!conn_->recv(t, 3)) {
+                if(!conn_->recv(t, 3, yield)) {
                     return -10;
                 }
                 p = (uint8_t *)&chunk->chunk_message_header_.message_length_;
@@ -400,7 +307,7 @@ public:
                 p[1] = t[1];
                 p[2] = t[0];
 
-                if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1)) {
+                if(!conn_->recv((uint8_t*)&chunk->chunk_message_header_.message_type_id_, 1, yield)) {
                     return -11;
                 }
             } else if (fmt == RTMP_FMT_TYPE2) {
@@ -410,7 +317,7 @@ public:
                 *chunk = *prev_chunk;
 
                 uint8_t t[4] = {0};
-                if(!conn_->recv(t, 3)) {
+                if(!conn_->recv(t, 3, yield)) {
                     return -13;
                 }
                 int32_t time_delta = 0;
@@ -441,7 +348,7 @@ public:
             }
             // read the payload
             int32_t this_chunk_payload_size = std::min(in_chunk_size_, chunk->chunk_message_header_.message_length_ - chunk->rtmp_message_->payload_size_);
-            if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size)) {
+            if(!conn_->recv(chunk->rtmp_message_->payload_ + chunk->rtmp_message_->payload_size_, this_chunk_payload_size, yield)) {
                 return -15;
             }
 
@@ -468,7 +375,7 @@ public:
                     continue;
                 }
 
-                if (!recv_handler_(chunk->rtmp_message_)) {
+                if (!recv_handler_(chunk->rtmp_message_, yield)) {
                     return -18;
                 }
 
@@ -513,7 +420,7 @@ private:
     }
 private:
     RtmpConn *conn_;
-    std::function<bool(std::shared_ptr<RtmpMessage>)> recv_handler_;
+    std::function<bool(std::shared_ptr<RtmpMessage>, boost::asio::yield_context & yield)> recv_handler_;
 
     boost::array<uint8_t, 1024*1024> recv_buffer_;
     boost::array<uint8_t, 1024*1024> send_buffer_;

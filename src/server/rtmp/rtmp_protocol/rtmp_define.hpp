@@ -206,10 +206,6 @@ public:
         payload_size_ = 0;
     }
 
-    std::vector<std::shared_ptr<RtmpChunk>> toChunks(uint8_t chunk_id, uint32_t chunk_size) {
-        return {};
-    }
-
     uint8_t getMessageType() {
         return message_type_id_;
     }

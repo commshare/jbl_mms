@@ -5,13 +5,13 @@
 #include "http_session.hpp"
 namespace mms {
 
-void HttpServer::onTcpSocketOpen(TcpSocket *conn) {
+void HttpServer::onTcpSocketOpen(TcpSocket *conn, boost::asio::yield_context & yield) {
     HttpConn * http_conn = (HttpConn*)conn;
     std::shared_ptr<HttpSession> s = std::make_shared<HttpSession>(http_conn);
-    s->service();
+    s->service(yield);
 }
 
-void HttpServer::onTcpSocketClose(TcpSocket *conn) {
+void HttpServer::onTcpSocketClose(TcpSocket *conn, boost::asio::yield_context & yield) {
 
 }
 
