@@ -27,22 +27,25 @@
 #include "core/rtmp_media_source.hpp"
 #include "core/media_manager.hpp"
 
+
 namespace mms {
 RtmpSession::RtmpSession(RtmpConn *conn) : RtmpMediaSource(conn->getWorker()), RtmpMediaSink(conn->getWorker()), conn_(conn), handshake_(conn), chunk_protocol_(conn) {
     chunk_protocol_.setOutChunkSize(4096);
     worker_ = conn->getWorker();
 }
 
-void RtmpSession::service(boost::asio::yield_context &yield) {
-    if (!handshake_.handshake(yield)) {
-        conn_->close(); // 关闭socket
-        return;
-    }
+void RtmpSession::service() {
+    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
+        if (!handshake_.handshake(yield)) {
+            conn_->close(); // 关闭socket
+            return;
+        }
 
-    int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1, std::placeholders::_2), yield);
-    if (0 != ret) {
-        conn_->close();
-    }
+        int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1, std::placeholders::_2), yield);
+        if (0 != ret) {
+            conn_->close();
+        }
+    });
 }
 
 bool RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
@@ -335,16 +338,9 @@ bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg, bo
     return true;
 }
 
-bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg,boost::asio::yield_context & yield) {
-    return chunk_protocol_._sendRtmpMessage(msg, yield);
-}
-
-bool RtmpSession::onRtmpPacket(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield) {
-    auto ret = chunk_protocol_._sendRtmpMessage(msg, yield, true);
-    if (!ret) {
-        conn_->close();
-    }
-    return ret;
+bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
+    chunk_protocol_.sendRtmpMessage(msg);
+    return true;
 }
 
 void RtmpSession::close() {

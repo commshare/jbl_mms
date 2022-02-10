@@ -13,7 +13,7 @@ class HttpSession : public Session {
 public:
     HttpSession(HttpConn *conn);
     virtual ~HttpSession();
-    void service(boost::asio::yield_context & yield);
+    void service();
     void close();
 private:
     HttpConn *conn_;

@@ -26,7 +26,7 @@ public:
         stopListen();
     }
 private:
-    void onTcpSocketOpen(TcpSocket *socket, boost::asio::yield_context & yield) override;
-    void onTcpSocketClose(TcpSocket *socket, boost::asio::yield_context & yield) override;
+    void onTcpSocketOpen(TcpSocket *socket) override;
+    void onTcpSocketClose(TcpSocket *socket) override;
 };
 };

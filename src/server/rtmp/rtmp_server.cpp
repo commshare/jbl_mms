@@ -5,13 +5,13 @@
 #include "rtmp_session.hpp"
 namespace mms {
 // conn属于server,session属于conn
-void RtmpServer::onTcpSocketOpen(TcpSocket *conn, boost::asio::yield_context & yield) {
+void RtmpServer::onTcpSocketOpen(TcpSocket *conn) {
     RtmpConn *rtmp_conn = (RtmpConn*)conn;
     std::shared_ptr<RtmpSession> s = rtmp_conn->createSession();
-    s->service(yield);
+    s->service();
 }
 
-void RtmpServer::onTcpSocketClose(TcpSocket *conn, boost::asio::yield_context & yield) {
+void RtmpServer::onTcpSocketClose(TcpSocket *conn) {
     RtmpConn *rtmp_conn = (RtmpConn*)conn;
     std::shared_ptr<RtmpSession> s = rtmp_conn->getSession();
     s->close();

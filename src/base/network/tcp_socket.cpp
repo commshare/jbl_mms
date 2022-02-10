@@ -15,8 +15,8 @@ TcpSocket::~TcpSocket() {
     }
 }
 
-void TcpSocket::open(boost::asio::yield_context & yield) {
-    handler_->onTcpSocketOpen(this, yield);
+void TcpSocket::open() {
+    handler_->onTcpSocketOpen(this);
 }
 
 uint64_t TcpSocket::getRecvCount() {
@@ -69,7 +69,7 @@ int32_t TcpSocket::recvSome(uint8_t *data, size_t len, boost::asio::yield_contex
 void TcpSocket::close() {
     boost::asio::spawn(worker_->getIOContext(), [this](boost::asio::yield_context yield) {
         if (handler_) {
-            handler_->onTcpSocketClose(this, yield);
+            handler_->onTcpSocketClose(this);
         }
         socket_->close();
         delete this;

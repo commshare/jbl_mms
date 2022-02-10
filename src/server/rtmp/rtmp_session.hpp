@@ -12,6 +12,7 @@
 #include "core/rtmp_media_source.hpp"
 #include "core/rtmp_media_sink.hpp"
 #include "core/session.hpp"
+#include "boost/coroutine2/all.hpp"
 
 namespace mms {
 class RtmpSession : public Session, public RtmpMediaSource, public RtmpMediaSink, public std::enable_shared_from_this<RtmpSession> {
@@ -22,11 +23,11 @@ public:
 
     }
 
-    void service(boost::asio::yield_context & yield);
+    void service();
     void close();
 private:
     bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
-    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
+    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg);
 
     bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
     bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
@@ -42,7 +43,6 @@ private:
 
     bool handleAcknowledgement(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
     bool handleUserControlMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
-    bool onRtmpPacket(std::shared_ptr<RtmpMessage> pkt, boost::asio::yield_context & yield);
 
     RtmpConn *conn_;
     RtmpHandshake handshake_;
@@ -52,6 +52,7 @@ private:
     bool parseConnectCmd(RtmpConnectCommandMessage & conn_cmd);
     bool parsePublishCmd(RtmpPublishMessage & pub_cmd);
     bool parsePlayCmd(RtmpPlayMessage & pub_cmd);
+    std::function<void()> send_handler_;
 private:
     ThreadWorker *worker_;
     std::string domain_;

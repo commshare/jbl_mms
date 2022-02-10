@@ -4,26 +4,19 @@
 using namespace mms;
 
 void RtmpMediaSink::active() {
-    boost::asio::spawn(worker_->getIOContext(), [this](boost::asio::yield_context yield) {
+    worker_->post([this]() {
         if (!source_->isReady()) {
             return;
         }
-        
-        if (sending_) {
-            return;
-        }
-        sending_ = true;
-        auto s = (RtmpMediaSource*)source_;
-        auto v = s->getPkts(last_send_pkt_index_, 10);
-        // std::cout << "***************** get pkts size:" << v.size() << " *******************" << std::endl;
-        if (v.size() > 0) {
-            for(auto p : v) {
-                if (!onRtmpPacket(p, yield)) {
+
+        auto rtmp_source = (RtmpMediaSource*)source_;
+        auto pkts = rtmp_source->getPkts(last_send_pkt_index_, 10);
+        if (pkts.size() > 0) {
+            for(auto pkt : pkts) {
+                if (!sendRtmpMessage(pkt)) {
                     break;
                 }
             }
-            // active();
         }
-        sending_ = false;
     });
 }

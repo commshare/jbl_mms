@@ -25,6 +25,7 @@ SOFTWARE.
 #include <functional>
 #include <unordered_map>
 #include <vector>
+#include <list>
 
 #include "base/shared_ptr.hpp"
 
@@ -40,6 +41,27 @@ public:
         for (uint32_t cid = 0; cid < 256; cid++) {
             recv_chunk_cache_[cid] = std::make_shared<RtmpChunk>();
         }
+
+        send_handler_ = [this]() {
+            if (sending_rtmp_msgs_.empty()) {
+                return;
+            }
+
+            if (sending_) {
+                return;
+            }
+            sending_ = true;
+            boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
+                boost::system::error_code ec;
+                if (!sending_rtmp_msgs_.empty()) {
+                    for (auto it = sending_rtmp_msgs_.begin(); it != sending_rtmp_msgs_.end();) {
+                        _sendRtmpMessage(*it, yield);
+                        it = sending_rtmp_msgs_.erase(it);
+                    }
+                }
+                sending_ = false;
+            });
+        };
     }
 
     virtual ~RtmpChunkProtocol() {
@@ -52,15 +74,21 @@ public:
         if (!rtmp_msg) {
             return false;
         }
-        return _sendRtmpMessage(rtmp_msg, yield);
+
+        while (sending_) {
+            boost::asio::steady_timer timer(conn_->getWorker()->getIOContext());
+            timer.expires_from_now(std::chrono::milliseconds(10));
+            timer.async_wait(yield);
+        }
+        sending_ = true;
+        auto ret = _sendRtmpMessage(rtmp_msg, yield);
+        sending_ = false;
+        send_handler_();
+        return ret;
     }
 
-    bool _sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield, bool print = false) {
+    bool _sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
         size_t left_size = rtmp_msg->payload_size_;
-        if (print) {
-            std::cout << "payload size:" << left_size << ", rtmp_msg->message_stream_id_：" << (uint32_t)rtmp_msg->message_stream_id_ << ", csid:" << (uint32_t)rtmp_msg->chunk_stream_id_ << ", timestamp:" << rtmp_msg->timestamp_ << std::endl;
-        }
-        
         size_t cur_pos = 0;
         uint8_t fmt = RTMP_FMT_TYPE0;
         bool first_pkt = true;
@@ -86,13 +114,6 @@ public:
                 fmt = RTMP_FMT_TYPE3;
             }
 
-            if (print) {
-                if (fmt == RTMP_FMT_TYPE1) {
-                    // std::cout << "*************************** RTMP_FMT_TYPE1 ************************" << std::endl;
-                } else if (fmt == RTMP_FMT_TYPE2) {
-                    std::cout << "*************************** RTMP_FMT_TYPE2 ************************" << std::endl;
-                }
-            }
             //  +--------------+----------------+--------------------+--------------+
             //  | Basic Header | Message Header | Extended Timestamp | Chunk Data |
             //  +--------------+----------------+--------------------+--------------+
@@ -384,6 +405,10 @@ public:
         }
     }
 
+    int32_t cycleSendRtmpMessage() {
+
+    }
+
     inline size_t getOutChunkSize() {
         return out_chunk_size_;
     }
@@ -395,7 +420,13 @@ public:
     inline void close() {
         conn_->close();
     }
+
+    void sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
+        sending_rtmp_msgs_.emplace_back(rtmp_msg);
+        send_handler_();
+    }
 private:
+    std::function<void()> send_handler_;
     bool handleSetChunkSize(std::shared_ptr<RtmpMessage> msg) {
         RtmpSetChunkSizeMessage cmd;
         int ret = cmd.decode(msg);
@@ -431,6 +462,7 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<RtmpChunk>> recv_chunk_cache_;
     std::unordered_map<uint32_t, std::shared_ptr<RtmpChunk>> send_chunk_streams_;
 
-    std::vector<std::shared_ptr<RtmpMessage>> sending_rtmp_msgs_;
+    std::list<std::shared_ptr<RtmpMessage>> sending_rtmp_msgs_;
+    std::atomic<bool> sending_{false};
 };
 };
