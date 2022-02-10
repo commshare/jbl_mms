@@ -32,7 +32,7 @@ public:
 protected:
     bool stream_ready_ = false;
     ThreadWorker *worker_;
-    std::mutex sinks_mtx_;
+    std::recursive_mutex sinks_mtx_;
     std::set<std::shared_ptr<MediaSink>> sinks_;
 };
 

@@ -71,6 +71,7 @@ void TcpSocket::close() {
         return;
     }
     closed_ = true;
+
     if (handler_) {
         handler_->onTcpSocketClose(this);
     }

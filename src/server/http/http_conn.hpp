@@ -18,10 +18,14 @@ class HttpConn : public TcpSocket {
 public:
     HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker);
     void cycleRecv(const std::function<int32_t(const char *buf, size_t len, boost::asio::yield_context & yield)> & recv_handler, boost::asio::yield_context & yield);
+
+    std::shared_ptr<HttpSession> createSession();
+    std::shared_ptr<HttpSession> getSession();
+    void destroySession();
 private:
     std::string buf_;
     size_t buf_size_ = 0;
     size_t buf_pos_ = 0;
-    HttpSession *session_;
+    std::shared_ptr<HttpSession> session_;
 };
 };

@@ -1,4 +1,6 @@
 #include "http_conn.hpp"
+#include "http_session.hpp"
+
 using namespace mms;
 
 HttpConn::HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker):TcpSocket(handler, sock, worker) {
@@ -24,4 +26,18 @@ void HttpConn::cycleRecv(const std::function<int32_t(const char *, size_t, boost
             buf_size_ -= consumed;
         }
     }
+}
+
+std::shared_ptr<HttpSession> HttpConn::createSession() {
+    session_ = std::make_shared<HttpSession>(this);
+    return session_;
+}
+
+
+std::shared_ptr<HttpSession> HttpConn::getSession() {
+    return session_;
+}
+
+void HttpConn::destroySession() {
+    session_.reset();
 }

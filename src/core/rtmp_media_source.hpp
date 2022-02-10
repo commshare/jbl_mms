@@ -53,7 +53,7 @@ public:
         latest_audio_timestamp_ = audio_pkt->timestamp_;
 
         if (latest_frame_index_ >= 300 || latest_frame_index_%5 == 0) {
-            std::lock_guard<std::mutex> lck(sinks_mtx_);
+            std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
             for (auto & sink : sinks_) {
                 sink->active();
             }
@@ -84,7 +84,7 @@ public:
         latest_video_timestamp_ = video_pkt->timestamp_;
 
         if (latest_frame_index_ >= 300 || latest_frame_index_%5 == 0) {
-            std::lock_guard<std::mutex> lck(sinks_mtx_);
+            std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
             for (auto & sink : sinks_) {
                 sink->active();
             }
@@ -101,16 +101,18 @@ public:
     }
 
     bool addMediaSink(std::shared_ptr<MediaSink> media_sink) final {
-        std::lock_guard<std::mutex> lck(sinks_mtx_);
+        std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
         sinks_.insert(media_sink);
         media_sink->setSource(this);
         return true;
     }
 
     bool removeMediaSink(std::shared_ptr<MediaSink> media_sink) final {
-        std::lock_guard<std::mutex> lck(sinks_mtx_);
+        std::cout << "******************* removeMediaSink ****************" << std::endl;
+        std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
         for (auto it = sinks_.begin(); it != sinks_.end(); it++) {
             if (*it == media_sink) {
+                std::cout << "******************* remove sink ****************" << std::endl;
                 sinks_.erase(it);
                 break;
             }
@@ -169,16 +171,19 @@ public:
                 start_idx++;
             }
             last_pkt_index = start_idx;
-            // std::cout << "***************** last_pkt_index2:" << last_pkt_index << " *****************" << std::endl;
         }
 
         return pkts;
     }
 
     void close() {
-        std::lock_guard<std::mutex> lck(sinks_mtx_);
-        for (auto & sink : sinks_) {
-            sink->close();
+        std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
+        std::set<std::shared_ptr<MediaSink>> tmp_sinks_;
+        tmp_sinks_.swap(sinks_);
+        for (auto sink : tmp_sinks_) {
+            sink->getWorker()->dispatch([sink]() {
+                sink->close();
+            });
         }
         sinks_.clear();
     }

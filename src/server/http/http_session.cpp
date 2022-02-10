@@ -3,7 +3,6 @@
 
 namespace mms {
 HttpSession::HttpSession(HttpConn *conn):conn_(conn), RtmpMediaSink(conn->getWorker()) {
-    conn_->session_ = this;
 }
 
 HttpSession::~HttpSession() {
@@ -13,6 +12,7 @@ void HttpSession::service() {
     boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
         http_parser_.onHttpRequest([this](std::shared_ptr<HttpRequest> req) {
             // 得到session name，将session加到source里面，结束
+            std::cout << "path:" << req->path_ << std::endl;
         });
 
         conn_->cycleRecv([this](const char *buf, size_t len, boost::asio::yield_context & yield)->int32_t {

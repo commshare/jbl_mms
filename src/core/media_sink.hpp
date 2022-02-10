@@ -24,6 +24,10 @@ public:
     virtual void close() {
 
     }
+
+    virtual ThreadWorker *getWorker() {
+        return worker_;
+    }
 protected:
     MediaSource *source_ = nullptr;
     ThreadWorker *worker_;

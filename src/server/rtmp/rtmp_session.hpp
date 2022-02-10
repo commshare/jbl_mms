@@ -60,6 +60,7 @@ private:
     std::string stream_name_;
     bool is_publisher_ = false;
     bool is_player_ = false;
+    std::atomic<bool> closed_{false};
 };
 
 };
