@@ -14,7 +14,10 @@ void RtmpServer::onTcpSocketOpen(TcpSocket *conn) {
 void RtmpServer::onTcpSocketClose(TcpSocket *conn) {
     RtmpConn *rtmp_conn = (RtmpConn*)conn;
     std::shared_ptr<RtmpSession> s = rtmp_conn->getSession();
-    s->close();
+    rtmp_conn->destroySession();
+    if (s) {
+        s->close();
+    }
 }
 
 };

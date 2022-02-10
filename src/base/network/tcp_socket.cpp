@@ -67,13 +67,15 @@ int32_t TcpSocket::recvSome(uint8_t *data, size_t len, boost::asio::yield_contex
 }
 
 void TcpSocket::close() {
-    boost::asio::spawn(worker_->getIOContext(), [this](boost::asio::yield_context yield) {
-        if (handler_) {
-            handler_->onTcpSocketClose(this);
-        }
-        socket_->close();
-        delete this;
-    });
+    if (closed_) {
+        return;
+    }
+    closed_ = true;
+    if (handler_) {
+        handler_->onTcpSocketClose(this);
+    }
+    socket_->close();
+    delete this;
 }
 
 

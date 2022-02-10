@@ -36,5 +36,6 @@ private:
     boost::atomic_uint64_t in_bytes_;
     boost::atomic_uint64_t out_bytes_;
     TcpSocketHandler *handler_;
+    std::atomic<bool> closed_{false};
 };
 };

@@ -55,7 +55,9 @@ public:
                 boost::system::error_code ec;
                 if (!sending_rtmp_msgs_.empty()) {
                     for (auto it = sending_rtmp_msgs_.begin(); it != sending_rtmp_msgs_.end();) {
-                        _sendRtmpMessage(*it, yield);
+                        if (!_sendRtmpMessage(*it, yield)) {
+                            return;
+                        }
                         it = sending_rtmp_msgs_.erase(it);
                     }
                 }
@@ -80,6 +82,7 @@ public:
             timer.expires_from_now(std::chrono::milliseconds(10));
             timer.async_wait(yield);
         }
+
         sending_ = true;
         auto ret = _sendRtmpMessage(rtmp_msg, yield);
         sending_ = false;
@@ -207,6 +210,11 @@ public:
             send_chunk_streams_[rtmp_msg->chunk_stream_id_] = chunk;
         }
         return true;
+    }
+    // 异步方式发送
+    void sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
+        sending_rtmp_msgs_.emplace_back(rtmp_msg);
+        send_handler_();
     }
 
     int32_t cycleRecvRtmpMessage(const std::function<bool(std::shared_ptr<RtmpMessage>, boost::asio::yield_context &)> & recv_handler, boost::asio::yield_context & yield) {
@@ -405,10 +413,6 @@ public:
         }
     }
 
-    int32_t cycleSendRtmpMessage() {
-
-    }
-
     inline size_t getOutChunkSize() {
         return out_chunk_size_;
     }
@@ -419,11 +423,6 @@ public:
 
     inline void close() {
         conn_->close();
-    }
-
-    void sendRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
-        sending_rtmp_msgs_.emplace_back(rtmp_msg);
-        send_handler_();
     }
 private:
     std::function<void()> send_handler_;

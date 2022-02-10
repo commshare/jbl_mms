@@ -17,6 +17,7 @@ public:
     }
     std::shared_ptr<RtmpSession> createSession();
     std::shared_ptr<RtmpSession> getSession();
+    void destroySession();
 private:
     std::shared_ptr<RtmpSession> session_ = nullptr;
     uint64_t recv_size_;

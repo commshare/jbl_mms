@@ -11,3 +11,7 @@ std::shared_ptr<RtmpSession> RtmpConn::createSession() {
 std::shared_ptr<RtmpSession> RtmpConn::getSession() {
     return session_;
 }
+
+void RtmpConn::destroySession() {
+    session_.reset();
+}

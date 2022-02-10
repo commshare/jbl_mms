@@ -107,6 +107,17 @@ public:
         return true;
     }
 
+    bool removeMediaSink(std::shared_ptr<MediaSink> media_sink) final {
+        std::lock_guard<std::mutex> lck(sinks_mtx_);
+        for (auto it = sinks_.begin(); it != sinks_.end(); it++) {
+            if (*it == media_sink) {
+                sinks_.erase(it);
+                break;
+            }
+        }
+        return true;
+    }
+
     std::vector<std::shared_ptr<RtmpMessage>> getPkts(uint64_t &last_pkt_index, uint32_t max_count) {
         std::vector<std::shared_ptr<RtmpMessage>> pkts;
         if (last_pkt_index == -1) {

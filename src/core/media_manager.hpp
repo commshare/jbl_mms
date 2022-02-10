@@ -18,6 +18,12 @@ public:
         return true;
     }
 
+    bool removeSource(const std::string & source_name) {
+        std::lock_guard<std::mutex> lck(sources_mtx_);
+        sources_.erase(source_name);
+        return true;
+    }
+
     std::shared_ptr<MediaSource> getSource(const std::string & source_name) {
         std::lock_guard<std::mutex> lck(sources_mtx_);
         auto it = sources_.find(source_name);

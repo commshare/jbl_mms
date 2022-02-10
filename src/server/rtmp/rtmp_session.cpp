@@ -43,6 +43,7 @@ void RtmpSession::service() {
 
         int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1, std::placeholders::_2), yield);
         if (0 != ret) {
+            std::cout << "**************************** recv exit *********************" << std::endl;
             conn_->close();
         }
     });
@@ -247,6 +248,8 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
         return false;
     }
 
+    is_publisher_ = false;
+    is_player_ = true;
     return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
 }
 
@@ -295,6 +298,8 @@ bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg, b
         return false;
     }
 
+    is_publisher_ = false;
+    is_player_ = true;
     return s->addMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
 }
 
@@ -344,7 +349,24 @@ bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
 }
 
 void RtmpSession::close() {
+    // todo: how to record 404 error to log.
+    if (is_player_) {
+        auto s = MediaManager::get_mutable_instance().getSource(session_name_);
+        if (!s) {
+            return;
+        }
 
+        s->removeMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
+    } else if (is_publisher_) {
+        auto s = MediaManager::get_mutable_instance().removeSource(session_name_);
+        if (!s) {
+            return;
+        }
+        std::cout << "**************************** source close ************************" << std::endl;
+        RtmpMediaSource::close();
+    }
+    
+    conn_->close();
 }
 
 };

@@ -25,7 +25,7 @@ public:
 
     }
 protected:
-    MediaSource *source_;
+    MediaSource *source_ = nullptr;
     ThreadWorker *worker_;
 };
 

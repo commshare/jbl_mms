@@ -25,6 +25,7 @@ public:
     }
 
     virtual bool addMediaSink(std::shared_ptr<MediaSink> media_sink) = 0;
+    virtual bool removeMediaSink(std::shared_ptr<MediaSink> media_sink) = 0;
     bool isReady() {
         return stream_ready_;
     }
