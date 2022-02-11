@@ -108,15 +108,14 @@ public:
     }
 
     bool removeMediaSink(std::shared_ptr<MediaSink> media_sink) final {
-        std::cout << "******************* removeMediaSink ****************" << std::endl;
         std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);
         for (auto it = sinks_.begin(); it != sinks_.end(); it++) {
             if (*it == media_sink) {
-                std::cout << "******************* remove sink ****************" << std::endl;
                 sinks_.erase(it);
                 break;
             }
         }
+        std::cout << "*************** remove sink, sink_count:" << sinks_.size() << " *******************" << std::endl;
         return true;
     }
 

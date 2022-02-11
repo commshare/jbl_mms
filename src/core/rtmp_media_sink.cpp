@@ -17,6 +17,7 @@ void RtmpMediaSink::active() {
                     break;
                 }
             }
+            startSendRtmpMessage();
         }
     });
 }

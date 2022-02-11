@@ -12,6 +12,7 @@ TcpSocket::~TcpSocket() {
     if (socket_) {
         delete socket_;
         socket_ = nullptr;
+        std::cout << "******************* destroy TcpSocket ******************" << std::endl;
     }
 }
 

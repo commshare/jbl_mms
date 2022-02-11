@@ -20,7 +20,7 @@ public:
     RtmpSession(RtmpConn *conn);
 
     virtual ~RtmpSession() {
-
+        std::cout << "************** destroy rtmpsession ****************" << std::endl;
     }
 
     void service();
@@ -28,6 +28,9 @@ public:
 private:
     bool onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
     bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg);
+    bool startSendRtmpMessage() {
+        return true;
+    }
 
     bool handleAmf0Command(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);
     bool handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield);

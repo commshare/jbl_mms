@@ -41,6 +41,19 @@ struct FlvHeader {
     };
     Flags flag;
     uint32_t data_offset = 0x09;
+
+    static int32_t encode(uint8_t *data, size_t len) {
+        data[0] = 'F';
+        data[1] = 'L';
+        data[2] = 'V';
+        data[3] = 0x01;
+        data[4] = 0x05;
+        data[5] = 0x00;
+        data[6] = 0x00;
+        data[7] = 0x00;
+        data[8] = 0x09;
+        return 9;
+    }
 };
 
 struct FlvTagHeader {
@@ -61,6 +74,49 @@ struct FlvTagHeader {
     uint8_t timestamp[3];
     uint8_t timestamp_ext;
     uint8_t stream_id[3];
+
+    static int32_t encodeFromRtmpMessage(std::shared_ptr<RtmpMessage> msg, uint8_t *data, size_t len) {
+        uint8_t *start = data;
+        if (len < 1) {
+            return -1;
+        }
+
+        *data = msg->message_type_id_;
+        len--;
+        data++;
+
+        if (len < 3) {
+            return -2;
+        }
+
+        uint8_t *p = (uint8_t*)(&msg->payload_size_);
+        data[0] = p[2];
+        data[1] = p[1];
+        data[2] = p[0];
+        data += 3;
+        len -= 3;
+        if (len < 4) {
+            return -3;
+        }
+
+        p = (uint8_t*)(&msg->timestamp_);
+        data[0] = p[2];
+        data[1] = p[1];
+        data[2] = p[0];
+        data[3] = p[3];
+        data += 4;
+        len -= 4;
+
+        if (len < 3) {
+            return -4;
+        }
+        data[0] = 0;
+        data[1] = 0;
+        data[2] = 0;
+        data += 3;
+        len -= 3;
+        return data - start;
+    }
 };
 
 struct AudioTagHeader {

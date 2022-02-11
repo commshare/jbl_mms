@@ -25,7 +25,7 @@ public:
     RtmpMediaSink(ThreadWorker *worker) : MediaSink(worker) {
     }
 
-    bool init() {
+    virtual bool init() {
         return true;
     }
 
@@ -42,6 +42,10 @@ public:
     }
 
     virtual bool sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
+        return true;
+    }
+
+    virtual bool startSendRtmpMessage() {
         return true;
     }
 

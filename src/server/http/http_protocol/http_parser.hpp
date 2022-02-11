@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "http_define.hpp"
+#include "http_request.hpp"
 
 namespace mms {
 enum HTTP_STATE {
