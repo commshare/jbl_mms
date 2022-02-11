@@ -16,7 +16,7 @@ void HttpSession::service() {
     auto self(shared_from_this());
     // todo:consider to wrap the conn as a bufio, and move parser to HttpRequest class.
     boost::asio::spawn(conn_->getWorker()->getIOContext(), [this, self](boost::asio::yield_context yield) {
-        http_parser_.onHttpRequest(std::bind(&HttpSession::onHttpRequest, this, std::placeholders::_1));
+        http_parser_.onHttpRequest(std::bind(&HttpSession::onHttpRequest, this, std::placeholders::_1, yield));
 
         conn_->cycleRecv([this](const char *buf, size_t len, boost::asio::yield_context & yield)->int32_t {
             int32_t total_consumed = 0;
@@ -37,7 +37,7 @@ void HttpSession::service() {
     });
 }
 
-void HttpSession::onHttpRequest(std::shared_ptr<HttpRequest> req) {
+void HttpSession::onHttpRequest(std::shared_ptr<HttpRequest> req, boost::asio::yield_context &yield) {
     size_t pos;
     if ((pos = req->getPath().rfind(".flv")) != std::string::npos) {
         std::shared_ptr<HttpResponse> resp = std::make_shared<HttpResponse>(conn_);
@@ -47,6 +47,10 @@ void HttpSession::onHttpRequest(std::shared_ptr<HttpRequest> req) {
 
         auto source = MediaManager::get_mutable_instance().getSource(session_name_);
         if (!source) {//todo : reply 404
+            resp->addHeader("Connection", "close");
+            if (!resp->writeHeader(404, yield)) {
+                conn_->close();
+            }
             return;
         }
         std::cout << "****************** start init ********************" << std::endl;
