@@ -35,7 +35,8 @@ RtmpSession::RtmpSession(RtmpConn *conn) : RtmpMediaSource(conn->getWorker()), R
 }
 
 void RtmpSession::service() {
-    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
+    auto self(shared_from_this());
+    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this, self](boost::asio::yield_context yield) {
         if (!handshake_.handshake(yield)) {
             conn_->close(); // 关闭socket
             return;
@@ -366,6 +367,7 @@ void RtmpSession::close() {
             return;
         }
     }
+
     conn_->close();
 }
 
