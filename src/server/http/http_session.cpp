@@ -9,7 +9,8 @@ HttpSession::~HttpSession() {
 }
 
 void HttpSession::service() {
-    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
+    auto self(shared_from_this());
+    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this, self](boost::asio::yield_context yield) {
         http_parser_.onHttpRequest([this](std::shared_ptr<HttpRequest> req) {
             // 得到session name，将session加到source里面，结束
             std::cout << "path:" << req->path_ << std::endl;
