@@ -82,11 +82,13 @@ bool HttpFlv::init() {
         http_response_->addHeader("Content-Type", "video/x-flv");
         http_response_->addHeader("Connection", "Keep-Alive");
         if (!http_response_->writeHeader(200, yield)) {
+            conn_->close();
             return;
         }
 
         auto consumed = FlvHeader::encode((uint8_t*)send_buf_.data(), send_buf_size_);
         if (!http_response_->writeData((uint8_t*)send_buf_.data(), consumed, yield)) {
+            conn_->close();
             return;
         }
 
