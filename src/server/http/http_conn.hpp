@@ -17,7 +17,7 @@ class HttpConn : public TcpSocket {
     friend class HttpSession;
 public:
     HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker);
-    void cycleRecv(const std::function<int32_t(const char *buf, size_t len, boost::asio::yield_context & yield)> & recv_handler, boost::asio::yield_context & yield);
+    boost::asio::awaitable<void> cycleRecv(const std::function<int32_t(const char *buf, size_t len)> & recv_handler);
 
     std::shared_ptr<HttpSession> createSession();
     std::shared_ptr<HttpSession> getSession();

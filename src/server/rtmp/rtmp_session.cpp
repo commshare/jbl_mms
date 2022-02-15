@@ -36,97 +36,98 @@ RtmpSession::RtmpSession(RtmpConn *conn) : RtmpMediaSource(conn->getWorker()), R
 
 void RtmpSession::service() {
     auto self(shared_from_this());
-    boost::asio::spawn(conn_->getWorker()->getIOContext(), [this, self](boost::asio::yield_context yield) {
-        if (!handshake_.handshake(yield)) {
+    boost::asio::co_spawn(conn_->getWorker()->getIOContext(), [this, self]()->boost::asio::awaitable<void> {
+        std::cout << "start handshake" << std::endl;
+        if (!co_await handshake_.handshake()) {
             conn_->close(); // 关闭socket
-            return;
+            co_return;
         }
-
-        int ret = chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1, std::placeholders::_2), yield);
+        std::cout << "**************** handhake done ***************" << std::endl;
+        int ret = co_await chunk_protocol_.cycleRecvRtmpMessage(std::bind(&RtmpSession::onRecvRtmpMessage, this, std::placeholders::_1));
         if (0 != ret) {
             conn_->close();
         }
-    });
+    }, boost::asio::detached);
 }
 
-bool RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::onRecvRtmpMessage(std::shared_ptr<RtmpMessage> rtmp_msg) {
     switch(rtmp_msg->getMessageType()) {
         case RTMP_MESSAGE_TYPE_AMF0_COMMAND: {
-            return handleAmf0Command(rtmp_msg, yield);
+            co_return co_await handleAmf0Command(rtmp_msg);
         }
         case RTMP_MESSAGE_TYPE_AMF0_DATA: {
-            return handleAmf0Data(rtmp_msg, yield);
+            co_return handleAmf0Data(rtmp_msg);
         }
         case RTMP_MESSAGE_TYPE_USER_CONTROL: {
-            return handleUserControlMsg(rtmp_msg, yield);
+            co_return handleUserControlMsg(rtmp_msg);
         }
         case RTMP_MESSAGE_TYPE_ACKNOWLEDGEMENT: {
-            return handleAcknowledgement(rtmp_msg, yield);
+            co_return handleAcknowledgement(rtmp_msg);
         }
         case RTMP_MESSAGE_TYPE_VIDEO: {
-            return handleVideoMsg(rtmp_msg, yield);
+            co_return handleVideoMsg(rtmp_msg);
         }
         case RTMP_MESSAGE_TYPE_AUDIO: {
-            return handleAudioMsg(rtmp_msg, yield);
+            co_return handleAudioMsg(rtmp_msg);
         }
         default: {
 
         }
     }
-    return true;
+    co_return true;
 }
 
-bool RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0Command(std::shared_ptr<RtmpMessage> rtmp_msg) {
     Amf0String command_name;
     int32_t consumed = command_name.decode(rtmp_msg->payload_, rtmp_msg->payload_size_);
     if (consumed < 0) {
-        return false;
+        co_return false;
     }
 
     auto name = command_name.getValue();
     if (name == "connect") {
-        return handleAmf0ConnectCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0ConnectCommand(rtmp_msg);
     } else if (name == "releaseStream") {
-        return handleAmf0ReleaseStreamCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0ReleaseStreamCommand(rtmp_msg);
     } else if (name == "FCPublish") {
-        return handleAmf0FCPublishCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0FCPublishCommand(rtmp_msg);
     } else if (name == "createStream") {
-        return handleAmf0CreateStreamCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0CreateStreamCommand(rtmp_msg);
     } else if (name == "publish") {
-        return handleAmf0PublishCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0PublishCommand(rtmp_msg);
     } else if (name == "play") {
-        return handleAmf0PlayCommand(rtmp_msg, yield);
+        co_return co_await handleAmf0PlayCommand(rtmp_msg);
     }
 
-    return true;
+    co_return true;
 }
 
-bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpConnectCommandMessage connect_command;
     auto consumed = connect_command.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
 
     // 获取domain, app, stream_name信息
     if (!parseConnectCmd(connect_command)) {
-        return false;
+        co_return false;
     }
 
     // send window ack size to client
     RtmpWindowAckSizeMessage window_ack_size_msg(window_ack_size_);
-    if (!chunk_protocol_.sendRtmpMessage(window_ack_size_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(window_ack_size_msg)) {
+        co_return false;
     }
 
     RtmpSetPeerBandwidthMessage set_peer_bandwidth_msg(800000000, LIMIT_TYPE_DYNAMIC);
-    if (!chunk_protocol_.sendRtmpMessage(set_peer_bandwidth_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(set_peer_bandwidth_msg)) {
+        co_return false;
     }
 
     RtmpSetChunkSizeMessage set_chunk_size_msg(chunk_protocol_.getOutChunkSize());//todo set out chunk size in conf
-    if (!chunk_protocol_.sendRtmpMessage(set_chunk_size_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(set_chunk_size_msg)) {
+        co_return false;
     }
 
     RtmpConnectRespMessage result_msg(connect_command, "_result");
@@ -137,10 +138,10 @@ bool RtmpSession::handleAmf0ConnectCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     result_msg.info().setItemValue("code", RTMP_RESULT_CONNECT_SUCCESS);
     result_msg.info().setItemValue("description", "Connection succeed.");
     result_msg.info().setItemValue("objEncoding", connect_command.object_encoding_);//todo objencoding需要自己判断
-    if (!chunk_protocol_.sendRtmpMessage(result_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(result_msg)) {
+        co_return false;
     }
-    return true;
+    co_return true;
 }
 
 bool RtmpSession::parseConnectCmd(RtmpConnectCommandMessage & connect_command) {
@@ -186,57 +187,57 @@ bool RtmpSession::parseConnectCmd(RtmpConnectCommandMessage & connect_command) {
     return true;
 }
 
-bool RtmpSession::handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0ReleaseStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpReleaseStreamMessage release_command;
     auto consumed = release_command.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
     
     RtmpReleaseStreamRespMessage result_msg(release_command, "_result");
-    if (!chunk_protocol_.sendRtmpMessage(result_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(result_msg)) {
+        co_return false;
     }
-    return true;
+    co_return true;
 }
 
-bool RtmpSession::handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0FCPublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpFCPublishMessage fcpublish_cmd;
     auto consumed = fcpublish_cmd.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
     
     RtmpFCPublishRespMessage result_msg(fcpublish_cmd, "_result");
-    if (!chunk_protocol_.sendRtmpMessage(result_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(result_msg)) {
+        co_return false;
     }
-    return true;
+    co_return true;
 }
 
-bool RtmpSession::handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0CreateStreamCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpCreateStreamMessage create_stream_cmd;
     auto consumed = create_stream_cmd.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
 
     RtmpCreateStreamRespMessage result_msg(create_stream_cmd, "_result");
-    if (!chunk_protocol_.sendRtmpMessage(result_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(result_msg)) {
+        co_return false;
     }
-    return true;
+    co_return true;
 }
 
-bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpPublishMessage publish_cmd;
     auto consumed = publish_cmd.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
 
     if (!parsePublishCmd(publish_cmd)) {
-        return false;
+        co_return false;
     }
 
     RtmpOnStatusRespMessage status_msg(publish_cmd.transaction_id_.getValue());
@@ -244,13 +245,13 @@ bool RtmpSession::handleAmf0PublishCommand(std::shared_ptr<RtmpMessage> rtmp_msg
     status_msg.data().setItemValue("code", RTMP_STATUS_STREAM_PUBLISH_START);
     status_msg.data().setItemValue("description", "publish start ok.");
     status_msg.data().setItemValue("clientid", "mms");
-    if (!chunk_protocol_.sendRtmpMessage(status_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(status_msg)) {
+        co_return false;
     }
 
     is_publisher_ = true;
     is_player_ = false;
-    return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
+    co_return MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
 }
 
 bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
@@ -263,20 +264,20 @@ bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
     return true;
 }
 
-bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+boost::asio::awaitable<bool> RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg) {
     RtmpPlayMessage play_cmd;
     auto consumed = play_cmd.decode(rtmp_msg);
     if(consumed < 0) {
-        return false;
+        co_return false;
     }
 
     if (!parsePlayCmd(play_cmd)) {
-        return false;
+        co_return false;
     }
 
     RtmpStreamBeginMessage stream_begin_msg(1);// 只用1这个stream_id
-    if (!chunk_protocol_.sendRtmpMessage(stream_begin_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(stream_begin_msg)) {
+        co_return false;
     }
 
     RtmpOnStatusRespMessage status_msg(play_cmd.transaction_id_.getValue());
@@ -284,23 +285,24 @@ bool RtmpSession::handleAmf0PlayCommand(std::shared_ptr<RtmpMessage> rtmp_msg, b
     status_msg.data().setItemValue("code", RTMP_STATUS_STREAM_PLAY_START);
     status_msg.data().setItemValue("description", "play start ok.");
     status_msg.data().setItemValue("clientid", "mms");
-    if (!chunk_protocol_.sendRtmpMessage(status_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(status_msg)) {
+        co_return false;
     }
 
     RtmpAccessSampleMessage access_sample_msg;
-    if (!chunk_protocol_.sendRtmpMessage(access_sample_msg, yield)) {
-        return false;
+    if (!co_await chunk_protocol_.sendRtmpMessage(access_sample_msg)) {
+        co_return false;
     }
     // todo: how to record 404 error to log.
     auto s = MediaManager::get_mutable_instance().getSource(session_name_);
     if (!s) {
-        return false;
+        co_return false;
     }
 
     is_publisher_ = false;
     is_player_ = true;
-    return s->addMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
+    auto ret = s->addMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
+    co_return ret;
 }
 
 bool RtmpSession::parsePlayCmd(RtmpPlayMessage & play_cmd) {
@@ -313,7 +315,7 @@ bool RtmpSession::parsePlayCmd(RtmpPlayMessage & play_cmd) {
     return true;
 }
 
-bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {//usually is metadata
+bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg) {//usually is metadata
     std::shared_ptr<RtmpMetaDataMessage> metadata = std::make_shared<RtmpMetaDataMessage>();
     auto consumed = metadata->decode(rtmp_msg);
     if (consumed < 0) {
@@ -324,28 +326,28 @@ bool RtmpSession::handleAmf0Data(std::shared_ptr<RtmpMessage> rtmp_msg, boost::a
     return true;
 }
 
-bool RtmpSession::handleVideoMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield) {
+bool RtmpSession::handleVideoMsg(std::shared_ptr<RtmpMessage> msg) {
     return RtmpMediaSource::onVideoPacket(msg);
 }
 
-bool RtmpSession::handleAudioMsg(std::shared_ptr<RtmpMessage> msg, boost::asio::yield_context & yield) {
+bool RtmpSession::handleAudioMsg(std::shared_ptr<RtmpMessage> msg) {
     return RtmpMediaSource::onAudioPacket(msg);
 }
 
-bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+bool RtmpSession::handleAcknowledgement(std::shared_ptr<RtmpMessage> rtmp_msg) {
     // todo 
     // nothing to do
     return true;
 }
 
-bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg, boost::asio::yield_context & yield) {
+bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg) {
     // todo handle user control msg
     return true;
 }
 
-bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
+boost::asio::awaitable<bool> RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
     chunk_protocol_.sendRtmpMessage(msg);
-    return true;
+    co_return true;
 }
 
 void RtmpSession::close() {

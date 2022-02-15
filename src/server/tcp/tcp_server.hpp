@@ -9,6 +9,25 @@
 
 #include "base/thread/thread_pool.hpp"
 #include "base/network/tcp_socket.hpp"
+#include <boost/asio.hpp>
+#include <boost/asio/experimental/as_tuple.hpp>
+#include <boost/asio/experimental/awaitable_operators.hpp>
+#include <boost/asio/experimental/channel.hpp>
+#include <iostream>
+
+using boost::asio::awaitable;
+using boost::asio::buffer;
+using boost::asio::co_spawn;
+using boost::asio::detached;
+using boost::asio::experimental::as_tuple;
+using boost::asio::experimental::channel;
+using boost::asio::io_context;
+using boost::asio::ip::tcp;
+using boost::asio::steady_timer;
+using boost::asio::use_awaitable;
+namespace this_coro = boost::asio::this_coro;
+using namespace boost::asio::experimental::awaitable_operators;
+using namespace std::literals::chrono_literals;
 
 namespace mms {
 template <typename CONN>
@@ -27,7 +46,7 @@ public:
             return -1;
         }
 
-        boost::asio::spawn(worker_->getIOContext(), [port, addr, this](boost::asio::yield_context yield) {
+        boost::asio::co_spawn(worker_->getIOContext(), ([port, addr, this]()->boost::asio::awaitable<void>{
             boost::asio::ip::tcp::endpoint endpoint;
             endpoint.port(port);
             if (!addr.empty()) {
@@ -39,21 +58,23 @@ public:
             acceptor_ = boost::make_shared<boost::asio::ip::tcp::acceptor>(worker_->getIOContext(), endpoint);
             acceptor_->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
             while(1) {
-                boost::system::error_code ec;
                 auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-                boost::asio::ip::tcp::socket *tcp_sock = new boost::asio::ip::tcp::socket(worker->getIOContext());
-                acceptor_->async_accept(*tcp_sock, yield[ec]);
-                if (ec) {
-                    delete tcp_sock;
-                    tcp_sock = nullptr;
-                    break;
+                auto [ec, tcp_sock] = co_await acceptor_->async_accept(worker->getIOContext(), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
+                if (!ec) {
+                    // auto ex = tcp_sock.get_executor();
+                    // auto client_conn = new CONN(this, (boost::asio::ip::tcp::socket*)&tcp_sock, worker);
+                    // client_conn->open();
+                    char data[10240];
+                    size_t len = 10240;
+                    auto [ec, n] = co_await tcp_sock.async_receive(boost::asio::buffer(data, len), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
+                    std::cout << "recv len:" << n << std::endl;
+                } else {
+                    steady_timer timer(co_await this_coro::executor);
+                    timer.expires_after(100ms);
+                    co_await timer.async_wait(boost::asio::use_awaitable);
                 }
-                
-                auto client_conn = new CONN(this, tcp_sock, worker);
-                client_conn->open();
             }
-        });
-
+        }), boost::asio::detached);
         return 0;
     }
 

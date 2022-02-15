@@ -17,7 +17,7 @@ public:
     virtual ~HttpSession();
     void service();
     void close();
-    void onHttpRequest(std::shared_ptr<HttpRequest> req, boost::asio::yield_context &yield);
+    boost::asio::awaitable<void> onHttpRequest(std::shared_ptr<HttpRequest> req);
     ThreadWorker *getWorker() {
         return conn_->getWorker();
     }

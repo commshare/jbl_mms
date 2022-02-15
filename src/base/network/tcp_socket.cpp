@@ -1,4 +1,6 @@
 #include <iostream>
+#include <boost/asio/experimental/as_tuple.hpp>
+
 #include "tcp_socket.hpp"
 
 namespace mms {
@@ -28,43 +30,41 @@ uint64_t TcpSocket::getSendCount() {
     return out_bytes_;
 }
 
-bool TcpSocket::send(const uint8_t *data, size_t len, boost::asio::yield_context & yield) {
-    boost::system::error_code ec;
+boost::asio::awaitable<bool> TcpSocket::send(const uint8_t *data, size_t len) {
     size_t pos = 0;
     while (pos < len) {
-        size_t s = socket_->async_send(boost::asio::buffer(data + pos, len - pos), 0, yield[ec]);
+        auto [ec, s] = co_await socket_->async_send(boost::asio::buffer(data + pos, len - pos), 0, boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
         if(ec) {
-            return false;
+            co_return false;
         }
         pos += s;
     }
     out_bytes_ += len;
-    return true;
+    co_return true;
 }
 
-bool TcpSocket::recv(uint8_t *data, size_t len, boost::asio::yield_context & yield) {
-    boost::system::error_code ec;
+boost::asio::awaitable<bool> TcpSocket::recv(uint8_t *data, size_t len) {
     size_t pos = 0;
     while (pos < len) {
-        size_t s = socket_->async_receive(boost::asio::buffer(data + pos, len - pos), yield[ec]);
+        std::cout << "start async recv..." << std::endl;
+        auto [ec, s] = co_await socket_->async_receive(boost::asio::buffer(data + pos, len - pos), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
         if (ec) {
-            return false;
+            co_return false;
         }
         pos += s;
     }
     
     in_bytes_ += len;
-    return true;
+    co_return true;
 }
 
-int32_t TcpSocket::recvSome(uint8_t *data, size_t len, boost::asio::yield_context & yield) {
-    boost::system::error_code ec;
-    auto s = socket_->async_read_some(boost::asio::buffer(data, len), yield[ec]);
+boost::asio::awaitable<int32_t> TcpSocket::recvSome(uint8_t *data, size_t len) {
+    auto [ec, s] = co_await socket_->async_read_some(boost::asio::buffer(data, len), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
     if (ec) {
-        return -1;
+        co_return -1;
     }
     in_bytes_ += s;
-    return s;
+    co_return s;
 }
 
 void TcpSocket::close() {

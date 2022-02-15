@@ -19,9 +19,9 @@ public:
 
     virtual ~TcpSocket();
 
-    bool send(const uint8_t *data, size_t len, boost::asio::yield_context & y);
-    bool recv(uint8_t *data, size_t len, boost::asio::yield_context & y);
-    int32_t recvSome(uint8_t *data, size_t len, boost::asio::yield_context &y);
+    boost::asio::awaitable<bool> send(const uint8_t *data, size_t len);
+    boost::asio::awaitable<bool> recv(uint8_t *data, size_t len);
+    boost::asio::awaitable<int32_t> recvSome(uint8_t *data, size_t len);
     void open();
     void close();
 

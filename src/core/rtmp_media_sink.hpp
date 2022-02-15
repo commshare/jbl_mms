@@ -41,8 +41,8 @@ public:
         return true;
     }
 
-    virtual bool sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
-        return true;
+    virtual boost::asio::awaitable<bool> sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
+        co_return true;
     }
 
     virtual bool startSendRtmpMessage() {

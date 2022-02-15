@@ -35,12 +35,11 @@ void waitExit() {
 
 int main(int argc, char *argv[]) {
     thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
-
     RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
     if(!rtmp_server.start()) {
         return -1;
     }
-
+    std::cout << "rtmp server started" << std::endl;
     HttpServer http_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
     if(!http_server.start()) {
         return -1;

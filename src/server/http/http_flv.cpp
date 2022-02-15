@@ -13,9 +13,9 @@ HttpFlv::HttpFlv(HttpSession *http_session, std::shared_ptr<HttpRequest> http_re
     send_buf_size_ = 1024;
 }
 
-bool HttpFlv::sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
+boost::asio::awaitable<bool> HttpFlv::sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
     sending_rtmp_msgs_.emplace_back(pkt);
-    return true;
+    co_return true;
     // send_handler_();
 }
 
@@ -48,52 +48,51 @@ bool HttpFlv::init() {
             return;
         }
         sending_ = true;
-        boost::asio::spawn(conn_->getWorker()->getIOContext(), [this](boost::asio::yield_context yield) {
-            boost::system::error_code ec;
+        boost::asio::co_spawn(conn_->getWorker()->getIOContext(), [this]()->boost::asio::awaitable<void> {
             if (!sending_rtmp_msgs_.empty()) {
                 std::list<std::shared_ptr<mms::RtmpMessage>> msgs;
                 sending_rtmp_msgs_.swap(msgs);
                 
                 for (auto it = msgs.begin(); it != msgs.end(); it++) {
                     uint32_t d = htonl(prev_tag_size_);
-                    if (!conn_->send((uint8_t*)&d, 4, yield)) {
+                    if (!(co_await conn_->send((uint8_t*)&d, 4))) {
                         conn_->close();
-                        return;
+                        co_return;
                     }
 
                     int32_t header_size = FlvTagHeader::encodeFromRtmpMessage(*it, (uint8_t*)send_buf_.data(), send_buf_size_);
-                    if (!conn_->send((uint8_t*)send_buf_.data(), header_size, yield)) {
+                    if (!(co_await conn_->send((uint8_t*)send_buf_.data(), header_size))) {
                         conn_->close();
-                        return;
+                        co_return;
                     }
-                    if (!conn_->send((*it)->payload_, (*it)->payload_size_, yield)) {
+                    if (!(co_await conn_->send((*it)->payload_, (*it)->payload_size_))) {
                         conn_->close();
-                        return;
+                        co_return;
                     }
                     
                     prev_tag_size_ = (*it)->payload_size_ + header_size;
                 }
             }
             sending_ = false;
-        });
+        }, boost::asio::detached);
     };
     
-    boost::asio::spawn(worker_->getIOContext(), [this](boost::asio::yield_context yield) {
+    boost::asio::co_spawn(worker_->getIOContext(), [this]()->boost::asio::awaitable<void> {
         http_response_->addHeader("Content-Type", "video/x-flv");
         http_response_->addHeader("Connection", "Keep-Alive");
-        if (!http_response_->writeHeader(200, yield)) {
+        if (!(co_await http_response_->writeHeader(200))) {
             conn_->close();
-            return;
+            co_return;
         }
 
         auto consumed = FlvHeader::encode((uint8_t*)send_buf_.data(), send_buf_size_);
-        if (!http_response_->writeData((uint8_t*)send_buf_.data(), consumed, yield)) {
+        if (!(co_await http_response_->writeData((uint8_t*)send_buf_.data(), consumed))) {
             conn_->close();
-            return;
+            co_return;
         }
 
         send_header_done_ = true;
         send_handler_();
-    });
+    }, boost::asio::detached);
     return true;
 }
