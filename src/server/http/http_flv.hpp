@@ -14,7 +14,7 @@ public:
     bool init();
     void close();
 private:
-    boost::asio::awaitable<bool> sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) override;
+    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) override;
     bool startSendRtmpMessage() override;
     HttpSession *http_session_;
     std::shared_ptr<HttpRequest> http_request_;

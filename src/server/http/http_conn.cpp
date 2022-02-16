@@ -7,15 +7,16 @@ HttpConn::HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket sock,
     buf_.resize(HTTP_MAX_BUF);
 }
 
-boost::asio::awaitable<void> HttpConn::cycleRecv(const std::function<int32_t(const char *, size_t)> & recv_handler) {
+boost::asio::awaitable<void> HttpConn::cycleRecv(const std::function<boost::asio::awaitable<int32_t>(const char *, size_t)> & recv_handler) {
     while(1) {
         auto recv_size = co_await recvSome((uint8_t*)buf_.data() + buf_size_, HTTP_MAX_BUF - buf_size_);
         if (recv_size < 0) {
             break;
         }
-
+        std::cout << "************* http conn recv:" << recv_size << " **************" << std::endl;
         buf_size_ += recv_size;
-        int32_t consumed = recv_handler((const char*)buf_.data(), buf_size_);
+        int32_t consumed = co_await recv_handler((const char*)buf_.data(), buf_size_);
+        std::cout << "************* http conn consumed:" << consumed << " **************" << std::endl;
         if (consumed < 0) {
             close();
             co_return;

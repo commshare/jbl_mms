@@ -4,16 +4,16 @@
 using namespace mms;
 
 void RtmpMediaSink::active() {
-    worker_->post([this]()->boost::asio::awaitable<void> {
+    worker_->post([this]() {
         if (!source_->isReady()) {
-            co_return;
+            return;
         }
 
         auto rtmp_source = (RtmpMediaSource*)source_;
         auto pkts = rtmp_source->getPkts(last_send_pkt_index_, 10);
         if (pkts.size() > 0) {
             for(auto pkt : pkts) {
-                if (!co_await sendRtmpMessage(pkt)) {
+                if (!sendRtmpMessage(pkt)) {
                     break;
                 }
             }

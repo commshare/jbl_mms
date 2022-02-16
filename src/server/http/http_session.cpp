@@ -18,19 +18,19 @@ void HttpSession::service() {
     boost::asio::co_spawn(conn_->getWorker()->getIOContext(), [this, self]()->boost::asio::awaitable<void> {
         http_parser_.onHttpRequest(std::bind(&HttpSession::onHttpRequest, this, std::placeholders::_1));
 
-        co_await conn_->cycleRecv([this](const char *buf, size_t len)->int32_t {
+        co_await conn_->cycleRecv([this](const char *buf, size_t len)->boost::asio::awaitable<int32_t> {
             int32_t total_consumed = 0;
             int32_t consumed = 0;
             do {
-                consumed = http_parser_.read(std::string(buf + total_consumed, len));
+                consumed = co_await http_parser_.read(std::string(buf + total_consumed, len));
                 if (consumed < 0) {
-                    return -1;
+                    co_return -1;
                 }
                 total_consumed += consumed;
                 len -= consumed;
             } while(consumed > 0 && len > 0);
 
-            return total_consumed;
+            co_return total_consumed;
         });
         conn_->close();
         std::cout << "****************** end cycleRecv ******************" << std::endl;
@@ -39,6 +39,7 @@ void HttpSession::service() {
 
 boost::asio::awaitable<void> HttpSession::onHttpRequest(std::shared_ptr<HttpRequest> req) {
     size_t pos;
+    std::cout << "*************** get http request ****************" << std::endl;
     if ((pos = req->getPath().rfind(".flv")) != std::string::npos) {
         std::shared_ptr<HttpResponse> resp = std::make_shared<HttpResponse>(conn_);
         rtmp_media_sink_ = std::make_shared<HttpFlv>(this, req, resp);

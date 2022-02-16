@@ -345,9 +345,9 @@ bool RtmpSession::handleUserControlMsg(std::shared_ptr<RtmpMessage> rtmp_msg) {
     return true;
 }
 
-boost::asio::awaitable<bool> RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
+bool RtmpSession::sendRtmpMessage(std::shared_ptr<RtmpMessage> msg) {
     chunk_protocol_.sendRtmpMessage(msg);
-    co_return true;
+    return true;
 }
 
 void RtmpSession::close() {

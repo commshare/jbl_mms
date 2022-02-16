@@ -13,9 +13,9 @@ HttpFlv::HttpFlv(HttpSession *http_session, std::shared_ptr<HttpRequest> http_re
     send_buf_size_ = 1024;
 }
 
-boost::asio::awaitable<bool> HttpFlv::sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
+bool HttpFlv::sendRtmpMessage(std::shared_ptr<RtmpMessage> pkt) {
     sending_rtmp_msgs_.emplace_back(pkt);
-    co_return true;
+    return true;
     // send_handler_();
 }
 

@@ -27,7 +27,7 @@ public:
     void close();
 private:
     boost::asio::awaitable<bool> onRecvRtmpMessage(std::shared_ptr<RtmpMessage> msg);
-    boost::asio::awaitable<bool> sendRtmpMessage(std::shared_ptr<RtmpMessage> msg);
+    bool sendRtmpMessage(std::shared_ptr<RtmpMessage> msg);
     bool startSendRtmpMessage() {
         return true;
     }
