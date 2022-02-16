@@ -15,7 +15,7 @@ public:
 
 class TcpSocket {
 public:
-    TcpSocket(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker);
+    TcpSocket(TcpSocketHandler *handler, boost::asio::ip::tcp::socket sock, ThreadWorker *worker);
 
     virtual ~TcpSocket();
 
@@ -31,7 +31,7 @@ public:
         return worker_;
     }
 private:
-    boost::asio::ip::tcp::socket *socket_ = nullptr;
+    boost::asio::ip::tcp::socket socket_;
     ThreadWorker *worker_ = nullptr;
     boost::atomic_uint64_t in_bytes_;
     boost::atomic_uint64_t out_bytes_;

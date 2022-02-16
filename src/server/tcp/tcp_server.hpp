@@ -61,13 +61,9 @@ public:
                 auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
                 auto [ec, tcp_sock] = co_await acceptor_->async_accept(worker->getIOContext(), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
                 if (!ec) {
-                    // auto ex = tcp_sock.get_executor();
-                    // auto client_conn = new CONN(this, (boost::asio::ip::tcp::socket*)&tcp_sock, worker);
-                    // client_conn->open();
-                    char data[10240];
-                    size_t len = 10240;
-                    auto [ec, n] = co_await tcp_sock.async_receive(boost::asio::buffer(data, len), boost::asio::experimental::as_tuple(boost::asio::use_awaitable));
-                    std::cout << "recv len:" << n << std::endl;
+                    auto ex = tcp_sock.get_executor();
+                    auto client_conn = new CONN(this, std::move(tcp_sock), worker);
+                    client_conn->open();
                 } else {
                     steady_timer timer(co_await this_coro::executor);
                     timer.expires_after(100ms);

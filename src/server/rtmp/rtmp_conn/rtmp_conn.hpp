@@ -13,7 +13,7 @@ class RtmpSession;
 class RtmpConn : public TcpSocket {
     friend class RtmpSession;
 public:
-    RtmpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker):TcpSocket(handler, sock, worker) {
+    RtmpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket sock, ThreadWorker *worker):TcpSocket(handler, std::move(sock), worker) {
     }
     std::shared_ptr<RtmpSession> createSession();
     std::shared_ptr<RtmpSession> getSession();

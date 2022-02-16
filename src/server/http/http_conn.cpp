@@ -3,7 +3,7 @@
 
 using namespace mms;
 
-HttpConn::HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket *sock, ThreadWorker *worker):TcpSocket(handler, sock, worker) {
+HttpConn::HttpConn(TcpSocketHandler *handler, boost::asio::ip::tcp::socket sock, ThreadWorker *worker):TcpSocket(handler, std::move(sock), worker) {
     buf_.resize(HTTP_MAX_BUF);
 }
 
