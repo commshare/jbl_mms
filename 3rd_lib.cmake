@@ -1,6 +1,6 @@
 include(ExternalProject)
 
-ExternalProject_Add(libboost
+ExternalProject_Add(libboost-1.75.0
     EXCLUDE_FROM_ALL 1
     URL https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz
     BUILD_IN_SOURCE 1
