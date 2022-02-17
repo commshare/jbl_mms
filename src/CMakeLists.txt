@@ -18,6 +18,7 @@ add_dependencies(mms
     libboost-1.75.0
     libjemalloc
     libjsoncpp
+    libopenssl-1.1.1
 )
 
 target_link_libraries(mms
@@ -29,6 +30,8 @@ target_link_libraries(mms
     boost_coroutine.a
     boost_thread.a
     boost_context.a
+    ssl.a 
+    crypto.a
     libjemalloc.a
     libjsoncpp.a
     dl

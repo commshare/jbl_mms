@@ -27,3 +27,12 @@ ExternalProject_Add(libjsoncpp
     INSTALL_COMMAND make install
 )
 
+ExternalProject_Add(libopenssl-1.1.1
+    EXCLUDE_FROM_ALL 1
+    URL https://www.openssl.org/source/old/1.1.1/openssl-1.1.1.tar.gz
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND ./config --prefix=${PROJECT_BINARY_DIR}
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+)
+

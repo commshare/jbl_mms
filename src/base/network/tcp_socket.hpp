@@ -30,7 +30,7 @@ public:
     inline ThreadWorker *getWorker() {
         return worker_;
     }
-private:
+protected:
     boost::asio::ip::tcp::socket *socket_ = nullptr;
     ThreadWorker *worker_ = nullptr;
     boost::atomic_uint64_t in_bytes_;

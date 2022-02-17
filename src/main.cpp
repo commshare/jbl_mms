@@ -12,6 +12,7 @@
 
 #include "server/rtmp/rtmp_server.hpp"
 #include "server/http/http_server.hpp"
+#include "server/udp/udp_server.hpp"
 
 using namespace mms;
 
