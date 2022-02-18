@@ -13,6 +13,7 @@
 #include "server/rtmp/rtmp_server.hpp"
 #include "server/http/http_server.hpp"
 #include "server/udp/udp_server.hpp"
+#include "server/stun/stun_server.hpp"
 
 using namespace mms;
 
@@ -46,6 +47,12 @@ int main(int argc, char *argv[]) {
     if(!http_server.start()) {
         return -1;
     }
+
+    UdpServer udp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    udp_server.startListen(3478);
+    // if (udp_server.startListen(3478)) {
+    //     return -2;
+    // }
 
     waitExit();
 
