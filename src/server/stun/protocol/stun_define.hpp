@@ -12,6 +12,19 @@ struct StunMsgHeader {
     uint16_t type;
     uint16_t length;
     uint8_t transaction_id[16];
+    int32_t decode(uint8_t *data, size_t len) {
+        if (len < 20) {
+            return -1;
+        }
+
+        uint8_t *data_start = data;
+        type = ntohs(*(uint16_t*)data);
+        data += 2;
+        len = ntohs(*(uint16_t*)data);
+        data += 2;
+        memcpy(transaction_id, data, 16);
+        return 20;
+    }
 };
 
 #define STUN_ATTR_MAPPED_ADDRESS            0x0001
@@ -39,6 +52,16 @@ public:
 struct StunMsg {
     StunMsgHeader header;
     std::vector<StunMsgAttr*> attrs;
+
+    int32_t decode(uint8_t *data, size_t len) {
+        int32_t consumed = header.decode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+
+        std::cout << "type:" << (uint32_t)header.type << ",len:" << (uint32_t)header.length << std::endl;
+        return consumed;
+    }
 };
 
 //     0                   1                   2                   3

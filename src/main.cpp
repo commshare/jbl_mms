@@ -39,20 +39,19 @@ int main(int argc, char *argv[]) {
     thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
 
     RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
-    if(!rtmp_server.start()) {
+    if (!rtmp_server.start()) {
         return -1;
     }
 
     HttpServer http_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
-    if(!http_server.start()) {
-        return -1;
+    if (!http_server.start()) {
+        return -2;
     }
 
-    UdpServer udp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
-    udp_server.startListen(3478);
-    // if (udp_server.startListen(3478)) {
-    //     return -2;
-    // }
+    StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    if (!stun_server.start(3478)) {
+        return -3;
+    }
 
     waitExit();
 

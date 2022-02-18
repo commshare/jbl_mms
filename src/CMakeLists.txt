@@ -25,7 +25,6 @@ target_link_libraries(mms
     boost_system.a
     boost_serialization.a
     boost_date_time.a
-    boost_filesystem.a
     boost_regex.a
     boost_coroutine.a
     boost_thread.a
