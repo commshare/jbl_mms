@@ -27,7 +27,10 @@ struct StunMsgHeader {
 #define STUN_ATTR_REFLECTED_FROM            0x000b
 
 struct StunMsgAttr {
-public:
+public: 
+    StunMsgAttr(uint16_t t) : type(t) {
+
+    }
     uint16_t type;
     uint16_t length;
     uint8_t *value;
@@ -46,7 +49,7 @@ struct StunMsg {
 //    |                             Address                           |
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 struct StunMappedAddressAttr : public StunMsgAttr {
-    StunMappedAddressAttr() : type(STUN_ATTR_MAPPED_ADDRESS) {
+    StunMappedAddressAttr() : StunMsgAttr(STUN_ATTR_MAPPED_ADDRESS) {
 
     }
 
@@ -56,7 +59,7 @@ struct StunMappedAddressAttr : public StunMsgAttr {
 };
 
 struct StunResponseAddressAttr : public StunMsgAttr {
-    StunResponseAddressAttr() : type(STUN_ATTR_RESPONSE_ADDRESS) {
+    StunResponseAddressAttr() : StunMsgAttr(STUN_ATTR_RESPONSE_ADDRESS) {
 
     }
 
@@ -66,7 +69,7 @@ struct StunResponseAddressAttr : public StunMsgAttr {
 };
 
 struct StunChangeAddressAttr : public StunMsgAttr {
-    StunChangeAddressAttr() : type(STUN_ATTR_CHANGED_ADDRESS) {
+    StunChangeAddressAttr() : StunMsgAttr(STUN_ATTR_CHANGED_ADDRESS) {
 
     }
 
@@ -76,7 +79,7 @@ struct StunChangeAddressAttr : public StunMsgAttr {
 };
 
 struct StunChangeRequestAttr : public StunMsgAttr {
-    StunChangeRequestAttr() : type(STUN_ATTR_CHANGE_REQUEST) {
+    StunChangeRequestAttr() : StunMsgAttr(STUN_ATTR_CHANGE_REQUEST) {
 
     }
 
@@ -85,7 +88,7 @@ struct StunChangeRequestAttr : public StunMsgAttr {
 };
 
 struct StunSourceAddressAttr : public StunMsgAttr {
-    StunChangeRequestAttr() : type(STUN_ATTR_SOURCE_ADDRESS) {
+    StunSourceAddressAttr() : StunMsgAttr(STUN_ATTR_SOURCE_ADDRESS) {
 
     }
 
@@ -95,7 +98,7 @@ struct StunSourceAddressAttr : public StunMsgAttr {
 };
 
 struct StunUsernameAttr : public StunMsgAttr {
-    StunUsernameAttr() : type(STUN_ATTR_SOURCE_ADDRESS) {
+    StunUsernameAttr() : StunMsgAttr(STUN_ATTR_SOURCE_ADDRESS) {
 
     }
 
@@ -103,7 +106,7 @@ struct StunUsernameAttr : public StunMsgAttr {
 };
 
 struct StunPasswordAttr : public StunMsgAttr {
-    StunPasswordAttr() : type(STUN_ATTR_PASSWORD) {
+    StunPasswordAttr() : StunMsgAttr(STUN_ATTR_PASSWORD) {
 
     }
 
@@ -111,7 +114,7 @@ struct StunPasswordAttr : public StunMsgAttr {
 };
 
 struct StunMessageIntegrityAttr : public StunMsgAttr {
-    StunMessageIntegrityAttr() : type(STUN_ATTR_MESSAGE_INTEGRITY) {
+    StunMessageIntegrityAttr() : StunMsgAttr(STUN_ATTR_MESSAGE_INTEGRITY) {
 
     }
 
@@ -119,7 +122,7 @@ struct StunMessageIntegrityAttr : public StunMsgAttr {
 };
 
 struct StunErrorCodeAttr : public StunMsgAttr {
-    StunErrorCodeAttr() : type(STUN_ATTR_ERROR_CODE) {
+    StunErrorCodeAttr() : StunMsgAttr(STUN_ATTR_ERROR_CODE) {
 
     }
 
@@ -129,7 +132,7 @@ struct StunErrorCodeAttr : public StunMsgAttr {
 };
 
 struct StunUnknownAttributesAttr : public StunMsgAttr {
-    StunUnknownAttributesAttr() : type(STUN_ATTR_UNKNOWN_ATTRIBUTES) {
+    StunUnknownAttributesAttr() : StunMsgAttr(STUN_ATTR_UNKNOWN_ATTRIBUTES) {
 
     }
 
@@ -138,7 +141,7 @@ struct StunUnknownAttributesAttr : public StunMsgAttr {
 
 
 struct StunReflectFromAttr : public StunMsgAttr {
-    StunReflectFromAttr() : type(STUN_ATTR_REFLECTED_FROM) {
+    StunReflectFromAttr() : StunMsgAttr(STUN_ATTR_REFLECTED_FROM) {
 
     }
 
