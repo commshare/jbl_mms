@@ -48,11 +48,8 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    UdpServer udp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
-    udp_server.startListen(3478);
-    // if (udp_server.startListen(3478)) {
-    //     return -2;
-    // }
+    StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    stun_server.start();
 
     waitExit();
 
