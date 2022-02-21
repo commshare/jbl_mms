@@ -1,5 +1,8 @@
 #pragma once
 #include <vector>
+#include <memory>
+#include <string>
+
 namespace mms {
 #define STUN_BINDING_REQUEST                0x0001
 #define STUN_BINDING_RESPONSE               0x0101
@@ -12,6 +15,23 @@ struct StunMsgHeader {
     uint16_t type;
     uint16_t length;
     uint8_t transaction_id[16];
+    int32_t decode(uint8_t *data, size_t len) {
+        if (len < 20) {
+            return -1;
+        }
+
+        uint8_t *data_start = data;
+        type = ntohs(*(uint16_t*)data);
+        data += 2;
+        len = ntohs(*(uint16_t*)data);
+        data += 2;
+        memcpy(transaction_id, data, 16);
+        return 20;
+    }
+
+    size_t size() {
+        return 20;
+    }
 };
 
 #define STUN_ATTR_MAPPED_ADDRESS            0x0001
@@ -31,6 +51,19 @@ public:
     StunMsgAttr(uint16_t t) : type(t) {
 
     }
+
+    virtual size_t size() {
+        return 0;
+    }
+
+    virtual int32_t encode(uint8_t *data, size_t len) {
+
+    }
+
+    uint16_t getType() {
+        return type;
+    }
+    
     uint16_t type;
     uint16_t length;
     uint8_t *value;
@@ -38,7 +71,54 @@ public:
 
 struct StunMsg {
     StunMsgHeader header;
-    std::vector<StunMsgAttr*> attrs;
+    std::vector<std::unique_ptr<StunMsgAttr>> attrs;
+    uint16_t type() {
+        return header.type;
+    }
+
+    int32_t decode(uint8_t *data, size_t len) {
+        int32_t consumed = header.decode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+
+        std::cout << "type:" << (uint32_t)header.type << ",len:" << (uint32_t)header.length << std::endl;
+        data += consumed;
+        len -= consumed;
+        while(len > 0) {
+
+        }
+        return consumed;
+    }
+
+    size_t size() {
+        int32_t s = 0;
+        for (auto & attr : attrs) {
+            s += attr->size();
+        }
+        s += header.size();
+        return s;
+    }
+
+    virtual int32_t encode(uint8_t *data, size_t len) {
+        uint8_t *data_start = data;
+        int32_t consumed = header.encode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+
+        data += consumed;
+        len -= consumed;
+        for(auto & attr : attrs) {
+            consumed = attr->encode(data, len);
+            if (consumed < 0) {
+                return -2;
+            }
+            data += consumed;
+            len -= consumed;
+        }
+        return data - data_start;
+    }
 };
 
 //     0                   1                   2                   3
@@ -122,13 +202,18 @@ struct StunMessageIntegrityAttr : public StunMsgAttr {
 };
 
 struct StunErrorCodeAttr : public StunMsgAttr {
-    StunErrorCodeAttr() : StunMsgAttr(STUN_ATTR_ERROR_CODE) {
+    StunErrorCodeAttr(int32_t code, const std::string & reason) : StunMsgAttr(STUN_ATTR_ERROR_CODE) {
+        _class = (uint8_t)(code/100);
+        number = (uint8_t)(code%100);
+    }
 
+    size_t size() {
+        return 4 + reason.size();
     }
 
     uint8_t _class;
     uint8_t number;
-    uint32_t reason;
+    std::string reason;
 };
 
 struct StunUnknownAttributesAttr : public StunMsgAttr {

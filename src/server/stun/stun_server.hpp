@@ -5,10 +5,11 @@
 #include "server/tcp/tcp_server.hpp"
 
 #include "protocol/stun_define.hpp"
+#include "protocol/stun_binding_error_response_msg.hpp"
 
 namespace mms {
 #define STUN_DEFAULT_PORT 3478
-class StunServer : public UdpServer {
+class StunServer : public UdpServer, public UdpSocketHandler {
 public:
     StunServer(ThreadWorker *worker) : UdpServer(worker){
 
@@ -19,27 +20,31 @@ public:
     }
 public:
     bool start(uint32_t port = STUN_DEFAULT_PORT) {
-        onRecvPkt(std::bind(&StunServer::onRecvUdpPkt, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-        // stun 服务器包含两部分，tcp 交换秘钥，udp 绑定消息处理
         int32_t ret = startListen(port);
         if (0 != ret) {
             return false;
         }
-
-        // 启动TCP 服务
-
-        // ret = TcpServer::startListen(port);
-        // if (0 != ret) {
-        //     return -2;
-        // }
         return true;
     }
 private:
-    int32_t onRecvUdpPkt(std::shared_ptr<boost::asio::ip::udp::socket> udp_sock, const uint8_t *data, size_t len) {
-        std::cout << "******************** get udp socket size:" << len << " ********************" << std::endl;
+    void onUdpSocketRecv(UdpSocket *sock, uint8_t *data, size_t len, boost::asio::ip::udp::endpoint remote_endpoint) {
+        StunMsg stun_msg;
+        stun_msg.decode(data, len);
+        switch(stun_msg.type()) {
+            case STUN_BINDING_REQUEST : {
+                processBindMsg(stun_msg, sock, remote_endpoint);
+                break;
+            }
+        }
     }
-// private:
-//     void onTcpSocketOpen(TcpSocket *socket) override;
-//     void onTcpSocketClose(TcpSocket *socket) override;
+private:
+    void processBindMsg(StunMsg & msg, UdpSocket *sock, boost::asio::ip::udp::endpoint & remote_ep) {
+        if (msg.attrs.size() <= 0) {// no message integrity
+            StunBindingErrorResponseMsg resp(401, "");
+            auto s = resp.size();
+            boost::array<uint8_t, s> data;
+            sock->sendTo(data.data(), s, remote_pt, yield);
+        }
+    }
 };
 };
