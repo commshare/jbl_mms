@@ -49,9 +49,7 @@ int main(int argc, char *argv[]) {
     }
 
     StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
-    if (!stun_server.start(3478)) {
-        return -3;
-    }
+    stun_server.start();
 
     waitExit();
 

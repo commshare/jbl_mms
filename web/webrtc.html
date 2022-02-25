@@ -263,6 +263,7 @@
         // 获取到触发 icecandidate 事件的 RTCPeerConnection 对象
         // 获取到具体的Candidate
         console.log("handleConnection")
+        console.log("oncandidate:", event);
         const peerConnection = event.target;
         const icecandidate = event.candidate;
 

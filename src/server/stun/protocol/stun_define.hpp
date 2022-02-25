@@ -1,5 +1,10 @@
 #pragma once
 #include <vector>
+#include <memory>
+#include <string>
+#include <netinet/in.h>
+#include <string.h>
+
 namespace mms {
 #define STUN_BINDING_REQUEST                0x0001
 #define STUN_BINDING_RESPONSE               0x0101
@@ -7,6 +12,8 @@ namespace mms {
 #define STUN_SHARED_SECRET_REQUEST          0x0002
 #define STUN_SHARED_SECRET_RESPONSE         0x0102
 #define STUN_SHARED_SECRET_ERROR_RESPONSE   0x0112
+
+struct StunMsg;
 
 struct StunMsgHeader {
     uint16_t type;
@@ -25,6 +32,22 @@ struct StunMsgHeader {
         memcpy(transaction_id, data, 16);
         return 20;
     }
+
+    int32_t encode(uint8_t *data, size_t len) {
+        if (len < 20) {
+            return -1;
+        }
+        *(uint16_t*)data = htons(type);
+        data += 2;
+        *(uint16_t*)data = htons(length);
+        data += 2;
+        memcpy(data, transaction_id, 16);
+        return 20;
+    }
+
+    size_t size() {
+        return 20;
+    }
 };
 
 #define STUN_ATTR_MAPPED_ADDRESS            0x0001
@@ -41,26 +64,94 @@ struct StunMsgHeader {
 
 struct StunMsgAttr {
 public: 
+    StunMsgAttr() {
+
+    }
+
     StunMsgAttr(uint16_t t) : type(t) {
 
     }
+
+    virtual size_t size() {
+        return 4;
+    }
+
+    virtual int32_t encode(uint8_t *data, size_t len) {
+        if (len < 4) {
+            return -1;
+        }
+        *(uint16_t *)data = htons(type);
+        data += 2;
+        *(uint16_t *)data = htons(length);
+        return 4;
+    }
+
+    virtual int32_t decode(uint8_t *data, size_t len) {
+        if (len < 4) {
+            return -1;
+        }
+        type = ntohs(*(uint16_t *)data);
+        data += 2;
+        length = ntohs(*(uint16_t *)data);
+        data += 2;
+        return 4;
+    }
+
+    uint16_t getType() {
+        return type;
+    }
+    
     uint16_t type;
     uint16_t length;
-    uint8_t *value;
 };
 
 struct StunMsg {
     StunMsgHeader header;
-    std::vector<StunMsgAttr*> attrs;
+    std::vector<std::unique_ptr<StunMsgAttr>> attrs;
 
-    int32_t decode(uint8_t *data, size_t len) {
-        int32_t consumed = header.decode(data, len);
+    void addAttr(std::unique_ptr<StunMsgAttr> attr) {
+        attrs.emplace_back(std::move(attr));
+    }
+
+    uint16_t type() {
+        return header.type;
+    }
+
+    int32_t decode(uint8_t *data, size_t len);
+
+    size_t size() {
+        int32_t s = 0;
+        for (auto & attr : attrs) {
+            s += attr->size();
+        }
+        s += header.size();
+        return s;
+    }
+
+    virtual int32_t encode(uint8_t *data, size_t len) {
+        int32_t content_len = 0;
+        for(auto & attr : attrs) {
+            content_len += attr->size();
+        }
+        header.length = content_len;
+
+        uint8_t *data_start = data;
+        int32_t consumed = header.encode(data, len);
         if (consumed < 0) {
             return -1;
         }
 
-        std::cout << "type:" << (uint32_t)header.type << ",len:" << (uint32_t)header.length << std::endl;
-        return consumed;
+        data += consumed;
+        len -= consumed;
+        for(auto & attr : attrs) {
+            consumed = attr->encode(data, len);
+            if (consumed < 0) {
+                return -2;
+            }
+            data += consumed;
+            len -= consumed;
+        }
+        return data - data_start;
     }
 };
 
@@ -72,8 +163,61 @@ struct StunMsg {
 //    |                             Address                           |
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 struct StunMappedAddressAttr : public StunMsgAttr {
-    StunMappedAddressAttr() : StunMsgAttr(STUN_ATTR_MAPPED_ADDRESS) {
+    StunMappedAddressAttr(uint32_t addr, uint16_t p) : StunMsgAttr(STUN_ATTR_MAPPED_ADDRESS), family(0x01) {
+        address = addr;
+        port = p;
+    }
 
+    StunMappedAddressAttr() : family(0x01) {
+        
+    }
+
+    size_t size() {
+        return StunMsgAttr::size() + 8;
+    }
+
+    int32_t encode(uint8_t *data, size_t len) {
+        length = 8;
+        uint8_t *data_start = data;
+        int32_t consumed = StunMsgAttr::encode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+        data += consumed;
+        len -= consumed;
+        if (len < 8) {
+            return -2;
+        }
+
+        data[1] = family;
+        data[0] = 0;
+        data += 2;
+        *(uint16_t*)data = htons(port);
+        data += 2;
+        *(uint32_t*)data = htonl(address);
+        data += 4;
+        return data - data_start;
+    }
+
+    int32_t decode(uint8_t *data, size_t len) {
+        uint8_t *data_start = data;
+        int32_t consumed = StunMsgAttr::decode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+        data += consumed;
+        len -= consumed;
+
+        if (len < 8) {
+            return -2;
+        }
+        family = data[1];
+        data += 2;
+        port = ntohs(*(uint16_t*)data);
+        data += 2;
+        address = ntohl(*(uint32_t*)data);
+        data += 4;
+        return data - data_start;
     }
 
     uint8_t family; // always 0x01
@@ -145,13 +289,39 @@ struct StunMessageIntegrityAttr : public StunMsgAttr {
 };
 
 struct StunErrorCodeAttr : public StunMsgAttr {
-    StunErrorCodeAttr() : StunMsgAttr(STUN_ATTR_ERROR_CODE) {
+    StunErrorCodeAttr(int32_t code, const std::string & reason) : StunMsgAttr(STUN_ATTR_ERROR_CODE) {
+        _class = (uint8_t)(code/100);
+        number = (uint8_t)(code%100);
+    }
 
+    size_t size() {
+        return StunMsgAttr::size() + 4 + reason.size();
+    }
+
+    int32_t encode(uint8_t *data, size_t len) {
+        uint8_t *data_start = data;
+        int32_t consumed = StunMsgAttr::encode(data, len);
+        if (consumed < 0) {
+            return -1;
+        }
+        data += consumed;
+        len -= consumed;
+        if (len < 4 + reason.size()) {
+            return -2;
+        }
+
+        data[3] = number;
+        data[2] = 0x07&_class;
+        data[1] = 0;
+        data[0] = 0;
+        memcpy(data + 4, reason.data(), reason.size());
+        data += 4 + reason.size();
+        return data - data_start;
     }
 
     uint8_t _class;
     uint8_t number;
-    uint32_t reason;
+    std::string reason;
 };
 
 struct StunUnknownAttributesAttr : public StunMsgAttr {
