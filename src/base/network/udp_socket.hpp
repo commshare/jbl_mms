@@ -1,22 +1,11 @@
 #pragma once
-<<<<<<< HEAD
-#include <boost/atomic.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/spawn.hpp>
-#include "base/thread/thread_pool.hpp"
-=======
 #include <memory>
->>>>>>> 9b05d98606ecca65c0db516bb5367ce45d311088
 
 namespace mms {
 class UdpSocket;
 class UdpSocketHandler {
 public:
-<<<<<<< HEAD
-    virtual void onUdpSocketRecv(UdpSocket *sock, uint8_t *data, size_t len, boost::asio::ip::udp::endpoint remote_endpoint) = 0;
-=======
     virtual void onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep) = 0;
->>>>>>> 9b05d98606ecca65c0db516bb5367ce45d311088
 };
 
 class UdpSocket {
