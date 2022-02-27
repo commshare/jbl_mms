@@ -36,3 +36,13 @@ ExternalProject_Add(libopenssl-1.1.1
     INSTALL_COMMAND make install
 )
 
+ExternalProject_Add(libwebsocket++-0.8.2
+    DEPENDS libopenssl-1.1.1 libboost-1.75.0
+    EXCLUDE_FROM_ALL 1
+    URL https://github.com/zaphoyd/websocketpp/archive/refs/tags/0.8.2.tar.gz
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND cmake . -DBOOST_ROOT=${PROJECT_BINARY_DIR} -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+)
+

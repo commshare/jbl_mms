@@ -19,6 +19,7 @@ add_dependencies(mms
     libjemalloc
     libjsoncpp
     libopenssl-1.1.1
+    libwebsocket++-0.8.2
 )
 
 target_link_libraries(mms
