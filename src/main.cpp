@@ -14,6 +14,7 @@
 #include "server/http/http_server.hpp"
 #include "server/udp/udp_server.hpp"
 #include "server/stun/stun_server.hpp"
+#include "server/webrtc/webrtc_server.hpp"
 
 using namespace mms;
 
@@ -51,6 +52,9 @@ int main(int argc, char *argv[]) {
     StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
     stun_server.start();
 
+    WebRtcServer webrtc_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    webrtc_server.start();
+    
     waitExit();
 
     std::cout << "stop rtmp server" << std::endl;
