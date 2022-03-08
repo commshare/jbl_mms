@@ -1,14 +1,14 @@
-#include "room_server.hpp"
+#include "websocket_server.hpp"
 using namespace mms;
-RoomServer::RoomServer(ThreadWorker *worker) : worker_(worker) {
+WebsocketServer::WebsocketServer(ThreadWorker *worker) : worker_(worker) {
 
 }
 
-RoomServer::~RoomServer() {
+WebsocketServer::~WebsocketServer() {
 
 }
 
-bool RoomServer::start(uint16_t port) {
+bool WebsocketServer::start(uint16_t port) {
     if (!worker_) {
         return false;
     }
@@ -22,9 +22,9 @@ bool RoomServer::start(uint16_t port) {
             // Initialize Asio
             init_asio();
             // Register our message handler
-            set_open_handler(std::bind(&RoomServer::onOpen, this, websocketpp::lib::placeholders::_1));
-            set_close_handler(std::bind(&RoomServer::onClose, this, websocketpp::lib::placeholders::_1));
-            set_message_handler(std::bind(&RoomServer::onMessage, this, this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
+            set_open_handler(std::bind(&WebsocketServer::onWebsocketOpen, this, websocketpp::lib::placeholders::_1));
+            set_close_handler(std::bind(&WebsocketServer::onWebsocketClose, this, websocketpp::lib::placeholders::_1));
+            set_message_handler(std::bind(&WebsocketServer::onMessage, this, this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
             // Listen on port
             listen(port);
@@ -44,18 +44,10 @@ bool RoomServer::start(uint16_t port) {
     return 0;
 }
 
-void RoomServer::onOpen(websocketpp::connection_hdl hdl) {
+void WebsocketServer::onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, message_ptr msg) {
 
 }
 
-void RoomServer::onClose(websocketpp::connection_hdl hdl) {
-
-}
-
-void RoomServer::onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, message_ptr msg) {
-
-}
-
-void RoomServer::stop() {
+void WebsocketServer::stop() {
 
 }

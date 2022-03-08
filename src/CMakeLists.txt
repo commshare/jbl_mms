@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 add_definitions(-DJEMALLOC_NO_DEMANGLE) 
-set(CMAKE_CXX_FLAGS "-g -Wall -std=c++17 -O3")
+set(CMAKE_CXX_FLAGS "-g -Wall -std=c++2a -O3")
 # rpath
 set(CMAKE_SKIP_BUILD_RPATH FALSE)                 # 编译时加上RPATH  
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)          # 编译时RPATH不使用安装的RPATH  

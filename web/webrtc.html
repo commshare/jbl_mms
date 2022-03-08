@@ -34,7 +34,7 @@
 
     const config = {
         iceServers: [
-            { urls: 'stun:192.168.31.123:3478?transport=udp' }
+            { urls: 'stun:192.168.95.129:3478?transport=udp' }
         ],
     };
 
@@ -87,21 +87,22 @@
                 //创建点对点连接对象
             });
 
-        createConnection();
+        // createConnection();
     }
 
     // getUserMedia 获得流后，将音视频流展示并保存到 localStream
     function gotLocalMediaStream(mediaStream) {
-        localVideo.srcObject = mediaStream;
+        localVideo.srcObject = mediaStream;  
         localStream = mediaStream;
         callBtn.disabled = false;
+        createConnection();
     }
 
     function startWebsocket() {
         toUserId = document.getElementById('toUserId').value
-        let webSocketUrl = 'wss://' + location.host + '/websocket/' + userId
+        let webSocketUrl = 'ws://192.168.95.129:8282/app/' + userId
         if ('WebSocket' in window) {
-            // console.log(1)
+            // console.log(1) 
             socket = new WebSocket(webSocketUrl);
         } else if ('MozWebSocket' in window) {
             // console.log(2)
@@ -126,7 +127,7 @@
         socket.onmessage = onmessage
     }
     //连接服务器
-    // startWebsocket();
+    startWebsocket();
 
     function onmessage(e) {
 
