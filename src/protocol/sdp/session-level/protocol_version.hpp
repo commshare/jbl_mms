@@ -5,7 +5,7 @@
 namespace mms {
 struct ProtocolVersion {
 public:
-    const constexpr static std::string prefix = "v=";
+    const static std::string prefix;
     int32_t read(const std::string_view & data) {
         std::string_view::size_type end_pos = data.find("\n");
         std::string_view::size_type end = end_pos;
@@ -19,7 +19,7 @@ public:
             }
         }
 
-        if (!data.starts_with(prefix)) {
+        if (!data.find(prefix) == 0) {//start_with
             return -2;
         }
 
