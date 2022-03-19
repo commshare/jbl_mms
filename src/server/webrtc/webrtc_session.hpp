@@ -5,6 +5,7 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 #include "core/session.hpp"
+#include "protocol/sdp/sdp.hpp"
 
 namespace mms {
 class WebsocketServer;
@@ -21,10 +22,11 @@ public:
     }
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 private:
-    void processOfferMsg(const std::string & sdp);
+    bool processOfferMsg(const std::string & sdp);
 private:
     ThreadWorker *worker_;
     WebSocketConn *ws_conn_;
+    Sdp remote_sdp_;
 };
 
 };

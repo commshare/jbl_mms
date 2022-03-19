@@ -10,9 +10,12 @@ namespace mms {
 //    specified before the first media field.  No more than one URI field
 //    is allowed per session description.
 class Uri {
-
+public:
+    static std::string_view prefix;
+    bool parse(const std::string_view & line);
 public:
     std::string_view raw_string;
+    std::string_view valid_string;
     std::string_view uri;
 };
 };

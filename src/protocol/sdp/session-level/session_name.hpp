@@ -4,10 +4,12 @@
 // s=<session name>
 namespace mms {
 struct SessionName {
-
-    
+public:
+    static std::string_view prefix;
+    bool parse(const std::string_view & line);
 public:
     std::string_view raw_string;
+    std::string_view valid_string;
     //    The "s=" field is the textual session name.  There MUST be one and
     //    only one "s=" field per session description.  The "s=" field MUST NOT
     //    be empty and SHOULD contain ISO 10646 characters (but see also the

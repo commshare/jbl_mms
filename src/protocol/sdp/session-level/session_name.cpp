@@ -1,18 +1,15 @@
-
-#include "protocol_version.hpp"
+#include "session_name.hpp"
 #include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
-
-std::string_view ProtocolVersion::prefix = "v=";
-
-bool ProtocolVersion::parse(const std::string_view & line) {
+std::string_view SessionName::prefix = "s=";
+bool SessionName::parse(const std::string_view & line) {
     std::string_view::size_type end_pos = line.rfind("\r");
     if (end_pos == std::string_view::npos) {
         end_pos = line.size() - 1;
     }
     valid_string = line.substr(prefix.size(), end_pos);
-    version = valid_string;
-    std::cout << "version:" << version << std::endl;
+    session_name = valid_string;
+    std::cout << "session_name:" << session_name << std::endl;
     return true;
 }

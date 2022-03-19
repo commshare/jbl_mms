@@ -43,7 +43,7 @@ namespace mms {
 //       which multicast packets sent in this conference will be sent.  TTL
 //       values MUST be in the range 0-255.  Although the TTL MUST be
 //       specified, its use to scope multicast traffic is deprecated;
-//     applications SHOULD use an administratively scoped address
+//       applications SHOULD use an administratively scoped address
 //       instead.
 
 //    The TTL for the session is appended to the address using a slash as a
@@ -90,11 +90,13 @@ namespace mms {
 //       c=IN IP6 FF15::101
 //       c=IN IP6 FF15::102
 //       c=IN IP6 FF15::103
-struct ConnectionData {
+struct ConnectionInfo {
 public:
-
+    static std::string_view prefix;
+    bool parse(const std::string_view & line);
 public:
     std::string_view raw_string;
+    std::string_view valid_string;
     //    The first sub-field ("<nettype>") is the network type, which is a
     //    text string giving the type of network.  Initially, "IN" is defined
     //    to have the meaning "Internet", but other values MAY be registered in
@@ -108,6 +110,9 @@ public:
     //    The third sub-field ("<connection-address>") is the connection
     //    address.  OPTIONAL sub-fields MAY be added after the connection
     //    address depending on the value of the <addrtype> field.
+    // 目前只支持单播
     std::string_view connection_address;
+    std::string_view ttl;
+    std::string_view num_of_addr;
 };
 };

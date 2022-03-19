@@ -29,7 +29,7 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
         }
 
         Json::Value & msg = root["message"];
-        if (msg.isMember("type") || !msg["type"].isString()) {
+        if (!msg.isMember("type") || !msg["type"].isString()) {
             std::cout << "msg type is not string" << std::endl;
             return;
         }
@@ -45,8 +45,13 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
     }
 }
 
-void WebRtcSession::processOfferMsg(const std::string & sdp) {
-    
+bool WebRtcSession::processOfferMsg(const std::string & sdp) {
+    if (!remote_sdp_.parse(sdp)) {
+        return false;
+    }
+    // 创建answer
+
+    return true;
 }
 
 void WebRtcSession::service() {

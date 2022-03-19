@@ -3,9 +3,12 @@
 // 5.2.  Origin ("o=")
 namespace mms {
 struct Origin {
-
+public:
+    static std::string_view prefix;
+    bool parse(const std::string_view & line);
 public:
     std::string_view raw_string;// 原始字符串
+    std::string_view valid_string;//去除\r\n后的字符串
     // <username> is the user's login on the originating host, or it is "-"
     //   if the originating host does not support the concept of user IDs.
     //   The <username> MUST NOT contain spaces.
