@@ -6,6 +6,7 @@
 #include <boost/asio/thread_pool.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/program_options.hpp>
 
 #include "base/thread/thread_pool.hpp"
 #include "base/jemalloc/je_new.h"
@@ -37,6 +38,22 @@ void waitExit() {
 }
 
 int main(int argc, char *argv[]) {
+    boost::program_options::options_description opts("all options");
+    opts.add_options()
+    ("config", boost::program_options::value<std::string>(), "the config file")
+    ("help", "mms is a multi media server.");
+    boost::program_options::variables_map vm;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::notify(vm);
+
+    if (!vm.count("config")) {
+        std::cerr << "please set the config file." << std::endl;
+        return -1;
+    }
+
+    std::string config_file = vm["config"].as<std::string>();
+    
+
     thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
 
     RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));

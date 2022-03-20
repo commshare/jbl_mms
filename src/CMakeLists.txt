@@ -30,6 +30,7 @@ target_link_libraries(mms
     boost_coroutine.a
     boost_thread.a
     boost_context.a
+    boost_program_options.a
     ssl.a 
     crypto.a
     libjemalloc.a
