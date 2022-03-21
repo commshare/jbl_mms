@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     ("config", boost::program_options::value<std::string>(), "the config file")
     ("help", "mms is a multi media server.");
     boost::program_options::variables_map vm;
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts), vm);
     boost::program_options::notify(vm);
 
     if (!vm.count("config")) {

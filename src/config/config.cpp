@@ -8,5 +8,5 @@ Config & Config::getInstance() {
 }
 
 bool Config::loadFromFile(const std::string & config_file) {
-
+    return false;
 }
