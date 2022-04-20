@@ -46,11 +46,15 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
 }
 
 bool WebRtcSession::processOfferMsg(const std::string & sdp) {
-    if (!remote_sdp_.parse(sdp)) {
+    if (!remote_sdp_.parseRemoteSdp(sdp)) {
+        return false;
+    }
+
+    if (!remote_sdp_.createLocalSdp(local_sdp_)) {
         return false;
     }
     // 创建answer
-
+    
     return true;
 }
 

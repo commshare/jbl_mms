@@ -27,6 +27,7 @@ private:
     ThreadWorker *worker_;
     WebSocketConn *ws_conn_;
     Sdp remote_sdp_;
+    Sdp local_sdp_;
 };
 
 };

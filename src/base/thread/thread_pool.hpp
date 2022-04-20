@@ -10,6 +10,7 @@
 #include <boost/serialization/singleton.hpp> 
 
 #include "thread_worker.hpp"
+#define RAND_WORKER -1
 namespace mms {
 class ThreadPool {
 public:

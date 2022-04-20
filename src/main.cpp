@@ -40,36 +40,42 @@ void waitExit() {
 int main(int argc, char *argv[]) {
     boost::program_options::options_description opts("all options");
     opts.add_options()
-    ("config", boost::program_options::value<std::string>(), "the config file")
+    ("c", boost::program_options::value<std::string>(), "the config file")
     ("help", "mms is a multi media server.");
     boost::program_options::variables_map vm;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts), vm);
     boost::program_options::notify(vm);
 
-    if (!vm.count("config")) {
-        std::cerr << "please set the config file." << std::endl;
-        return -1;
+    if(vm.count("help") ){//若参数中有help选项
+        std::cout << opts << std::endl; 
+        return -1;  
+    } else {
+        if (!vm.count("c")) {
+            std::cerr << "please set the config file." << std::endl;
+            return -2;
+        }
     }
+    
 
-    std::string config_file = vm["config"].as<std::string>();
+    std::string config_file = vm["c"].as<std::string>();
     
 
     thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
 
-    RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
     if (!rtmp_server.start()) {
         return -1;
     }
 
-    HttpServer http_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    HttpServer http_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
     if (!http_server.start()) {
         return -2;
     }
 
-    StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
     stun_server.start();
 
-    WebRtcServer webrtc_server(thread_pool_inst::get_mutable_instance().getWorker(-1));
+    WebRtcServer webrtc_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
     webrtc_server.start();
     
     waitExit();

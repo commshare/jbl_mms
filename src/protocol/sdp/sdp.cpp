@@ -2,7 +2,7 @@
 #include "base/utils/utils.h"
 #include <iostream>
 using namespace mms;
-int32_t Sdp::parse(const std::string & sdp) {
+int32_t Sdp::parseRemoteSdp(const std::string & sdp) {
     raw_str = std::move(sdp);
     std::cout << "sdp:" << raw_str << std::endl;
     lines_ = Utils::split(raw_str, "\n");
@@ -99,5 +99,9 @@ int32_t Sdp::parse(const std::string & sdp) {
         media_sdps_.emplace_back(currMediaSdp.value());
     }
     
+    return 0;
+}
+
+int32_t Sdp::createLocalSdp(Sdp & local_sdp) {
     return 0;
 }

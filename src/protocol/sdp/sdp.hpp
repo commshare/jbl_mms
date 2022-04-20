@@ -19,7 +19,8 @@
 namespace mms {
 struct Sdp {
 public:
-    int32_t parse(const std::string & sdp);
+    int32_t parseRemoteSdp(const std::string & sdp);
+    int32_t createLocalSdp(Sdp & local_sdp);
 private:
     std::string raw_str;
     std::set<std::string> candidates;
