@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 namespace mms {
 // 5.7.  Connection Data ("c=")
 //    c=<nettype> <addrtype> <connection-address>
@@ -92,27 +92,27 @@ namespace mms {
 //       c=IN IP6 FF15::103
 struct ConnectionInfo {
 public:
-    static std::string_view prefix;
-    bool parse(const std::string_view & line);
+    static std::string prefix;
+    bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
+    std::string raw_string;
+    std::string valid_string;
     //    The first sub-field ("<nettype>") is the network type, which is a
     //    text string giving the type of network.  Initially, "IN" is defined
     //    to have the meaning "Internet", but other values MAY be registered in
     //    the future (see Section 8).
-    std::string_view nettype;
+    std::string nettype;
     //    The second sub-field ("<addrtype>") is the address type.  This allows
     //    SDP to be used for sessions that are not IP based.  This memo only
     //    defines IP4 and IP6, but other values MAY be registered in the future
     //    (see Section 8).
-    std::string_view addrtype;
+    std::string addrtype;
     //    The third sub-field ("<connection-address>") is the connection
     //    address.  OPTIONAL sub-fields MAY be added after the connection
     //    address depending on the value of the <addrtype> field.
     // 目前只支持单播
-    std::string_view connection_address;
-    std::string_view ttl;
-    std::string_view num_of_addr;
+    std::string connection_address;
+    std::string ttl;
+    std::string num_of_addr;
 };
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 #include <string>
 // a=keywds:<keywords>
 
@@ -15,7 +15,7 @@ namespace mms {
 struct ToolAttr {
 static std::string prefix = "a=tool:";
 public:
-    std::string_view name;
-    std::string_view version;
+    std::string name;
+    std::string version;
 };
 };

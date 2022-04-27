@@ -1,32 +1,32 @@
 #pragma once
-#include <string_view>
+#include <string>
 // 5.2.  Origin ("o=")
 namespace mms {
 struct Origin {
 public:
-    static std::string_view prefix;
-    bool parse(const std::string_view & line);
+    static std::string prefix;
+    bool parse(const std::string & line);
 public:
-    std::string_view raw_string;// 原始字符串
-    std::string_view valid_string;//去除\r\n后的字符串
+    std::string raw_string;// 原始字符串
+    std::string valid_string;//去除\r\n后的字符串
     // <username> is the user's login on the originating host, or it is "-"
     //   if the originating host does not support the concept of user IDs.
     //   The <username> MUST NOT contain spaces.
-    std::string_view username;
+    std::string username;
     // <sess-id> is a numeric string such that the tuple of <username>,
     //   <sess-id>, <nettype>, <addrtype>, and <unicast-address> forms a
     //   globally unique identifier for the session.
-    std::string_view session_id;
+    std::string session_id;
     // <sess-version> is a version number for this session description.
-    std::string_view session_version;
+    std::string session_version;
     // <nettype> is a text string giving the type of network.  Initially
     //   "IN" is defined to have the meaning "Internet", but other values
     //   MAY be registered in the future
-    std::string_view nettype;
+    std::string nettype;
     // <addrtype> is a text string giving the type of the address that
     //   follows.  Initially "IP4" and "IP6" are defined, but other values
     //   MAY be registered in the future (see Section 8).
-    std::string_view addrtype;
+    std::string addrtype;
     // <unicast-address> is the address of the machine from which the
     //   session was created.  For an address type of IP4, this is either
     //   the fully qualified domain name of the machine or the dotted-
@@ -42,7 +42,7 @@ public:
     //   concern, an arbitrary <username> and private <unicast-address> MAY be
     //   chosen to populate the "o=" field, provided that these are selected
     //   in a manner that does not affect the global uniqueness of the field.
-    std::string_view unicast_address;
+    std::string unicast_address;
     
 };
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 #include <string>
 #include <vector>
 // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding
@@ -16,9 +16,9 @@ namespace mms {
 struct RTPMapAttr {
 static std::string prefix = "a=rtpmap:";
 public:
-    std::string_view payload_type;
-    std::string_view encoding_name;
-    std::string_view clock_rate;
-    std::vector<std::string_view> encoding_parameters;
+    std::string payload_type;
+    std::string encoding_name;
+    std::string clock_rate;
+    std::vector<std::string> encoding_parameters;
 };
 };

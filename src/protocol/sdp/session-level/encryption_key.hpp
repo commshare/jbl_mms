@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 // 5.12.  Encryption Keys ("k=")
 
 //       k=<method>
@@ -75,6 +75,6 @@
 namespace mms {
 struct EncryptionKeys {
 public:
-    std::string_view raw_string;
+    std::string raw_string;
 };
 };

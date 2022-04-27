@@ -4,9 +4,9 @@
 namespace mms {
 struct BundleAttr : public Attribute{
 public:
-    static std::string_view prefix;
-    virtual bool parse(const std::string_view & line);
+    static std::string prefix;
+    virtual bool parse(const std::string & line);
 public:
-    std::set<std::string_view> mids;
+    std::set<std::string> mids;
 };
 };

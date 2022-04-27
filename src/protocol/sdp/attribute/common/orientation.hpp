@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 #include <string>
 #include <vector>
 // a=orient:<orientation>
@@ -13,6 +13,6 @@ namespace mms {
 struct OrientAttr {
 static std::string prefix = "a=orient:";
 public:
-    std::string_view orientation;
+    std::string orientation;
 };
 };

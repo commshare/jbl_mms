@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 // 15.4.  "ice-ufrag" and "ice-pwd" Attributes
 
 //    The "ice-ufrag" and "ice-pwd" attributes convey the username fragment
@@ -33,11 +33,11 @@
 namespace mms {
 struct IceUfrag {
 public:
-    static std::string_view prefix;
-    bool parse(const std::string_view & line);
+    static std::string prefix;
+    bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
-    std::string_view ufrag;
+    std::string raw_string;
+    std::string valid_string;
+    std::string ufrag;
 };
 };

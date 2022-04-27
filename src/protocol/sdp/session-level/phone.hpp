@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 namespace mms {
 // 5.6.  Email Address and Phone Number ("e=" and "p=")
 
@@ -39,11 +39,11 @@ namespace mms {
 //       e=Jane Doe <j.doe@example.com>
 struct Phone {
 public:
-    static std::string_view prefix;
-    bool parse(const std::string_view & line);
+    static std::string prefix;
+    bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
-    std::string_view phone;
+    std::string raw_string;
+    std::string valid_string;
+    std::string phone;
 };
 };

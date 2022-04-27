@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 #include <string>
 // a=maxptime:<maximum packet time>
 
@@ -17,5 +17,5 @@ namespace mms {
 struct MaxPTimeAttr {
 static std::string prefix = "a=maxptime:";
 public:
-    std::string_view max_packet_time;
+    std::string max_packet_time;
 };

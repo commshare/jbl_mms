@@ -1,13 +1,13 @@
 #pragma once
-#include <string_view>
+#include <string>
 namespace mms {
 struct FingerPrint {
 public:
-    static std::string_view prefix;
-    bool parse(const std::string_view & line);
+    static std::string prefix;
+    bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
-    std::string_view fingerprint;
+    std::string raw_string;
+    std::string valid_string;
+    std::string fingerprint;
 };
 };

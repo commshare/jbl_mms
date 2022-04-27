@@ -4,15 +4,15 @@
 #include <iostream>
 
 using namespace mms;
-std::string_view ConnectionInfo::prefix = "c=";
-bool ConnectionInfo::parse(const std::string_view & line) {
-    std::string_view::size_type end_pos = line.rfind("\r");
-    if (end_pos == std::string_view::npos) {
+std::string ConnectionInfo::prefix = "c=";
+bool ConnectionInfo::parse(const std::string & line) {
+    std::string::size_type end_pos = line.rfind("\r");
+    if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
     valid_string = line.substr(prefix.size(), end_pos);
 
-    std::vector<std::string_view> vs;
+    std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
     if (vs.size() != 3) {
         return false;
@@ -20,7 +20,7 @@ bool ConnectionInfo::parse(const std::string_view & line) {
 
     nettype = vs[0];
     addrtype = vs[1];
-    std::string_view conn_addr_info = vs[2];
+    std::string conn_addr_info = vs[2];
     
     vs = Utils::split(conn_addr_info, "/");
     connection_address = vs[0];

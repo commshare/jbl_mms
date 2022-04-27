@@ -25,7 +25,7 @@ private:
     std::string raw_str;
     std::set<std::string> candidates;
 private:
-    std::vector<std::string_view> lines_;
+    std::vector<std::string> lines_;
     ProtocolVersion protocol_version_;
     Origin          origin_;
     SessionName     session_name_;

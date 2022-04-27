@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 // 5.14.  Media Descriptions ("m=")
 //       m=<media> <port> <proto> <fmt> ...
 // A session description may contain a number of media descriptions.
@@ -9,11 +9,11 @@
 namespace mms {
 struct MediaDescription {
 public:
-    std::string_view raw_string;
+    std::string raw_string;
     // <media> is the media type.  Currently defined media are "audio",
     //   "video", "text", "application", and "message", although this list
     //   may be extended in the future (see Section 8).
-    std::string_view media;
+    std::string media;
     // <port> is the transport port to which the media stream is sent.  The
     //       meaning of the transport port depends on the network being used as
     //       specified in the relevant "c=" field, and on the transport
@@ -91,8 +91,8 @@ public:
     //   Modulation (PCM) audio and RTP PCM audio; another might be TCP/RTP
     //   PCM audio.  In addition, relays and monitoring tools that are
     //   transport-protocol-specific but format-independent are possible.
-    std::string_view port;
-    std::string_view proto;
+    std::string port;
+    std::string proto;
     // <fmt> is a media format description.  The fourth and any subsequent
     //   sub-fields describe the format of the media.  The interpretation
     //   of the media format depends on the value of the <proto> sub-field.
@@ -107,6 +107,6 @@ public:
     //   to a media encoding name that identifies the payload format.  The
     //   "a=fmtp:"  attribute MAY be used to specify format parameters (see
     //   Section 6).
-    std::string_view fmt;
+    std::string fmt;
 };
 };

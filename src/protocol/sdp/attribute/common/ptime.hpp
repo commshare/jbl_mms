@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 #include <string>
 // a=ptime:<packet time>
 
@@ -14,6 +14,6 @@ namespace mms {
 struct PTimeAttr {
 static std::string prefix = "a=ptime:";
 public:
-    std::string_view packet_time;
+    std::string packet_time;
 };
 };

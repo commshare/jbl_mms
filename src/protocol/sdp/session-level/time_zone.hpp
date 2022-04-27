@@ -1,8 +1,8 @@
 #pragma once
-#include <string_view>
+#include <string>
 namespace mms {
 struct TimeZone {
 public:
-    std::string_view raw_string;
+    std::string raw_string;
 };
 };

@@ -27,10 +27,10 @@ using namespace mms;
 #define ROLE_ACTPASS     "actpass"
 #define ROLD_HOLDCONN    "holdconn"
 
-std::string_view SetupAttr::prefix = "a=setup:";
-bool SetupAttr::parse(const std::string_view & line) {
-    std::string_view::size_type end_pos = line.rfind("\r");
-    if (end_pos == std::string_view::npos) {
+std::string SetupAttr::prefix = "a=setup:";
+bool SetupAttr::parse(const std::string & line) {
+    std::string::size_type end_pos = line.rfind("\r");
+    if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
     valid_string = line.substr(prefix.size(), end_pos);

@@ -56,20 +56,20 @@
 // 由于WebRTC中默认都是One-Byte Header，所以就不抓包分析了，具体构造解析代码跟One-Byte Header位于同一地方。
 
 // 常见RTP Header Extension
-#include <string_view>
+#include <string>
 #include <vector>
 
 namespace mms {
 struct Extmap {
 public:
-    static std::string_view prefix;
-    virtual bool parse(const std::string_view & line);
+    static std::string prefix;
+    virtual bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
-    std::string_view value;
-    std::string_view direction;
-    std::string_view uri;
-    std::vector<std::string_view> ext_attrs;
+    std::string raw_string;
+    std::string valid_string;
+    std::string value;
+    std::string direction;
+    std::string uri;
+    std::vector<std::string> ext_attrs;
 };
 };

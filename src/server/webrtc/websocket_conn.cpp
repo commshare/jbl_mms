@@ -3,7 +3,7 @@
 
 using namespace mms;
 
-WebSocketConn::WebSocketConn(ThreadWorker *worker, websocketpp::server<websocketpp::config::asio>::connection_ptr c) : worker_(worker), ws_conn_(c) {
+WebSocketConn::WebSocketConn(ThreadWorker *worker, websocketpp::server<websocketpp::config::asio>::connection_ptr c) : ws_conn_(c), worker_(worker) {
 
 }
 

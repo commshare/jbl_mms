@@ -4,7 +4,7 @@
 // #include <experimental/optional>
 #include <optional>
 #include <vector>
-#include <string_view>
+#include <string>
 // Session description
 // v=  (protocol version)
 // o=  (originator and session identifier)

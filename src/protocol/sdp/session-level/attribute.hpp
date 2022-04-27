@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 // 5.13.  Attributes ("a=")
 
 //       a=<attribute>
@@ -48,11 +48,11 @@
 namespace mms {
 struct Attribute {
 public:
-    static std::string_view prefix;
-    virtual bool parse(const std::string_view & line);
+    static std::string prefix;
+    virtual bool parse(const std::string & line);
 public:
-    std::string_view raw_string;
-    std::string_view valid_string;
-    std::string_view address;
+    std::string raw_string;
+    std::string valid_string;
+    std::string address;
 };
 };

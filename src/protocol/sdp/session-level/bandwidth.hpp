@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include <string>
 namespace mms {
 // 5.8.  Bandwidth ("b=")
 //       b=<bwtype>:<bandwidth>
@@ -10,8 +10,8 @@ namespace mms {
 //    (see Section 8 and [21], [25]):
 struct BandWidth {
 public:
-    std::string_view raw_string;
-    std::string_view bw_type;
-    std::string_view bandwidth;   
+    std::string raw_string;
+    std::string bw_type;
+    std::string bandwidth;   
 };
 };

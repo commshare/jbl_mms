@@ -16,6 +16,6 @@ public:
 private:
     websocketpp::server<websocketpp::config::asio>::connection_ptr ws_conn_;
     std::shared_ptr<WebRtcSession> session_;
-    ThreadWorker *worker_;
+    ThreadWorker *worker_ = nullptr;
 };
 };

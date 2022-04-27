@@ -67,16 +67,16 @@ public:
         sendrecv = 1,
         recvonly = 2,
     };
-    static std::string_view prefix;
-    virtual bool parse(const std::string_view & line);
-    bool parseAttr(const std::string_view & line);
+    static std::string prefix;
+    virtual bool parse(const std::string & line);
+    bool parseAttr(const std::string & line);
 public:
-    std::string_view valid_string;
-    std::string_view raw_string;
+    std::string valid_string;
+    std::string raw_string;
     // <media> is the media type.  Currently defined media are "audio",
     //   "video", "text", "application", and "message", although this list
     //   may be extended in the future (see Section 8).
-    std::string_view media;
+    std::string media;
     // <port> is the transport port to which the media stream is sent.  The
     //       meaning of the transport port depends on the network being used as
     //       specified in the relevant "c=" field, and on the transport
@@ -154,9 +154,9 @@ public:
     //   Modulation (PCM) audio and RTP PCM audio; another might be TCP/RTP
     //   PCM audio.  In addition, relays and monitoring tools that are
     //   transport-protocol-specific but format-independent are possible.
-    std::string_view port;
+    std::string port;
     std::vector<uint16_t> ports;
-    std::string_view proto;
+    std::string proto;
     // <fmt> is a media format description.  The fourth and any subsequent
     //   sub-fields describe the format of the media.  The interpretation
     //   of the media format depends on the value of the <proto> sub-field.
@@ -171,7 +171,7 @@ public:
     //   to a media encoding name that identifies the payload format.  The
     //   "a=fmtp:"  attribute MAY be used to specify format parameters (see
     //   Section 6).
-    std::vector<std::string_view> fmts;
+    std::vector<std::string> fmts;
 
 
     std::optional<IceUfrag> ice_ufrag_;
