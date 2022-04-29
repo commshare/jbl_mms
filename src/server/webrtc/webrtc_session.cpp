@@ -3,6 +3,7 @@
 #include "webrtc_session.hpp"
 #include "websocket_server.hpp"
 #include "json/json.h"
+#include "base/utils/utils.h"
 
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn) {
@@ -46,16 +47,21 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
 }
 
 bool WebRtcSession::processOfferMsg(const std::string & sdp) {
-    if (!remote_sdp_.parseRemoteSdp(sdp)) {
+    session_id_ = Utils::rand64();
+    if (!remote_sdp_.parse(sdp)) {
         return false;
     }
 
-    if (!remote_sdp_.createLocalSdp(local_sdp_)) {
+    if (0 != createLocalSdp()) {
         return false;
     }
-    // 创建answer
+    
     
     return true;
+}
+
+int32_t WebRtcSession::createLocalSdp() {
+    return 0;
 }
 
 void WebRtcSession::service() {

@@ -94,9 +94,49 @@ struct ConnectionInfo {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
+
+    const std::string & getNetType() {
+        return nettype;
+    }
+
+    void setNetType(const std::string & nt) {
+        nettype = nt;
+    }
+
+    const std::string & getAddrType() {
+        return addrtype;
+    }
+
+    void setAddrType(const std::string & at) {
+        addrtype = at;
+    }
+
+    const std::string & getConnectionAddress() {
+        return connection_address;
+    }
+
+    void setConnectionAddress(const std::string & ca) {
+        connection_address = ca;
+    }
+
+    int32_t getTTL() {
+        return ttl;
+    }
+
+    void setTTL(int32_t t) {
+        ttl = t;
+    }
+
+    int32_t getNumOfAddr() {
+        return num_of_addr;
+    }
+
+    void setNumOfAddr(int32_t val) {
+        num_of_addr = val;
+    }
+
+    std::string toString() const;
 public:
-    std::string raw_string;
-    std::string valid_string;
     //    The first sub-field ("<nettype>") is the network type, which is a
     //    text string giving the type of network.  Initially, "IN" is defined
     //    to have the meaning "Internet", but other values MAY be registered in
@@ -112,7 +152,7 @@ public:
     //    address depending on the value of the <addrtype> field.
     // 目前只支持单播
     std::string connection_address;
-    std::string ttl;
-    std::string num_of_addr;
+    int32_t ttl = 0;
+    int32_t num_of_addr = 1;
 };
 };

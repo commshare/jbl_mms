@@ -7,9 +7,17 @@ struct MidAttr {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
+
+    uint32_t getMid() const {
+        return mid;
+    }
+
+    void setMid(uint32_t val) {
+        mid = val;
+    }
+
+    std::string toString() const;
 public:
-    std::string raw_string;
-    std::string valid_string;
-    std::string mid;
+    uint32_t mid;
 };
 };

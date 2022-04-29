@@ -41,9 +41,16 @@ struct EmailAddress {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
+    const std::string & getAddress() const {
+        return address;
+    }
+
+    void setAddress(const std::string & addr) {
+        address = addr;
+    }
+
+    std::string toString() const;
 public:
-    std::string raw_string;
-    std::string valid_string;
     std::string address;
 };
 };

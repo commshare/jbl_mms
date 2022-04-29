@@ -1,5 +1,5 @@
+#include <sstream>
 #include "phone.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string Phone::prefix = "p=";
@@ -8,8 +8,12 @@ bool Phone::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    phone = valid_string;
-    std::cout << "phone:" << phone << std::endl;
+    phone = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string Phone::toString() const {
+    std::ostringstream oss;
+    oss << prefix << phone << std::endl;
+    return oss.str();
 }

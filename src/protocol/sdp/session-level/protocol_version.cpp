@@ -1,6 +1,6 @@
 
+#include <sstream>
 #include "protocol_version.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 
@@ -11,8 +11,21 @@ bool ProtocolVersion::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    version = valid_string;
-    std::cout << "version:" << version << std::endl;
+    std::string sversion = line.substr(prefix.size(), end_pos);
+    version = std::atoi(sversion.c_str());
     return true;
+}
+
+void ProtocolVersion::setVersion(int v) {
+    version = v;
+}
+
+int ProtocolVersion::getVersion() {
+    return version;
+}
+
+std::string ProtocolVersion::toString() const {
+    std::ostringstream oss;
+    oss << prefix << std::to_string(version) << std::endl;
+    return oss.str();
 }

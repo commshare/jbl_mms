@@ -9,9 +9,9 @@ public:
     static std::string prefix;
     bool parse(const std::string & line);
     int32_t getVersion();
+    void setVersion(int v);
+    std::string toString() const;
 private:
-    std::string raw_string;
-    std::string valid_string;
-    std::string version;
+    int version;
 };
 };

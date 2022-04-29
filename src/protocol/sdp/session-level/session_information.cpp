@@ -1,5 +1,5 @@
+#include <sstream>
 #include "session_information.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 
 using namespace mms;
@@ -9,8 +9,12 @@ bool SessionInformation::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    session_information = valid_string;
-    std::cout << "session_information:" << session_information << std::endl;
+    session_information = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string SessionInformation::toString() const {
+    std::ostringstream oss;
+    oss << prefix << session_information << std::endl;
+    return oss.str();
 }

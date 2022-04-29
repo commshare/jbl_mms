@@ -23,11 +23,13 @@ public:
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 private:
     bool processOfferMsg(const std::string & sdp);
+    int32_t createLocalSdp();
 private:
     ThreadWorker *worker_;
     WebSocketConn *ws_conn_;
     Sdp remote_sdp_;
     Sdp local_sdp_;
+    uint64_t session_id_ = 0;
 };
 
 };

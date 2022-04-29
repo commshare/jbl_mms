@@ -1,5 +1,7 @@
+#include <sstream>
+#include <boost/algorithm/string/join.hpp>
+
 #include "bundle.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string BundleAttr::prefix = "a=group:BUNDLE ";
@@ -14,7 +16,15 @@ bool BundleAttr::parse(const std::string & line) {
     if (vs.size() != 2) {
         return false;
     }
-    mids.insert(vs[0]);
-    mids.insert(vs[1]);
+    mids.emplace_back(vs[0]);
+    mids.emplace_back(vs[1]);
     return true;
+}
+
+std::string BundleAttr::toString() const {
+    std::ostringstream oss;
+    oss << prefix;
+    std::string s = boost::algorithm::join(mids, " ");
+    oss << s << std::endl;
+    return oss.str();
 }

@@ -25,9 +25,16 @@ struct SessionInformation {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
+    const std::string & getSessionInformation() const {
+        return session_information;
+    }
+
+    void setSessionInformation(const std::string & val) {
+        session_information = val;
+    }
+
+    std::string toString() const;
 public:
-    std::string raw_string;
-    std::string valid_string;
     std::string session_information;
 };
 };

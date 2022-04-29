@@ -1,5 +1,6 @@
+#include <sstream>
+
 #include "session_name.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string SessionName::prefix = "s=";
@@ -8,8 +9,12 @@ bool SessionName::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    session_name = valid_string;
-    std::cout << "session_name:" << session_name << std::endl;
+    session_name = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string SessionName::toString() const {
+    std::ostringstream oss;
+    oss << prefix << session_name << std::endl;
+    return oss.str();
 }

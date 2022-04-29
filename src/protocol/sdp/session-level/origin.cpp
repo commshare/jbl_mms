@@ -1,7 +1,7 @@
-#include <boost/algorithm/string.hpp>
+#include <exception>
+#include <sstream>
 #include "base/utils/utils.h"
 #include "origin.hpp"
-#include <iostream>
 
 using namespace mms;
 std::string Origin::prefix = "o=";
@@ -10,7 +10,7 @@ bool Origin::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos);
 
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
@@ -18,12 +18,22 @@ bool Origin::parse(const std::string & line) {
         return false;
     }
 
-    username = vs[0];
-    session_id = vs[1];
-    session_version = vs[2];
-    nettype = vs[3];
-    addrtype = vs[4];
-    unicast_address = vs[5];
-    std::cout << "valid_string:" << valid_string << std::endl;
+    try {
+        username = vs[0];
+        session_id = std::atoll(vs[1].c_str());
+        session_version = std::atoi(vs[2].c_str());
+        nettype = vs[3];
+        addrtype = vs[4];
+        unicast_address = vs[5];
+    } catch(std::exception & e) {
+        return false;
+    }
     return true;
+}
+
+std::string Origin::toString() const {
+    std::string line;
+    std::ostringstream oss;
+    oss << prefix << username << " " << session_id << " " << session_version << " " << nettype << " " << addrtype << " " << unicast_address << std::endl;
+    return oss.str();
 }

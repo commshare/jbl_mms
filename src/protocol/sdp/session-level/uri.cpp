@@ -1,5 +1,5 @@
+#include <sstream>
 #include "uri.hpp"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string Uri::prefix = "u=";
@@ -8,8 +8,12 @@ bool Uri::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    uri = valid_string;
-    std::cout << "uri:" << uri << std::endl;
+    uri = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string Uri::toString() const {
+    std::ostringstream oss;
+    oss << prefix << uri << std::endl;
+    return oss.str();
 }

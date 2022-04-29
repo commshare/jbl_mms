@@ -1,4 +1,5 @@
 #pragma once
+// @draft-ietf-rtcweb-sdp-14.html
 // rfc8285 中同一个 RTPStream 中允许 one-byte header extension 和 two-byte header extension 同时出现，需要 sdp中声明 ‘a=extmap-allow-mixed’
 // 在 SDP 信息中 ‘a=extmap’ 用来描述 RTP header extension。
 // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
@@ -65,8 +66,6 @@ public:
     static std::string prefix;
     virtual bool parse(const std::string & line);
 public:
-    std::string raw_string;
-    std::string valid_string;
     std::string value;
     std::string direction;
     std::string uri;

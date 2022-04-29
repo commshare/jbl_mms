@@ -2,45 +2,44 @@
 #include "base/utils/utils.h"
 #include <iostream>
 using namespace mms;
-int32_t Sdp::parseRemoteSdp(const std::string & sdp) {
-    raw_str = std::move(sdp);
-    std::cout << "sdp:" << raw_str << std::endl;
-    lines_ = Utils::split(raw_str, "\n");
-    if (lines_.size() <= 3) {
+int32_t Sdp::parse(const std::string & sdp) {
+    std::cout << "sdp:" << sdp << std::endl;
+    std::vector<std::string> lines = Utils::split(sdp, "\n");
+    if (lines.size() <= 3) {
         return -1;
     }
 
     // protocol version
-    if (!Utils::startWith(lines_[0], ProtocolVersion::prefix)) {
+    if (!Utils::startWith(lines[0], ProtocolVersion::prefix)) {
         return -1;
     }
 
-    if (!protocol_version_.parse(lines_[0])) {
+    if (!protocol_version_.parse(lines[0])) {
         return -2;
     }
     // origin
-    if (!Utils::startWith(lines_[1], Origin::prefix)) {
+    if (!Utils::startWith(lines[1], Origin::prefix)) {
         return -3;
     }
-    if (!origin_.parse(lines_[1])) {
+    if (!origin_.parse(lines[1])) {
         return -4;
     }
     // session_name
-    if (!Utils::startWith(lines_[2], SessionName::prefix)) {
+    if (!Utils::startWith(lines[2], SessionName::prefix)) {
         return -5;
     }
-    if (session_name_.parse(lines_[2])) {
+    if (session_name_.parse(lines[2])) {
         return -6;
     }
 
     std::optional<MediaSdp> currMediaSdp;
-    for (size_t i = 2; i < lines_.size(); i++) {
-        if (Utils::startWith(lines_[i], MediaSdp::prefix)) {
+    for (size_t i = 2; i < lines.size(); i++) {
+        if (Utils::startWith(lines[i], MediaSdp::prefix)) {
             if (currMediaSdp) {
                 media_sdps_.emplace_back(currMediaSdp.value());
             } else {
                 MediaSdp msdp;
-                if (!msdp.parse(lines_[i])) {
+                if (!msdp.parse(lines[i])) {
                     return false;
                 }
                 currMediaSdp = msdp;
@@ -49,45 +48,45 @@ int32_t Sdp::parseRemoteSdp(const std::string & sdp) {
         }
 
         if (currMediaSdp.has_value()) {
-            if (!(*currMediaSdp).parseAttr(lines_[i])) {
+            if (!(*currMediaSdp).parseAttr(lines[i])) {
                 return false;
             }
         } else {
             // session information
-            if (Utils::startWith(lines_[i], SessionInformation::prefix)) {
+            if (Utils::startWith(lines[i], SessionInformation::prefix)) {
                 SessionInformation si;
-                if (!si.parse(lines_[i])) {
+                if (!si.parse(lines[i])) {
                     return -7;
                 }
                 session_info_ = si;
                 continue;
-            } else if (Utils::startWith(lines_[i], Uri::prefix)) {
+            } else if (Utils::startWith(lines[i], Uri::prefix)) {
                 Uri uri;
-                if (!uri.parse(lines_[i])) {
+                if (!uri.parse(lines[i])) {
                     return -7;
                 }
                 uri_ = uri;
-            } else if (Utils::startWith(lines_[i], EmailAddress::prefix)) {
+            } else if (Utils::startWith(lines[i], EmailAddress::prefix)) {
                 EmailAddress email;
-                if (!email.parse(lines_[i])) {
+                if (!email.parse(lines[i])) {
                     return -7;
                 }
                 email_ = email;
-            } else if (Utils::startWith(lines_[i], Phone::prefix)) {
+            } else if (Utils::startWith(lines[i], Phone::prefix)) {
                 Phone phone;
-                if (!phone.parse(lines_[i])) {
+                if (!phone.parse(lines[i])) {
                     return -7;
                 }
                 phone_ = phone;
-            } else if (Utils::startWith(lines_[i], ConnectionInfo::prefix)) {
+            } else if (Utils::startWith(lines[i], ConnectionInfo::prefix)) {
                 ConnectionInfo conn_info;
-                if (!conn_info.parse(lines_[i])) {
+                if (!conn_info.parse(lines[i])) {
                     return -7;
                 }
                 conn_info_ = conn_info;
-            } else if (Utils::startWith(lines_[i], BundleAttr::prefix)) {
+            } else if (Utils::startWith(lines[i], BundleAttr::prefix)) {
                 BundleAttr bundle_attr;
-                if (!bundle_attr.parse(lines_[i])) {
+                if (!bundle_attr.parse(lines[i])) {
                     return -7;
                 }
                 bundle_attr_ = bundle_attr;
@@ -102,6 +101,10 @@ int32_t Sdp::parseRemoteSdp(const std::string & sdp) {
     return 0;
 }
 
-int32_t Sdp::createLocalSdp(Sdp & local_sdp) {
-    return 0;
+int Sdp::getVersion() {
+
+}
+
+void Sdp::setVersion(int v) {
+    
 }

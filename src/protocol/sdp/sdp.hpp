@@ -19,13 +19,10 @@
 namespace mms {
 struct Sdp {
 public:
-    int32_t parseRemoteSdp(const std::string & sdp);
-    int32_t createLocalSdp(Sdp & local_sdp);
+    int32_t parse(const std::string & sdp);
+    int getVersion();
+    void setVersion(int v);
 private:
-    std::string raw_str;
-    std::set<std::string> candidates;
-private:
-    std::vector<std::string> lines_;
     ProtocolVersion protocol_version_;
     Origin          origin_;
     SessionName     session_name_;
@@ -37,5 +34,6 @@ private:
     std::optional<BundleAttr> bundle_attr_;
     
     std::vector<MediaSdp> media_sdps_;
+    std::set<std::string> candidates;
 };
 };

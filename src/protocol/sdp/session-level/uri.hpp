@@ -13,9 +13,17 @@ class Uri {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
+
+    const std::string & getUri() const {
+        return uri;
+    }
+
+    void setUri(const std::string & val) {
+        uri = val;
+    }
+
+    std::string toString() const;
 public:
-    std::string raw_string;
-    std::string valid_string;
     std::string uri;
 };
 };

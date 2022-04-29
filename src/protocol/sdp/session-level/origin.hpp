@@ -6,9 +6,57 @@ struct Origin {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
-public:
-    std::string raw_string;// 原始字符串
-    std::string valid_string;//去除\r\n后的字符串
+
+    inline const std::string & getUserName() const {
+        return username;
+    }
+
+    inline void setUserName(const std::string & u) {
+        username = u;
+    }
+
+    inline uint64_t getSessionId() {
+        return session_id;
+    }
+
+    void setSessionId(uint64_t sid) {
+        session_id = sid;
+    }
+
+    uint32_t getSessionVersion() {
+        return session_version;
+    }
+
+    void setSessionVersion(uint32_t v) {
+        session_version = v;
+    }
+
+    const std::string & getNetType() const {
+        return nettype;
+    }
+
+    void setNetType(const std::string & nt) {
+        nettype = nt;
+    }
+
+    const std::string & getAddrType() const {
+        return addrtype;
+    }
+
+    void setAddrType(const std::string & at) {
+        addrtype = at;
+    }
+
+    const std::string & getUnicastAddress() const {
+        return unicast_address;
+    }
+
+    void setUnicastAddress(const std::string & ua) {
+        unicast_address = ua;
+    }
+
+    std::string toString() const;
+private:
     // <username> is the user's login on the originating host, or it is "-"
     //   if the originating host does not support the concept of user IDs.
     //   The <username> MUST NOT contain spaces.
@@ -16,9 +64,9 @@ public:
     // <sess-id> is a numeric string such that the tuple of <username>,
     //   <sess-id>, <nettype>, <addrtype>, and <unicast-address> forms a
     //   globally unique identifier for the session.
-    std::string session_id;
+    uint64_t session_id;
     // <sess-version> is a version number for this session description.
-    std::string session_version;
+    uint32_t session_version;
     // <nettype> is a text string giving the type of network.  Initially
     //   "IN" is defined to have the meaning "Internet", but other values
     //   MAY be registered in the future

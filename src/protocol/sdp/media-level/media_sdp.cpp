@@ -4,77 +4,106 @@
 
 using namespace mms;
 std::string MediaSdp::prefix = "m=";
-bool MediaSdp::parse(const std::string & line) {
+bool MediaSdp::parse(const std::string &line)
+{
     std::string::size_type end_pos = line.rfind("\r");
-    if (end_pos == std::string::npos) {
+    if (end_pos == std::string::npos)
+    {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos);
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
-    if (vs.size() < 4) {
+    if (vs.size() < 3)
+    {
         return false;
     }
 
     media = vs[0];
-    port = vs[1];
+    std::string & port = vs[1];
     proto = vs[2];
-    for (int i = 3; i < vs.size(); i++) {
-        fmts.emplace_back(vs[i]);
+    for (size_t i = 3; i < vs.size(); i++)
+    {
+        fmts.emplace_back(std::atoi(vs[i].c_str()));
     }
 
     vs = Utils::split(port, "/");
-    try {
-        if (vs.size() > 1) {
-            int iport = std::atoi(vs[0].data());
-            int count = std::atoi(vs[1].data());
-            for(int i = 0; i < count; i++) {
+    try
+    {
+        if (vs.size() > 1)
+        {
+            int iport = std::atoi(vs[0].c_str());
+            int count = std::atoi(vs[1].c_str());
+            for (int i = 0; i < count; i++)
+            {
                 ports.push_back(iport + i);
-            } 
-        } else {
-            ports.push_back(std::atoi(vs[0].data()));
+            }
         }
-    } catch(std::exception & e) {
+        else
+        {
+            ports.push_back(std::atoi(vs[0].c_str()));
+        }
+    }
+    catch (std::exception &e)
+    {
         return false;
     }
 
     return true;
 }
 
-bool MediaSdp::parseAttr(const std::string & line) {
-    if (Utils::startWith(line, IceUfrag::prefix)) {
+bool MediaSdp::parseAttr(const std::string &line)
+{
+    if (Utils::startWith(line, IceUfrag::prefix))
+    {
         IceUfrag ice_ufrag;
-        if (!ice_ufrag.parse(line)) {
+        if (!ice_ufrag.parse(line))
+        {
             return false;
         }
-        ice_ufrag_ = ice_ufrag;
+        ice_ufrag = ice_ufrag;
         return true;
-    } else if (Utils::startWith(line, IcePwd::prefix)) {
+    }
+    else if (Utils::startWith(line, IcePwd::prefix))
+    {
         IcePwd ice_pwd;
-        if (!ice_pwd.parse(line)) {
+        if (!ice_pwd.parse(line))
+        {
             return false;
         }
-        ice_pwd_ = ice_pwd;
+        ice_pwd = ice_pwd;
         return true;
-    } else if (Utils::startWith(line, IceOption::prefix)) {
+    }
+    else if (Utils::startWith(line, IceOption::prefix))
+    {
         IceOption ice_option;
-        if (!ice_option.parse(line)) {
+        if (!ice_option.parse(line))
+        {
             return false;
         }
-        ice_option_ = ice_option;
+        ice_option = ice_option;
         return true;
-    } else if (Utils::startWith(line, Extmap::prefix)) {
+    }
+    else if (Utils::startWith(line, Extmap::prefix))
+    {
         Extmap ext_map;
-        if (!ext_map.parse(line)) {
+        if (!ext_map.parse(line))
+        {
             return false;
         }
-        ext_maps_.emplace_back(ext_map);
-    } else if (Utils::startWith(line, "a=sendonly")) {
-        dir_ = sendonly;
-    } else if (Utils::startWith(line, "a=sendrecv")) {
-        dir_ = sendrecv;
-    } else if (Utils::startWith(line, "a=recvonly")) {
-        dir_ = recvonly;
+        ext_maps.emplace_back(ext_map);
+    }
+    else if (Utils::startWith(line, "a=sendonly"))
+    {
+        dir = sendonly;
+    }
+    else if (Utils::startWith(line, "a=sendrecv"))
+    {
+        dir = sendrecv;
+    }
+    else if (Utils::startWith(line, "a=recvonly"))
+    {
+        dir = recvonly;
     }
     return true;
 }

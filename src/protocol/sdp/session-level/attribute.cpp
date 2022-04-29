@@ -10,6 +10,5 @@ bool Attribute::parse(const std::string & line) {
     }
     valid_string = line.substr(prefix.size(), end_pos);
     address = valid_string;
-    std::cout << "email address:" << address << std::endl;
     return true;
 }
