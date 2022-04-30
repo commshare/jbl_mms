@@ -20,7 +20,7 @@ bool MediaSdp::parse(const std::string &line)
     }
 
     media = vs[0];
-    std::string & port = vs[1];
+    std::string &port = vs[1];
     proto = vs[2];
     for (size_t i = 3; i < vs.size(); i++)
     {
@@ -104,6 +104,24 @@ bool MediaSdp::parseAttr(const std::string &line)
     else if (Utils::startWith(line, "a=recvonly"))
     {
         dir = recvonly;
+    }
+    else if (Utils::startWith(line, ConnectionInfo::prefix))
+    {
+        ConnectionInfo ci;
+        if (!ci.parse(line))
+        {
+            return false;
+        }
+        connection_info = ci;
+    }
+    else if (Utils::startWith(line, MidAttr::prefix))
+    {
+        MidAttr ma;
+        if (!ma.parse(line))
+        {
+            return false;
+        }
+        mid = ma;
     }
     return true;
 }

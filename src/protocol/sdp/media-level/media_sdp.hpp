@@ -7,6 +7,8 @@
 #include "protocol/sdp/ice/ice_pwd.h"
 #include "protocol/sdp/ice/ice_options.h"
 #include "protocol/sdp/webrtc/extmap.hpp"
+#include "protocol/sdp/session-level/connection_info.hpp"
+#include "protocol/sdp/media-level/mid.h"
 
 // Media description, if present
 //     m=  (media name and transport address)
@@ -267,7 +269,8 @@ namespace mms
 
         std::string media_info;
         std::optional<std::string> media_title;
-        std::optional<std::string> connection_information;
+        std::optional<ConnectionInfo> connection_info;
+        std::optional<MidAttr> mid;
         std::vector<std::string> bandwidth_information;
         std::optional<std::string> encryption_key;
         std::vector<std::string> media_attrs;
