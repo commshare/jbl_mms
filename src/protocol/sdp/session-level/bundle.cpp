@@ -10,7 +10,7 @@ bool BundleAttr::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos);
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
     if (vs.size() != 2) {

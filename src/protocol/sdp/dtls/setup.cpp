@@ -1,5 +1,5 @@
 #include "setup.h"
-#include <iostream>
+#include <sstream>
 #include "base/utils/utils.h"
 using namespace mms;
 
@@ -33,8 +33,12 @@ bool SetupAttr::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    role = valid_string;
-    std::cout << "role:" << role << std::endl;
+    role = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string SetupAttr::toString() const {
+    std::ostringstream oss;
+    oss << prefix << role << std::endl;
+    return oss.str();
 }

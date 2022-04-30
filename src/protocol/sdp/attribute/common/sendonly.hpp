@@ -14,9 +14,13 @@
 //     sendonly applies only to the media, and any associated control
 //     protocol (e.g., RTCP) SHOULD still be received and processed as
 //     normal.
-namespace mms {
-struct SendOnlyAttr {
-static std::string prefix = "a=sendonly";
-public:
-};
+namespace mms
+{
+    struct SendOnlyAttr
+    {
+    public:
+        static std::string prefix;
+        bool parse(const std::string &line);
+        std::string toString() const;
+    };
 };

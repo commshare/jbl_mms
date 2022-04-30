@@ -1,5 +1,6 @@
+#include <sstream>
+
 #include "ice_ufrag.h"
-#include <iostream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string IceUfrag::prefix = "a=ice-ufrag:";
@@ -8,8 +9,12 @@ bool IceUfrag::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    ufrag = valid_string;
-    std::cout << "ufrag:" << ufrag << std::endl;
+    ufrag = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string IceUfrag::toString() const {
+    std::ostringstream oss;
+    oss << prefix << ufrag << std::endl;
+    return oss.str();
 }

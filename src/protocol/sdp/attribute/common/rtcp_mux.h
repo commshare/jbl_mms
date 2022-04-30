@@ -1,14 +1,12 @@
-#pragma once
-#include <string>
-#include <string>
-#include <vector>
+#pragma once 
+#include <string>  
 namespace mms
 {
-    struct RecvOnlyAttr
+    struct RtcpMux
     {
     public:
         static std::string prefix;
         bool parse(const std::string &line);
         std::string toString() const;
     };
-};
+} // namespace mms;

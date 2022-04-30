@@ -48,7 +48,9 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
 
 bool WebRtcSession::processOfferMsg(const std::string & sdp) {
     session_id_ = Utils::rand64();
-    if (!remote_sdp_.parse(sdp)) {
+    auto ret = remote_sdp_.parse(sdp);
+    if (0 != ret) {
+        std::cout << "***************** prase remote sdp failed, code:" << ret << " *****************" << std::endl;
         return false;
     }
 

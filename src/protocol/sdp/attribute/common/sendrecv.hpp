@@ -14,9 +14,12 @@
 //     and "sendrecv" is present, "sendrecv" SHOULD be assumed as the
 //     default for sessions that are not of the conference type
 //     "broadcast" or "H332" (see below).
-namespace mms {
-struct SendRecvAttr {
-static std::string prefix = "a=sendrecv";
-public:
-};
+namespace mms
+{
+    struct SendRecvAttr
+    {
+        static std::string prefix;
+        bool parse(const std::string &line);
+        std::string toString() const;
+    };
 };

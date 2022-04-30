@@ -1,3 +1,4 @@
+#include <boost/algorithm/string.hpp>
 #include "media_sdp.hpp"
 #include <iostream>
 #include "base/utils/utils.h"
@@ -54,7 +55,7 @@ bool MediaSdp::parse(const std::string &line)
 
 bool MediaSdp::parseAttr(const std::string &line)
 {
-    if (Utils::startWith(line, IceUfrag::prefix))
+    if (boost::starts_with(line, IceUfrag::prefix))
     {
         IceUfrag ice_ufrag;
         if (!ice_ufrag.parse(line))
@@ -64,7 +65,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         ice_ufrag = ice_ufrag;
         return true;
     }
-    else if (Utils::startWith(line, IcePwd::prefix))
+    else if (boost::starts_with(line, IcePwd::prefix))
     {
         IcePwd ice_pwd;
         if (!ice_pwd.parse(line))
@@ -74,7 +75,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         ice_pwd = ice_pwd;
         return true;
     }
-    else if (Utils::startWith(line, IceOption::prefix))
+    else if (boost::starts_with(line, IceOption::prefix))
     {
         IceOption ice_option;
         if (!ice_option.parse(line))
@@ -84,7 +85,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         ice_option = ice_option;
         return true;
     }
-    else if (Utils::startWith(line, Extmap::prefix))
+    else if (boost::starts_with(line, Extmap::prefix))
     {
         Extmap ext_map;
         if (!ext_map.parse(line))
@@ -93,19 +94,19 @@ bool MediaSdp::parseAttr(const std::string &line)
         }
         ext_maps.emplace_back(ext_map);
     }
-    else if (Utils::startWith(line, "a=sendonly"))
+    else if (boost::starts_with(line, SendOnlyAttr::prefix))
     {
         dir = sendonly;
     }
-    else if (Utils::startWith(line, "a=sendrecv"))
+    else if (boost::starts_with(line, SendRecvAttr::prefix))
     {
         dir = sendrecv;
     }
-    else if (Utils::startWith(line, "a=recvonly"))
+    else if (boost::starts_with(line, RecvOnlyAttr::prefix))
     {
         dir = recvonly;
     }
-    else if (Utils::startWith(line, ConnectionInfo::prefix))
+    else if (boost::starts_with(line, ConnectionInfo::prefix))
     {
         ConnectionInfo ci;
         if (!ci.parse(line))
@@ -114,7 +115,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         }
         connection_info = ci;
     }
-    else if (Utils::startWith(line, MidAttr::prefix))
+    else if (boost::starts_with(line, MidAttr::prefix))
     {
         MidAttr ma;
         if (!ma.parse(line))
@@ -122,6 +123,24 @@ bool MediaSdp::parseAttr(const std::string &line)
             return false;
         }
         mid = ma;
+    }
+    else if (boost::starts_with(line, Rtpmap::prefix))
+    {
+        Rtpmap m;
+        if (!m.parse(line))
+        {
+            return false;
+        }
+        rtpmaps.push_back(m);
+    }
+    else if (boost::starts_with(line, MaxPTimeAttr::prefix))
+    {
+        MaxPTimeAttr attr;
+        if (!attr.parse(line))
+        {
+            return false;
+        }
+        max_ptime = attr;
     }
     return true;
 }

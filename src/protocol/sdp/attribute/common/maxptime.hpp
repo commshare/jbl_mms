@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <string>
 // a=maxptime:<maximum packet time>
 
 //     This gives the maximum amount of media that can be encapsulated
@@ -13,9 +12,26 @@
 //     attribute, and it is not dependent on charset.  Note that this
 //     attribute was introduced after RFC 2327, and non-updated
 //     implementations will ignore this attribute.
-namespace mms {
-struct MaxPTimeAttr {
-static std::string prefix = "a=maxptime:";
-public:
-    std::string max_packet_time;
+namespace mms
+{
+    struct MaxPTimeAttr
+    {
+    public:
+        static std::string prefix;
+        bool parse(const std::string &line);
+        uint32_t getMaxPacketTime() const
+        {
+            return max_packet_time;
+        }
+
+        void setMaxPacketTime(uint32_t val)
+        {
+            max_packet_time = val;
+        }
+
+        std::string toString() const;
+
+    protected:
+        uint32_t max_packet_time;
+    };
 };

@@ -10,6 +10,11 @@
 #include "protocol/sdp/session-level/connection_info.hpp"
 #include "protocol/sdp/media-level/mid.h"
 
+#include "protocol/sdp/attribute/common/recvonly.hpp"
+#include "protocol/sdp/attribute/common/sendonly.hpp"
+#include "protocol/sdp/attribute/common/sendrecv.hpp"
+#include "protocol/sdp/attribute/common/rtpmap.h"
+#include "protocol/sdp/attribute/common/maxptime.hpp"
 // Media description, if present
 //     m=  (media name and transport address)
 //     i=* (media title)
@@ -76,90 +81,110 @@ namespace mms
         virtual bool parse(const std::string &line);
         bool parseAttr(const std::string &line);
 
-        const std::string & getMedia() const {
-            return media;//audio text video ...
+        const std::string &getMedia() const
+        {
+            return media; // audio text video ...
         }
 
-        void setMedia(const std::string & val) {
+        void setMedia(const std::string &val)
+        {
             media = val;
         }
 
-        const std::vector<uint16_t> & getPorts() const {
+        const std::vector<uint16_t> &getPorts() const
+        {
             return ports;
         }
 
-        void addPort(uint16_t val) {
+        void addPort(uint16_t val)
+        {
             ports.push_back(val);
         }
 
-        void setPorts(const std::vector<uint16_t> & val) {
+        void setPorts(const std::vector<uint16_t> &val)
+        {
             ports = val;
         }
 
-        const std::string & getProto() const {
+        const std::string &getProto() const
+        {
             return proto;
         }
 
-        void setProto(const std::string & val) {
+        void setProto(const std::string &val)
+        {
             proto = val;
         }
 
-        const std::vector<uint16_t> & getFmts() const {
+        const std::vector<uint16_t> &getFmts() const
+        {
             return fmts;
         }
 
-        void addFmt(uint16_t val) {
+        void addFmt(uint16_t val)
+        {
             fmts.push_back(val);
         }
 
-        void setFmts(const std::vector<uint16_t> & val) {
+        void setFmts(const std::vector<uint16_t> &val)
+        {
             fmts = val;
         }
 
-        const std::optional<IceUfrag> & getIceUfrag() const {
+        const std::optional<IceUfrag> &getIceUfrag() const
+        {
             return ice_ufrag;
         }
 
-        void setIceUfrag(const IceUfrag & val) {
+        void setIceUfrag(const IceUfrag &val)
+        {
             ice_ufrag = val;
         }
 
-        const std::optional<IcePwd> & getIcePwd() const {
+        const std::optional<IcePwd> &getIcePwd() const
+        {
             return ice_pwd;
         }
 
-        void setIcePwd(const IcePwd & val) {
+        void setIcePwd(const IcePwd &val)
+        {
             ice_pwd = val;
         }
 
-        const std::optional<IceOption> getIceOption() const {
+        const std::optional<IceOption> getIceOption() const
+        {
             return ice_option;
         }
 
-        void setIceOption(const IceOption & val) {
+        void setIceOption(const IceOption &val)
+        {
             ice_option = val;
         }
-        
-        const std::vector<Extmap> & getExtmap() const {
+
+        const std::vector<Extmap> &getExtmap() const
+        {
             return ext_maps;
         }
 
-        void setExtmap(const std::vector<Extmap> & val) {
+        void setExtmap(const std::vector<Extmap> &val)
+        {
             ext_maps = val;
         }
 
-        void addExtmap(const Extmap & val) {
+        void addExtmap(const Extmap &val)
+        {
             ext_maps.push_back(val);
         }
 
-        Direction getDir() const {
+        Direction getDir() const
+        {
             return dir;
         }
 
-        void setDir(Direction val) {
+        void setDir(Direction val)
+        {
             dir = val;
         }
-
 
     private:
         // <media> is the media type.  Currently defined media are "audio",
@@ -264,15 +289,14 @@ namespace mms
         std::optional<IceUfrag> ice_ufrag;
         std::optional<IcePwd> ice_pwd;
         std::optional<IceOption> ice_option;
-        std::vector<Extmap> ext_maps;
         Direction dir;
+        std::vector<Rtpmap> rtpmaps;
+        std::optional<MaxPTimeAttr> max_ptime;
+        std::vector<Extmap> ext_maps;
 
-        std::string media_info;
-        std::optional<std::string> media_title;
         std::optional<ConnectionInfo> connection_info;
         std::optional<MidAttr> mid;
         std::vector<std::string> bandwidth_information;
         std::optional<std::string> encryption_key;
-        std::vector<std::string> media_attrs;
     };
 };

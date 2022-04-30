@@ -3,6 +3,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <unordered_map>
 
 #include "session-level/protocol_version.hpp"
 #include "session-level/origin.hpp"

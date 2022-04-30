@@ -48,11 +48,7 @@
 namespace mms {
 struct Attribute {
 public:
-    static std::string prefix;
-    virtual bool parse(const std::string & line);
-public:
-    std::string raw_string;
-    std::string valid_string;
-    std::string address;
+    virtual bool parse(const std::string & line) = 0;
+    virtual std::string toString() const = 0;
 };
 };

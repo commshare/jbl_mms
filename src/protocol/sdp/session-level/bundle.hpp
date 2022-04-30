@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "attribute.hpp"
+#include "protocol/sdp/attribute/common/attribute.hpp"
 namespace mms {
-struct BundleAttr : public Attribute{
+struct BundleAttr : public Attribute {
 public:
     static std::string prefix;
     virtual bool parse(const std::string & line);

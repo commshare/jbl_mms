@@ -35,9 +35,16 @@ struct IceUfrag {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
-public:
-    std::string raw_string;
-    std::string valid_string;
+    const std::string & getUfrag() const {
+        return ufrag;
+    }
+
+    void setUfrag(const std::string & val) {
+        ufrag = val;
+    }
+
+    std::string toString() const;
+protected:
     std::string ufrag;
 };
 };

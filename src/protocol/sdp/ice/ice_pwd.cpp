@@ -1,5 +1,5 @@
 #include "ice_pwd.h"
-#include <iostream>
+#include <sstream>
 #include "base/utils/utils.h"
 using namespace mms;
 std::string IcePwd::prefix = "a=ice-pwd:";
@@ -8,8 +8,12 @@ bool IcePwd::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    valid_string = line.substr(prefix.size(), end_pos);
-    pwd = valid_string;
-    std::cout << "pwd:" << pwd << std::endl;
+    pwd = line.substr(prefix.size(), end_pos);
     return true;
+}
+
+std::string IcePwd::toString() const {
+    std::ostringstream oss;
+    oss << prefix << pwd << std::endl;
+    return oss.str();
 }

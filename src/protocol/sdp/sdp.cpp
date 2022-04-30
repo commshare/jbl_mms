@@ -1,3 +1,4 @@
+#include <boost/algorithm/string.hpp>
 #include "sdp.hpp"
 #include "base/utils/utils.h"
 #include <iostream>
@@ -10,7 +11,7 @@ int32_t Sdp::parse(const std::string & sdp) {
     }
 
     // protocol version
-    if (!Utils::startWith(lines[0], ProtocolVersion::prefix)) {
+    if (!boost::starts_with(lines[0], ProtocolVersion::prefix)) {
         return -1;
     }
 
@@ -18,84 +19,87 @@ int32_t Sdp::parse(const std::string & sdp) {
         return -2;
     }
     // origin
-    if (!Utils::startWith(lines[1], Origin::prefix)) {
+    if (!boost::starts_with(lines[1], Origin::prefix)) {
         return -3;
     }
     if (!origin_.parse(lines[1])) {
         return -4;
     }
     // session_name
-    if (!Utils::startWith(lines[2], SessionName::prefix)) {
+    if (!boost::starts_with(lines[2], SessionName::prefix)) {
         return -5;
     }
-    if (session_name_.parse(lines[2])) {
+    if (!session_name_.parse(lines[2])) {
         return -6;
     }
 
-    std::optional<MediaSdp> currMediaSdp;
+    std::optional<MediaSdp> curr_media_sdp;
     for (size_t i = 2; i < lines.size(); i++) {
-        if (Utils::startWith(lines[i], MediaSdp::prefix)) {
-            if (currMediaSdp) {
-                media_sdps_.emplace_back(currMediaSdp.value());
-            } else {
-                MediaSdp msdp;
-                if (!msdp.parse(lines[i])) {
-                    return false;
-                }
-                currMediaSdp = msdp;
+        std::cout << "parse line:" << lines[i] << std::endl;
+        if (boost::starts_with(lines[i], MediaSdp::prefix)) {
+            if (curr_media_sdp.has_value()) {
+                std::cout << "add media:" << curr_media_sdp.value().getMedia() << std::endl;
+                media_sdps_.emplace_back(curr_media_sdp.value());
+            } 
+
+            MediaSdp msdp;
+            if (!msdp.parse(lines[i])) {
+                std::cout << "parse media sdp failed." << std::endl;
+                return -7;
             }
+            curr_media_sdp = msdp;
             continue;
         }
 
-        if (currMediaSdp.has_value()) {
-            if (!(*currMediaSdp).parseAttr(lines[i])) {
-                return false;
+        if (curr_media_sdp.has_value()) {
+            if (!(*curr_media_sdp).parseAttr(lines[i])) {
+                return -8;
             }
         } else {
             // session information
-            if (Utils::startWith(lines[i], SessionInformation::prefix)) {
+            if (boost::starts_with(lines[i], SessionInformation::prefix)) {
                 SessionInformation si;
                 if (!si.parse(lines[i])) {
-                    return -7;
+                    return -9;
                 }
                 session_info_ = si;
-                continue;
-            } else if (Utils::startWith(lines[i], Uri::prefix)) {
+            } else if (boost::starts_with(lines[i], Uri::prefix)) {
                 Uri uri;
                 if (!uri.parse(lines[i])) {
-                    return -7;
+                    return -10;
                 }
                 uri_ = uri;
-            } else if (Utils::startWith(lines[i], EmailAddress::prefix)) {
+            } else if (boost::starts_with(lines[i], EmailAddress::prefix)) {
                 EmailAddress email;
                 if (!email.parse(lines[i])) {
-                    return -7;
+                    return -11;
                 }
                 email_ = email;
-            } else if (Utils::startWith(lines[i], Phone::prefix)) {
+            } else if (boost::starts_with(lines[i], Phone::prefix)) {
                 Phone phone;
                 if (!phone.parse(lines[i])) {
-                    return -7;
+                    return -12;
                 }
                 phone_ = phone;
-            } else if (Utils::startWith(lines[i], ConnectionInfo::prefix)) {
+            } else if (boost::starts_with(lines[i], ConnectionInfo::prefix)) {
                 ConnectionInfo conn_info;
                 if (!conn_info.parse(lines[i])) {
-                    return -7;
+                    return -13;
                 }
                 conn_info_ = conn_info;
-            } else if (Utils::startWith(lines[i], BundleAttr::prefix)) {
+            } else if (boost::starts_with(lines[i], BundleAttr::prefix)) {
                 BundleAttr bundle_attr;
                 if (!bundle_attr.parse(lines[i])) {
-                    return -7;
+                    return -14;
                 }
                 bundle_attr_ = bundle_attr;
             }
         }
     }
 
-    if (currMediaSdp.has_value()) {
-        media_sdps_.emplace_back(currMediaSdp.value());
+    if (curr_media_sdp.has_value()) {
+        std::cout << "add media:" << curr_media_sdp.value().getMedia() << std::endl;
+        media_sdps_.emplace_back(curr_media_sdp.value());
     }
     
     return 0;

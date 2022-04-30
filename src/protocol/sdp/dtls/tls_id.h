@@ -2,19 +2,19 @@
 // https://tools.ietf.org/html/rfc4145#section-4
 #include <string>
 namespace mms {
-struct SetupAttr {
+struct TlsIdAttr {
 public:
     static std::string prefix;
     bool parse(const std::string & line);
     std::string toString() const;
-    const std::string & getRole() const {
-        return role;
+    const std::string & getId() const {
+        return id;
     }
 
-    void setRole(const std::string &val) {
-        role = val;
+    void setId(const std::string &val) {
+        id = val;
     }
 public:
-    std::string role;
+    std::string id;
 };
 };
