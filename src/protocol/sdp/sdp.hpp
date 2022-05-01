@@ -16,6 +16,7 @@
 #include "session-level/bundle.hpp"
 
 #include "media-level/media_sdp.hpp"
+#include "webrtc/ssrc.h"
 
 namespace mms {
 struct Sdp {
@@ -35,6 +36,7 @@ private:
     std::optional<BundleAttr> bundle_attr_;
     
     std::vector<MediaSdp> media_sdps_;
-    std::set<std::string> candidates;
+    std::set<std::string> candidates_;
+    std::unordered_map<uint32_t, Ssrc> ssrcs_;
 };
 };

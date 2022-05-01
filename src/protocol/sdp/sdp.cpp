@@ -51,6 +51,27 @@ int32_t Sdp::parse(const std::string & sdp) {
             continue;
         }
 
+        if (boost::starts_with(lines[i], Ssrc::prefix)) {
+            std::vector<std::string> vs = Utils::split(lines[i], " ");
+            if (vs.size() < 2) {
+                return -8;
+            }
+
+            uint32_t id = std::atoi(vs[0].c_str());
+            auto it = ssrcs_.find(id);
+            if (it == ssrcs_.end()) {
+                Ssrc s;
+                if (!s.parse(lines[i])) {
+                    return -8;
+                }
+                ssrcs_[id] = s;
+            } else {
+                if (!it->second.parse(lines[i])) {
+                    return -9;
+                }
+            }
+        }
+
         if (curr_media_sdp.has_value()) {
             if (!(*curr_media_sdp).parseAttr(lines[i])) {
                 return -8;

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 
 #include "base/utils/utils.h"
 #include "rtcp.h"
