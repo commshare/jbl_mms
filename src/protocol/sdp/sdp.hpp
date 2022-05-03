@@ -14,6 +14,10 @@
 #include "session-level/phone.hpp"
 #include "session-level/connection_info.hpp"
 #include "session-level/bundle.hpp"
+#include "session-level/timing.hpp"
+#include "session-level/tool.hpp"
+#include "attribute/common/dir.hpp"
+#include "session-level/ssrc_group.h"
 
 #include "media-level/media_sdp.hpp"
 #include "webrtc/ssrc.h"
@@ -24,11 +28,74 @@ public:
     int32_t parse(const std::string & sdp);
     int getVersion();
     void setVersion(int v);
-private:
+
+    void setOrigin(const Origin &origin) {
+        origin_ = origin;
+    }
+
+    Origin & getOrigin() {
+        return origin_;
+    }
+
+    void setSessionName(const SessionName & session_name) {
+        session_name_ = session_name;
+    }
+
+    SessionName & getSessionName() {
+        return session_name_;
+    }
+
+    void setTime(const Timing & time) {
+        time_ = time;
+    }
+
+    const Timing & getTime() {
+        return time_;
+    }
+
+    void setTool(const ToolAttr & tool) {
+        tool_ = tool;
+    }
+
+    const ToolAttr & getTool() {
+        return tool_.value();
+    }
+
+    void setBundle(const BundleAttr & bundle) {
+        bundle_attr_ = bundle;
+    }
+
+    const BundleAttr & getBundle() {
+        return bundle_attr_.value();
+    }
+
+    const std::vector<MediaSdp> & getMediaSdps() const {
+        return media_sdps_;
+    }
+
+    void setMediaSdps(const std::vector<MediaSdp> & media_sdps) {
+        media_sdps_ = media_sdps;
+    }
+
+    void addMediaSdp(const MediaSdp & media_sdp) {
+        media_sdps_.emplace_back(media_sdp);
+    }
+
+    void addAttr(const std::string & val) {
+        attrs_.emplace_back(val);
+    }
+    
+    std::string toString() const;
+protected:
     ProtocolVersion protocol_version_;
     Origin          origin_;
     SessionName     session_name_;
+    Timing          time_;
+    std::vector<std::string> attrs_;
+
     std::optional<SessionInformation> session_info_;
+    std::optional<ToolAttr> tool_;
+    std::optional<DirAttr> dir_;
     std::optional<Uri> uri_;
     std::optional<EmailAddress> email_;
     std::optional<Phone> phone_;
@@ -37,6 +104,6 @@ private:
     
     std::vector<MediaSdp> media_sdps_;
     std::set<std::string> candidates_;
-    std::unordered_map<uint32_t, Ssrc> ssrcs_;
+    std::optional<SsrcGroup> ssrc_group_;
 };
 };

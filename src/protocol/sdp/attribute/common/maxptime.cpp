@@ -10,7 +10,7 @@ bool MaxPTimeAttr::parse(const std::string &line)
     {
         end_pos = line.size() - 1;
     }
-    std::string stime = line.substr(prefix.size(), end_pos);
+    std::string stime = line.substr(prefix.size(), end_pos - prefix.size());
     max_packet_time = std::atoi(stime.c_str());
     return true;
 }

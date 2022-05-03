@@ -299,6 +299,7 @@ struct StunErrorCodeAttr : public StunMsgAttr {
     }
 
     int32_t encode(uint8_t *data, size_t len) {
+        length = 4 + reason.size();
         uint8_t *data_start = data;
         int32_t consumed = StunMsgAttr::encode(data, len);
         if (consumed < 0) {
@@ -314,8 +315,12 @@ struct StunErrorCodeAttr : public StunMsgAttr {
         data[2] = 0x07&_class;
         data[1] = 0;
         data[0] = 0;
-        memcpy(data + 4, reason.data(), reason.size());
-        data += 4 + reason.size();
+        data += 4;
+        if (reason.size() > 0) {
+            memcpy(data, reason.data(), reason.size());
+            data += reason.size();
+        }
+        
         return data - data_start;
     }
 

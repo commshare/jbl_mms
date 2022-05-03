@@ -8,16 +8,16 @@ public:
     static std::string prefix;
     bool parse(const std::string & line);
 
-    uint32_t getMid() const {
-        return mid;
+    const std::string & getMid() const {
+        return mid_;
     }
 
-    void setMid(uint32_t val) {
-        mid = val;
+    void setMid(const std::string & val) {
+        mid_ = val;
     }
 
     std::string toString() const;
 public:
-    uint32_t mid;
+    std::string mid_;
 };
 };

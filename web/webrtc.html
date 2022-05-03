@@ -116,13 +116,13 @@
         //server端请求关闭
         socket.onclose = function (e) {
             console.log('close')
-            alert(JSON.stringify(e))
+            // alert(JSON.stringify(e))
 
         };
         //error
         socket.onerror = function (e) {
             console.error(e)
-            alert(JSON.stringify(e))
+            // alert(JSON.stringify(e))
         };
         socket.onmessage = onmessage
     }
@@ -229,6 +229,12 @@
         callBtn.disabled = true;
         hangupBtn.disabled = false;
         // 发送offer
+        let trans = peerConnection.getTransceivers();
+        for (var i = 0; i < trans.length; i++) {
+            trans[i].direction = "sendonly";
+        }
+        // peerConnection.getTransceivers().direction = "sendonly";
+        console.log(peerConnection.getTransceivers());
         peerConnection.createOffer().then(description => {
             console.log(`本地创建offer返回的sdp:\n${description.sdp}`)
 
@@ -236,7 +242,13 @@
             peerConnection.setLocalDescription(description).then(() => {
                 console.log('local 设置本地描述信息成功');
                 // 本地设置描述并将它发送给远端
-                socket.send(JSON.stringify({ 'userId': userId, 'toUserId': toUserId, 'message': description }));
+                socket.send(JSON.stringify({ 
+                    'userId': userId, 
+                    'toUserId': toUserId, 
+                    'message': description,
+                    'app':'rtcapp',
+                    'stream':'stream_1234',
+                }));
             }).catch((err) => {
                 console.log('local 设置本地描述信息错误', err)
             });

@@ -8,12 +8,12 @@ bool IcePwd::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    pwd = line.substr(prefix.size(), end_pos);
+    pwd_ = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 
 std::string IcePwd::toString() const {
     std::ostringstream oss;
-    oss << prefix << pwd << std::endl;
+    oss << prefix << pwd_ << std::endl;
     return oss.str();
 }

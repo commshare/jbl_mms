@@ -36,6 +36,7 @@ private:
         boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
             StunMsg stun_msg;
             stun_msg.decode(recv_data.get(), len);
+            std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
             switch(stun_msg.type()) {
                 case STUN_BINDING_REQUEST : {
                     std::cout << "process binding resquest" << std::endl;
@@ -58,8 +59,8 @@ private:
         //     }
         //     if (!sock->sendTo(std::move(data), s, remote_ep, yield)) {//todo log error
         //     }
+        //     return;
         // }
-
         StunBindingResponseMsg binding_resp(msg);
         std::cout << "remote port:" << remote_ep.port() << std::endl;
         auto mapped_addr_attr = std::make_unique<StunMappedAddressAttr>(remote_ep.address().to_v4().to_uint(), remote_ep.port());

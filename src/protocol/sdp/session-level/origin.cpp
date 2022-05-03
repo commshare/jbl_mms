@@ -10,7 +10,7 @@ bool Origin::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    std::string valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
 
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
@@ -19,12 +19,12 @@ bool Origin::parse(const std::string & line) {
     }
 
     try {
-        username = vs[0];
-        session_id = std::atoll(vs[1].c_str());
-        session_version = std::atoi(vs[2].c_str());
-        nettype = vs[3];
-        addrtype = vs[4];
-        unicast_address = vs[5];
+        username_ = vs[0];
+        session_id_ = std::atoll(vs[1].c_str());
+        session_version_ = std::atoi(vs[2].c_str());
+        nettype_ = vs[3];
+        addrtype_ = vs[4];
+        unicast_address_ = vs[5];
     } catch(std::exception & e) {
         return false;
     }
@@ -34,6 +34,6 @@ bool Origin::parse(const std::string & line) {
 std::string Origin::toString() const {
     std::string line;
     std::ostringstream oss;
-    oss << prefix << username << " " << session_id << " " << session_version << " " << nettype << " " << addrtype << " " << unicast_address << std::endl;
+    oss << prefix << username_ << " " << session_id_ << " " << session_version_ << " " << nettype_ << " " << addrtype_ << " " << unicast_address_ << std::endl;
     return oss.str();
 }

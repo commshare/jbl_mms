@@ -1,4 +1,5 @@
 #include <sstream>
+#include <iostream>
 #include "mid.h"
 #include "base/utils/utils.h"
 using namespace mms;
@@ -8,13 +9,13 @@ bool MidAttr::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    std::string smid = line.substr(prefix.size(), end_pos);
-    mid = std::atoi(smid.c_str());
+    mid_ = line.substr(prefix.size(), end_pos - prefix.size());
+    std::cout << "********************** mid:" << mid_ << " size:" << mid_.size() << " **********************" << std::endl;
     return true;
 }
 
 std::string MidAttr::toString() const {
     std::ostringstream oss;
-    oss << prefix << mid << std::endl;
+    oss << prefix << mid_ << std::endl;
     return oss.str();
 }

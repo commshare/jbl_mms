@@ -34,17 +34,22 @@ namespace mms {
 struct IceUfrag {
 public:
     static std::string prefix;
+    IceUfrag() = default;
+    IceUfrag(const std::string & u) : ufrag_(u) {
+
+    }
+
     bool parse(const std::string & line);
     const std::string & getUfrag() const {
-        return ufrag;
+        return ufrag_;
     }
 
     void setUfrag(const std::string & val) {
-        ufrag = val;
+        ufrag_ = val;
     }
 
     std::string toString() const;
 protected:
-    std::string ufrag;
+    std::string ufrag_;
 };
 };

@@ -7,11 +7,15 @@
 using namespace mms;
 std::string RtcpAttr::prefix = "a=rtcp:";
 bool RtcpAttr::parse(const std::string & line) {
+    if (!boost::starts_with(line, prefix)) {
+        return false;
+    }
+    
     std::string::size_type end_pos = line.rfind("\r");
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    std::string valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
 
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");

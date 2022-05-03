@@ -30,6 +30,8 @@ private:
     Sdp remote_sdp_;
     Sdp local_sdp_;
     uint64_t session_id_ = 0;
+    std::string app_;
+    std::string stream_;
 };
 
 };

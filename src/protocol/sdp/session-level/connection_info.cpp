@@ -10,7 +10,7 @@ bool ConnectionInfo::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    std::string valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
 
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
@@ -18,12 +18,12 @@ bool ConnectionInfo::parse(const std::string & line) {
         return false;
     }
 
-    nettype = vs[0];
-    addrtype = vs[1];
+    nettype_ = vs[0];
+    addrtype_ = vs[1];
     std::string conn_addr_info = vs[2];
     
     vs = Utils::split(conn_addr_info, "/");
-    connection_address = vs[0];
+    connection_address_ = vs[0];
     if (vs.size() >= 2) {
         ttl = std::atoi(vs[1].c_str());
     }
@@ -37,7 +37,7 @@ bool ConnectionInfo::parse(const std::string & line) {
 
 std::string ConnectionInfo::toString() const {
     std::ostringstream oss;
-    oss << prefix << nettype << " " << addrtype << " " << connection_address;
+    oss << prefix << nettype_ << " " << addrtype_ << " " << connection_address_;
     if (num_of_addr > 1) {
         oss << "/" << ttl << "/" << num_of_addr;
     }

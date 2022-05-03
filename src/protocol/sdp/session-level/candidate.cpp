@@ -13,7 +13,7 @@ bool Candidate::parse(const std::string &line)
     {
         end_pos = line.size() - 1;
     }
-    std::string valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
     std::vector<std::string> vs;
     vs = Utils::split(valid_string, " ");
     if (vs.size() < 8)

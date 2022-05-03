@@ -9,7 +9,7 @@ bool SessionInformation::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    session_information = line.substr(prefix.size(), end_pos);
+    session_information = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 

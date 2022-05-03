@@ -1,3 +1,4 @@
+#include <sstream>
 #include <boost/algorithm/string.hpp>
 #include "media_sdp.hpp"
 #include <iostream>
@@ -12,37 +13,33 @@ bool MediaSdp::parse(const std::string &line)
     {
         end_pos = line.size() - 1;
     }
-    std::string valid_string = line.substr(prefix.size(), end_pos);
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
     std::vector<std::string> vs;
-    vs = Utils::split(valid_string, " ");
+    boost::split(vs, valid_string, boost::is_any_of(" "));
     if (vs.size() < 3)
     {
         return false;
     }
 
     media = vs[0];
-    std::string &port = vs[1];
+    std::string &sport = vs[1];
     proto = vs[2];
     for (size_t i = 3; i < vs.size(); i++)
     {
         fmts.emplace_back(std::atoi(vs[i].c_str()));
     }
 
-    vs = Utils::split(port, "/");
+    vs = Utils::split(sport, "/");
     try
     {
         if (vs.size() > 1)
         {
-            int iport = std::atoi(vs[0].c_str());
-            int count = std::atoi(vs[1].c_str());
-            for (int i = 0; i < count; i++)
-            {
-                ports.push_back(iport + i);
-            }
+            port = std::atoi(vs[0].c_str());
+            port_count = std::atoi(vs[1].c_str());
         }
         else
         {
-            ports.push_back(std::atoi(vs[0].c_str()));
+            port = std::atoi(vs[0].c_str());
         }
     }
     catch (std::exception &e)
@@ -94,17 +91,12 @@ bool MediaSdp::parseAttr(const std::string &line)
         }
         ext_maps.emplace_back(ext_map);
     }
-    else if (boost::starts_with(line, SendOnlyAttr::prefix))
+    else if (DirAttr::isMyPrefix(line))
     {
-        dir = sendonly;
-    }
-    else if (boost::starts_with(line, SendRecvAttr::prefix))
-    {
-        dir = sendrecv;
-    }
-    else if (boost::starts_with(line, RecvOnlyAttr::prefix))
-    {
-        dir = recvonly;
+        if (!dir.parse(line))
+        {
+            return false;
+        }
     }
     else if (boost::starts_with(line, ConnectionInfo::prefix))
     {
@@ -142,5 +134,50 @@ bool MediaSdp::parseAttr(const std::string &line)
         }
         max_ptime = attr;
     }
+    else if (boost::starts_with(line, Ssrc::prefix))
+    {
+        if (!ssrc_.parse(line))
+        {
+            return false;
+        }
+    }
     return true;
+}
+
+std::string MediaSdp::toString() const
+{
+    std::ostringstream oss;
+    {
+        oss << prefix << " " << media << " " << proto;
+        for (size_t i = 0; i < fmts.size(); i++)
+        {
+            if (i != fmts.size() - 1)
+            {
+                oss << std::to_string(fmts[i]) << " ";
+            }
+            else
+            {
+                oss << std::to_string(fmts[i]);
+            }
+        }
+        oss << std::endl;
+    }
+
+    if (connection_info) {
+        oss << connection_info.value().toString();
+    }
+
+    if (ice_ufrag) {
+        oss << ice_ufrag.value().toString();
+    }
+
+    if (ice_pwd) {
+        oss << ice_pwd.value().toString();
+    }
+
+    if (ice_option) {
+        oss << ice_option.value().toString();
+    }
+
+    return oss.str();
 }

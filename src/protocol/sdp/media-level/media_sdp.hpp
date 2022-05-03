@@ -8,6 +8,7 @@
 #include "protocol/sdp/ice/ice_options.h"
 #include "protocol/sdp/webrtc/extmap.hpp"
 #include "protocol/sdp/session-level/connection_info.hpp"
+#include "protocol/sdp/webrtc/ssrc.h"
 #include "protocol/sdp/media-level/mid.h"
 
 #include "protocol/sdp/attribute/common/recvonly.hpp"
@@ -15,6 +16,7 @@
 #include "protocol/sdp/attribute/common/sendrecv.hpp"
 #include "protocol/sdp/attribute/common/rtpmap.h"
 #include "protocol/sdp/attribute/common/maxptime.hpp"
+#include "protocol/sdp/attribute/common/dir.hpp"
 // Media description, if present
 //     m=  (media name and transport address)
 //     i=* (media title)
@@ -91,19 +93,22 @@ namespace mms
             media = val;
         }
 
-        const std::vector<uint16_t> &getPorts() const
+        uint16_t getPort() const
         {
-            return ports;
+            return port;
         }
 
-        void addPort(uint16_t val)
+        void setPort(uint16_t val)
         {
-            ports.push_back(val);
+            port = val;
         }
 
-        void setPorts(const std::vector<uint16_t> &val)
-        {
-            ports = val;
+        uint16_t getPortCount() const {
+            return port_count;
+        }
+
+        void setPortCount(uint16_t val) {
+            port_count = val;
         }
 
         const std::string &getProto() const
@@ -124,6 +129,12 @@ namespace mms
         void addFmt(uint16_t val)
         {
             fmts.push_back(val);
+        }
+
+        void addFmt(std::initializer_list<uint16_t> v) {
+            for (auto & f : v) {
+                fmts.push_back(f);
+            }
         }
 
         void setFmts(const std::vector<uint16_t> &val)
@@ -176,16 +187,37 @@ namespace mms
             ext_maps.push_back(val);
         }
 
-        Direction getDir() const
+        const DirAttr & getDir() const
         {
             return dir;
         }
 
-        void setDir(Direction val)
+        void setDir(const DirAttr & val)
         {
             dir = val;
         }
 
+        const MidAttr & getMidAttr() const {
+            return mid;
+        }
+
+        void setMidAttr(const MidAttr & val) {
+            mid = val;
+        }
+
+        void reverseDir() {
+            if (dir.getDir() == DirAttr::MEDIA_SENDONLY) {
+                dir.setDir(DirAttr::MEDIA_RECVONLY);
+            } else if (dir.getDir() == DirAttr::MEDIA_RECVONLY) {
+                dir.setDir(DirAttr::MEDIA_SENDONLY);
+            }
+        }
+
+        void setConnectionInfo(const ConnectionInfo & info) {
+            connection_info = info;
+        }
+
+        std::string toString() const;
     private:
         // <media> is the media type.  Currently defined media are "audio",
         //   "video", "text", "application", and "message", although this list
@@ -268,7 +300,8 @@ namespace mms
         //   Modulation (PCM) audio and RTP PCM audio; another might be TCP/RTP
         //   PCM audio.  In addition, relays and monitoring tools that are
         //   transport-protocol-specific but format-independent are possible.
-        std::vector<uint16_t> ports;
+        uint16_t port;
+        uint16_t port_count;
         std::string proto;
         // <fmt> is a media format description.  The fourth and any subsequent
         //   sub-fields describe the format of the media.  The interpretation
@@ -289,14 +322,16 @@ namespace mms
         std::optional<IceUfrag> ice_ufrag;
         std::optional<IcePwd> ice_pwd;
         std::optional<IceOption> ice_option;
-        Direction dir;
+        // Direction dir;
+        DirAttr dir;
         std::vector<Rtpmap> rtpmaps;
         std::optional<MaxPTimeAttr> max_ptime;
         std::vector<Extmap> ext_maps;
 
         std::optional<ConnectionInfo> connection_info;
-        std::optional<MidAttr> mid;
+        MidAttr mid;
         std::vector<std::string> bandwidth_information;
         std::optional<std::string> encryption_key;
+        Ssrc ssrc_;
     };
 };

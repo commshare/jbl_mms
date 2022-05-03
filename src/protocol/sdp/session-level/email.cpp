@@ -8,7 +8,7 @@ bool EmailAddress::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    address = line.substr(prefix.size(), end_pos);
+    address = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 

@@ -9,12 +9,12 @@ bool IceUfrag::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    ufrag = line.substr(prefix.size(), end_pos);
+    ufrag_ = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 
 std::string IceUfrag::toString() const {
     std::ostringstream oss;
-    oss << prefix << ufrag << std::endl;
+    oss << prefix << ufrag_ << std::endl;
     return oss.str();
 }

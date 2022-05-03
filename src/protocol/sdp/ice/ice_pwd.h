@@ -34,9 +34,22 @@ namespace mms {
 struct IcePwd {
 public:
     static std::string prefix;
+    IcePwd() = default;
+    IcePwd(const std::string & pwd) : pwd_(pwd) {
+
+    }
     bool parse(const std::string & line);
+
+    const std::string & getPwd() const {
+        return pwd_;
+    }
+
+    void setPwd(const std::string & pwd) {
+        pwd_ = pwd;
+    }
+    
     std::string toString() const;
 private:
-    std::string pwd;
+    std::string pwd_;
 };
 };

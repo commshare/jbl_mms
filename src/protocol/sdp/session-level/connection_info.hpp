@@ -93,30 +93,35 @@ namespace mms {
 struct ConnectionInfo {
 public:
     static std::string prefix;
+    ConnectionInfo() = default;
+    ConnectionInfo(const std::string &nettype, const std::string & addrtype, const std::string & conn_addr) : addrtype_(addrtype), nettype_(nettype), connection_address_(conn_addr) {
+
+    }
+    
     bool parse(const std::string & line);
 
     const std::string & getNetType() {
-        return nettype;
+        return nettype_;
     }
 
     void setNetType(const std::string & nt) {
-        nettype = nt;
+        nettype_ = nt;
     }
 
     const std::string & getAddrType() {
-        return addrtype;
+        return addrtype_;
     }
 
     void setAddrType(const std::string & at) {
-        addrtype = at;
+        addrtype_ = at;
     }
 
     const std::string & getConnectionAddress() {
-        return connection_address;
+        return connection_address_;
     }
 
     void setConnectionAddress(const std::string & ca) {
-        connection_address = ca;
+        connection_address_ = ca;
     }
 
     int32_t getTTL() {
@@ -141,17 +146,17 @@ public:
     //    text string giving the type of network.  Initially, "IN" is defined
     //    to have the meaning "Internet", but other values MAY be registered in
     //    the future (see Section 8).
-    std::string nettype;
+    std::string nettype_;
     //    The second sub-field ("<addrtype>") is the address type.  This allows
     //    SDP to be used for sessions that are not IP based.  This memo only
     //    defines IP4 and IP6, but other values MAY be registered in the future
     //    (see Section 8).
-    std::string addrtype;
+    std::string addrtype_;
     //    The third sub-field ("<connection-address>") is the connection
     //    address.  OPTIONAL sub-fields MAY be added after the connection
     //    address depending on the value of the <addrtype> field.
     // 目前只支持单播
-    std::string connection_address;
+    std::string connection_address_;
     int32_t ttl = 0;
     int32_t num_of_addr = 1;
 };

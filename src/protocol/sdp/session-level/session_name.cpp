@@ -9,12 +9,12 @@ bool SessionName::parse(const std::string & line) {
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    session_name = line.substr(prefix.size(), end_pos);
+    session_name_ = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 
 std::string SessionName::toString() const {
     std::ostringstream oss;
-    oss << prefix << session_name << std::endl;
+    oss << prefix << session_name_ << std::endl;
     return oss.str();
 }

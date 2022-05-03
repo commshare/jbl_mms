@@ -1,9 +1,12 @@
-#include "fingerprint.h"
 #include <sstream>
+#include <vector>
+#include <string>
 #include "base/utils/utils.h"
+#include "timing.hpp"
+
 using namespace mms;
-std::string FingerPrint::prefix = "a=fingerprint:";
-bool FingerPrint::parse(const std::string & line) {
+std::string Timing::prefix = "t=";
+bool Timing::parse(const std::string & line) {
     std::string::size_type end_pos = line.rfind("\r");
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
@@ -15,13 +18,18 @@ bool FingerPrint::parse(const std::string & line) {
     if (vs.size() != 2) {
         return false;
     }
-    hash_name_ = vs[0];
-    hash_val_ = vs[1];
+
+    try {
+        start_time_ = std::atoll(vs[0].c_str());
+        stop_time_ = std::atoll(vs[1].c_str());
+    } catch(std::exception & e) {
+        return false;
+    }
     return true;
 }
 
-std::string FingerPrint::toString() const {
+std::string Timing::toString() const {
     std::ostringstream oss;
-    oss << prefix << hash_name_ << " " << hash_val_ << std::endl;
+    oss << prefix << start_time_ << " " << stop_time_ << std::endl;
     return oss.str();
 }

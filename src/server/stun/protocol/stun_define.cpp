@@ -18,7 +18,7 @@ int32_t StunMsg::decode(uint8_t *data, size_t len) {
         switch(t) {
             case STUN_ATTR_MAPPED_ADDRESS    : {
                 auto mapped_addr_attr = std::unique_ptr<StunMappedAddressAttr>();
-                int32_t c = mapped_addr_attr->encode(data, len);
+                int32_t c = mapped_addr_attr->decode(data, len);
                 if (c < 0) {
                     return -2;
                 }

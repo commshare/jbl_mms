@@ -24,6 +24,14 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
             return;
         }
 
+        if (!root.isMember("app") || !root["app"].isString()) {
+            return;
+        }
+
+        if (!root.isMember("stream") || !root["stream"].isString()) {
+            return;
+        }
+
         if (!root.isMember("message") || !root["message"].isObject()) {
             std::cout << "msg is not object" << std::endl;
             return;
@@ -41,7 +49,12 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
                 std::cout << "no sdp info" << std::endl;
                 return;
             }
-            processOfferMsg(msg["sdp"].asString());
+            const std::string &app = root["app"].asString();
+            const std::string &stream = root["stream"].asString();
+            setSessionName(app+"/"+stream);
+            if (!processOfferMsg(msg["sdp"].asString())) {
+                close();
+            }
         }
     }
 }
@@ -63,6 +76,55 @@ bool WebRtcSession::processOfferMsg(const std::string & sdp) {
 }
 
 int32_t WebRtcSession::createLocalSdp() {
+    local_sdp_.setVersion(0);
+    local_sdp_.setOrigin({"-", Utils::rand64(), 1, "IN", "IP4", "127.0.0.1"});//o=- rand64 1 IN IP4 127.0.0.1
+    local_sdp_.setSessionName(session_name_);//
+    local_sdp_.setTime({0, 0});//t=0 0
+    local_sdp_.setTool({"mms"});
+    local_sdp_.setBundle({"video", "audio", "data"});
+    local_sdp_.addAttr("ice-lite");
+    local_sdp_.addAttr("msid-semantic: WMS " + session_name_);
+    auto & remote_medias = remote_sdp_.getMediaSdps();
+    if (remote_medias.size() > 1) {
+        BundleAttr bundle;
+        for (auto & media : remote_medias) {
+            if (media.getMedia() == "audio") {
+                bundle.addMid(media.getMidAttr().getMid());
+            } else if (media.getMedia() == "video") {
+                bundle.addMid(media.getMidAttr().getMid());
+            }
+        }
+        local_sdp_.setBundle(bundle);
+    }
+
+    for (auto & media : remote_medias) {
+        if (media.getMedia() == "audio") {
+            MediaSdp audio_sdp;
+            audio_sdp.setMedia("audio");
+            audio_sdp.setPort(9);
+            audio_sdp.setPortCount(1);
+            audio_sdp.setProto("UDP/TLS/RTP/SAVPF");
+            audio_sdp.addFmt(97);
+            audio_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
+            audio_sdp.setIceUfrag(IceUfrag("123456"));
+            audio_sdp.setIcePwd(IcePwd("123"));
+        } else if (media.getMedia() == "video") {
+            MediaSdp video_sdp;
+            video_sdp.setMedia("video");
+            video_sdp.setPort(9);
+            video_sdp.setPortCount(1);
+            video_sdp.setProto("UDP/TLS/RTP/SAVPF");
+            video_sdp.addFmt(97);
+            video_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
+            video_sdp.setIceUfrag(IceUfrag("123456"));
+            video_sdp.setIcePwd(IcePwd("123"));
+        }
+    }
+    
+    
+
+    std::string sdp = local_sdp_.toString();
+    std::cout << "local sdp:" << sdp << std::endl;
     return 0;
 }
 
@@ -71,6 +133,8 @@ void WebRtcSession::service() {
 }
 
 void WebRtcSession::close() {
-
+    // if (ws_conn_) {
+    //     ws_conn_->close();
+    // }
 }
 
