@@ -61,16 +61,18 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
 
 bool WebRtcSession::processOfferMsg(const std::string & sdp) {
     session_id_ = Utils::rand64();
+    std::cout << "******************************* start parse remote sdp *******************************" << std::endl;
     auto ret = remote_sdp_.parse(sdp);
     if (0 != ret) {
-        std::cout << "***************** prase remote sdp failed, code:" << ret << " *****************" << std::endl;
+        std::cout << "******************************* parse remote sdp failed *******************************" << std::endl;
         return false;
     }
-
+    std::cout << "************************* parse remote sdp succeed ****************************" << std::endl;
+    ice_ufrag_ = Utils::randStr(8);
+    ice_pwd_ = Utils::randStr(8);
     if (0 != createLocalSdp()) {
         return false;
     }
-    
     
     return true;
 }
@@ -104,10 +106,14 @@ int32_t WebRtcSession::createLocalSdp() {
             audio_sdp.setPort(9);
             audio_sdp.setPortCount(1);
             audio_sdp.setProto("UDP/TLS/RTP/SAVPF");
-            audio_sdp.addFmt(97);
+            audio_sdp.addFmt(96);
             audio_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
-            audio_sdp.setIceUfrag(IceUfrag("123456"));
-            audio_sdp.setIcePwd(IcePwd("123"));
+            audio_sdp.setIceUfrag(IceUfrag(ice_ufrag_));
+            audio_sdp.setIcePwd(IcePwd(ice_pwd_));
+            audio_sdp.setDir(media.getReverseDir());
+            audio_sdp.setSetup(SetupAttr(ROLE_PASSIVE));
+            audio_sdp.setMidAttr(media.getMidAttr());
+            local_sdp_.addMediaSdp(audio_sdp);
         } else if (media.getMedia() == "video") {
             MediaSdp video_sdp;
             video_sdp.setMedia("video");
@@ -116,8 +122,12 @@ int32_t WebRtcSession::createLocalSdp() {
             video_sdp.setProto("UDP/TLS/RTP/SAVPF");
             video_sdp.addFmt(97);
             video_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
-            video_sdp.setIceUfrag(IceUfrag("123456"));
-            video_sdp.setIcePwd(IcePwd("123"));
+            video_sdp.setIceUfrag(IceUfrag(ice_ufrag_));
+            video_sdp.setIcePwd(IcePwd(ice_pwd_));
+            video_sdp.setDir(media.getReverseDir());
+            video_sdp.setSetup(SetupAttr(ROLE_PASSIVE));
+            video_sdp.setMidAttr(media.getMidAttr());
+            local_sdp_.addMediaSdp(video_sdp);
         }
     }
     

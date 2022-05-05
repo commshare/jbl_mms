@@ -22,23 +22,18 @@ using namespace mms;
 //       'holdconn': The endpoint does not want the connection to be
 //       established for the time being.
 
-#define ROLE_ACTIVE      "active"
-#define ROLE_PASSIVE     "passive"
-#define ROLE_ACTPASS     "actpass"
-#define ROLD_HOLDCONN    "holdconn"
-
 std::string SetupAttr::prefix = "a=setup:";
 bool SetupAttr::parse(const std::string & line) {
     std::string::size_type end_pos = line.rfind("\r");
     if (end_pos == std::string::npos) {
         end_pos = line.size() - 1;
     }
-    role = line.substr(prefix.size(), end_pos - prefix.size());
+    role_ = line.substr(prefix.size(), end_pos - prefix.size());
     return true;
 }
 
 std::string SetupAttr::toString() const {
     std::ostringstream oss;
-    oss << prefix << role << std::endl;
+    oss << prefix << role_ << std::endl;
     return oss.str();
 }

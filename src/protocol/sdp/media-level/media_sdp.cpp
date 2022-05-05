@@ -141,6 +141,13 @@ bool MediaSdp::parseAttr(const std::string &line)
             return false;
         }
     }
+    else if (boost::starts_with(line, SetupAttr::prefix)) 
+    {
+        if (!setup_.parse(line))
+        {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -148,16 +155,16 @@ std::string MediaSdp::toString() const
 {
     std::ostringstream oss;
     {
-        oss << prefix << " " << media << " " << proto;
+        oss << prefix << media << " " << proto;
         for (size_t i = 0; i < fmts.size(); i++)
         {
             if (i != fmts.size() - 1)
             {
-                oss << std::to_string(fmts[i]) << " ";
+                oss << " " << std::to_string(fmts[i]) << " ";
             }
             else
             {
-                oss << std::to_string(fmts[i]);
+                oss << " " << std::to_string(fmts[i]);
             }
         }
         oss << std::endl;
@@ -178,6 +185,10 @@ std::string MediaSdp::toString() const
     if (ice_option) {
         oss << ice_option.value().toString();
     }
+
+    oss << dir.toString();
+    oss << setup_.toString();
+    oss << mid.toString();
 
     return oss.str();
 }

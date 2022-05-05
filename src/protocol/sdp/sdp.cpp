@@ -13,7 +13,7 @@ int32_t Sdp::parse(const std::string &sdp)
     {
         return -1;
     }
-
+    std::cout << "line count:" << lines.size() << std::endl;
     // protocol version
     if (!boost::starts_with(lines[0], ProtocolVersion::prefix))
     {
@@ -107,7 +107,6 @@ int32_t Sdp::parse(const std::string &sdp)
             {
                 return -10;
             }
-            continue;
         }
         else if (boost::starts_with(lines[i], ConnectionInfo::prefix))
         {
@@ -224,6 +223,10 @@ std::string Sdp::toString() const
 
     if (bundle_attr_) {
         oss << bundle_attr_.value().toString();
+    }
+
+    for (auto & m : media_sdps_) {
+        oss << m.toString();
     }
     // std::optional<ToolAttr> tool_;
     // std::optional<DirAttr> dir_;

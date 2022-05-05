@@ -21,7 +21,7 @@ namespace mms
             dir_ = val;
         }
 
-        MEDIA_DIR getDir() {
+        MEDIA_DIR getDir() const {
             return dir_;
         }
     private:

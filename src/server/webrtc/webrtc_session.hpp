@@ -32,6 +32,8 @@ private:
     uint64_t session_id_ = 0;
     std::string app_;
     std::string stream_;
+    std::string ice_ufrag_;
+    std::string ice_pwd_;
 };
 
 };

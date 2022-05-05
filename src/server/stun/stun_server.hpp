@@ -65,14 +65,14 @@ private:
         std::cout << "remote port:" << remote_ep.port() << std::endl;
         auto mapped_addr_attr = std::make_unique<StunMappedAddressAttr>(remote_ep.address().to_v4().to_uint(), remote_ep.port());
         binding_resp.addAttr(std::move(mapped_addr_attr));
-        auto s = binding_resp.size();
-        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[s]);
-        int32_t consumed = binding_resp.encode(data.get(), s);
+        auto size = binding_resp.size();
+        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
+        int32_t consumed = binding_resp.encode(data.get(), size);
         if (consumed < 0) {// todo:add log
             return;
         }
 
-        if (!sock->sendTo(std::move(data), s, remote_ep, yield)) {//todo log error
+        if (!sock->sendTo(std::move(data), size, remote_ep, yield)) {//todo log error
         }
 
     }

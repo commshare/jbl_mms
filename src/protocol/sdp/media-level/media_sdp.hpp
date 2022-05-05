@@ -17,6 +17,7 @@
 #include "protocol/sdp/attribute/common/rtpmap.h"
 #include "protocol/sdp/attribute/common/maxptime.hpp"
 #include "protocol/sdp/attribute/common/dir.hpp"
+#include "protocol/sdp/dtls/setup.h"
 // Media description, if present
 //     m=  (media name and transport address)
 //     i=* (media title)
@@ -213,10 +214,30 @@ namespace mms
             }
         }
 
+        const DirAttr getReverseDir() const {
+            DirAttr d;
+            if (dir.getDir() == DirAttr::MEDIA_SENDONLY) {
+                d.setDir(DirAttr::MEDIA_RECVONLY);
+            } else if (dir.getDir() == DirAttr::MEDIA_RECVONLY) {
+                d.setDir(DirAttr::MEDIA_SENDONLY);
+            } else {
+                d.setDir(DirAttr::MEDIA_SENDRECV);
+            }
+            return d;
+        }
+
         void setConnectionInfo(const ConnectionInfo & info) {
             connection_info = info;
         }
 
+        void setSetup(const SetupAttr & val) {
+            setup_ = val;
+        }
+
+        const SetupAttr & getSetup() const {
+            return setup_;
+        }
+        
         std::string toString() const;
     private:
         // <media> is the media type.  Currently defined media are "audio",
@@ -324,6 +345,7 @@ namespace mms
         std::optional<IceOption> ice_option;
         // Direction dir;
         DirAttr dir;
+        SetupAttr setup_;
         std::vector<Rtpmap> rtpmaps;
         std::optional<MaxPTimeAttr> max_ptime;
         std::vector<Extmap> ext_maps;

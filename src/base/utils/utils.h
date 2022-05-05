@@ -9,5 +9,7 @@ public:
     static bool startWith(const std::string_view &str, const std::string_view &prefix);
     static bool endWith(const std::string_view &str, const std::string_view &suffix);
     static uint64_t rand64();
+    static std::string randStr(size_t len);
+    static uint32_t getCRC32(uint8_t* buf, size_t len);
 };
 };

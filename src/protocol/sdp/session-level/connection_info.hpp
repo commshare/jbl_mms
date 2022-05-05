@@ -94,7 +94,7 @@ struct ConnectionInfo {
 public:
     static std::string prefix;
     ConnectionInfo() = default;
-    ConnectionInfo(const std::string &nettype, const std::string & addrtype, const std::string & conn_addr) : addrtype_(addrtype), nettype_(nettype), connection_address_(conn_addr) {
+    ConnectionInfo(const std::string &nettype, const std::string & addrtype, const std::string & conn_addr) : nettype_(nettype), addrtype_(addrtype), connection_address_(conn_addr) {
 
     }
     

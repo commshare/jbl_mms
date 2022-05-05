@@ -6,6 +6,7 @@ bool DirAttr::isMyPrefix(const std::string & line) {
     if (boost::starts_with(line, "a=recvonly") || boost::starts_with(line, "a=sendonly") || boost::starts_with(line, "a=sendrecv")) {
         return true;
     }
+    return false;
 }
 
 bool DirAttr::parse(const std::string &line)
