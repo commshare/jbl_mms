@@ -2,6 +2,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <unordered_map>
 
 #include "protocol/sdp/ice/ice_ufrag.h"
 #include "protocol/sdp/ice/ice_pwd.h"
@@ -15,9 +16,13 @@
 #include "protocol/sdp/attribute/common/sendonly.hpp"
 #include "protocol/sdp/attribute/common/sendrecv.hpp"
 #include "protocol/sdp/attribute/common/rtpmap.h"
+#include "protocol/sdp/attribute/common/rtcp_mux.h"
 #include "protocol/sdp/attribute/common/maxptime.hpp"
 #include "protocol/sdp/attribute/common/dir.hpp"
 #include "protocol/sdp/dtls/setup.h"
+#include "protocol/sdp/session-level/candidate.h"
+
+#include "payload.h"
 // Media description, if present
 //     m=  (media name and transport address)
 //     i=* (media title)
@@ -104,11 +109,13 @@ namespace mms
             port = val;
         }
 
-        uint16_t getPortCount() const {
+        uint16_t getPortCount() const
+        {
             return port_count;
         }
 
-        void setPortCount(uint16_t val) {
+        void setPortCount(uint16_t val)
+        {
             port_count = val;
         }
 
@@ -132,8 +139,10 @@ namespace mms
             fmts.push_back(val);
         }
 
-        void addFmt(std::initializer_list<uint16_t> v) {
-            for (auto & f : v) {
+        void addFmt(std::initializer_list<uint16_t> v)
+        {
+            for (auto &f : v)
+            {
                 fmts.push_back(f);
             }
         }
@@ -173,6 +182,16 @@ namespace mms
             ice_option = val;
         }
 
+        void addCandidate(const Candidate &c)
+        {
+            candidates_.push_back(c);
+        }
+
+        const std::vector<Candidate> &getCandidates() const
+        {
+            return candidates_;
+        }
+
         const std::vector<Extmap> &getExtmap() const
         {
             return ext_maps;
@@ -188,57 +207,100 @@ namespace mms
             ext_maps.push_back(val);
         }
 
-        const DirAttr & getDir() const
+        const DirAttr &getDir() const
         {
             return dir;
         }
 
-        void setDir(const DirAttr & val)
+        void setDir(const DirAttr &val)
         {
             dir = val;
         }
 
-        const MidAttr & getMidAttr() const {
+        const MidAttr &getMidAttr() const
+        {
             return mid;
         }
 
-        void setMidAttr(const MidAttr & val) {
+        void setMidAttr(const MidAttr &val)
+        {
             mid = val;
         }
 
-        void reverseDir() {
-            if (dir.getDir() == DirAttr::MEDIA_SENDONLY) {
+        void reverseDir()
+        {
+            if (dir.getDir() == DirAttr::MEDIA_SENDONLY)
+            {
                 dir.setDir(DirAttr::MEDIA_RECVONLY);
-            } else if (dir.getDir() == DirAttr::MEDIA_RECVONLY) {
+            }
+            else if (dir.getDir() == DirAttr::MEDIA_RECVONLY)
+            {
                 dir.setDir(DirAttr::MEDIA_SENDONLY);
             }
         }
 
-        const DirAttr getReverseDir() const {
+        const DirAttr getReverseDir() const
+        {
             DirAttr d;
-            if (dir.getDir() == DirAttr::MEDIA_SENDONLY) {
+            if (dir.getDir() == DirAttr::MEDIA_SENDONLY)
+            {
                 d.setDir(DirAttr::MEDIA_RECVONLY);
-            } else if (dir.getDir() == DirAttr::MEDIA_RECVONLY) {
+            }
+            else if (dir.getDir() == DirAttr::MEDIA_RECVONLY)
+            {
                 d.setDir(DirAttr::MEDIA_SENDONLY);
-            } else {
+            }
+            else
+            {
                 d.setDir(DirAttr::MEDIA_SENDRECV);
             }
             return d;
         }
 
-        void setConnectionInfo(const ConnectionInfo & info) {
+        void setConnectionInfo(const ConnectionInfo &info)
+        {
             connection_info = info;
         }
 
-        void setSetup(const SetupAttr & val) {
+        void setSetup(const SetupAttr &val)
+        {
             setup_ = val;
         }
 
-        const SetupAttr & getSetup() const {
+        const SetupAttr &getSetup() const
+        {
             return setup_;
         }
-        
+
+        void setRtcpMux(const RtcpMux &rtcp_mux)
+        {
+            rtcp_mux_ = rtcp_mux;
+        }
+
+        const Ssrc &getSsrc() const
+        {
+            return ssrc_;
+        }
+
+        void setSsrc(const Ssrc &ssrc)
+        {
+            ssrc_ = ssrc;
+        }
+
+        void addPayload(const Payload &p)
+        {
+            payloads_.insert({p.getPt(), p});
+        }
         std::string toString() const;
+
+        std::optional<Payload> searchPayload(const std::string & encoding_name) const {
+            for (auto & p : payloads_) {
+                if (p.second.getEncodingName() == encoding_name) {
+                    return p.second;
+                }
+            }
+            return std::nullopt;
+        }
     private:
         // <media> is the media type.  Currently defined media are "audio",
         //   "video", "text", "application", and "message", although this list
@@ -343,10 +405,14 @@ namespace mms
         std::optional<IceUfrag> ice_ufrag;
         std::optional<IcePwd> ice_pwd;
         std::optional<IceOption> ice_option;
+        std::vector<Candidate> candidates_;
+        std::optional<RtcpMux> rtcp_mux_;
+        std::unordered_map<int, Payload> payloads_;
+        int curr_pt;
         // Direction dir;
         DirAttr dir;
         SetupAttr setup_;
-        std::vector<Rtpmap> rtpmaps;
+        // std::vector<Rtpmap> rtpmaps;
         std::optional<MaxPTimeAttr> max_ptime;
         std::vector<Extmap> ext_maps;
 

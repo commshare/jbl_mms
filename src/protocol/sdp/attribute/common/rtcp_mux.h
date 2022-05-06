@@ -6,6 +6,7 @@ namespace mms
     {
     public:
         static std::string prefix;
+        RtcpMux() = default;
         bool parse(const std::string &line);
         std::string toString() const;
     };

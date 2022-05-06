@@ -1,3 +1,4 @@
+#include <sstream>
 #include <vector>
 #include <string>
 #include "base/utils/utils.h"
@@ -20,29 +21,65 @@ bool Candidate::parse(const std::string &line)
     {
         return false;
     }
-    foundation = vs[0];
-    component_id = std::atoi(vs[1].c_str());
-    transport = vs[2];
-    priority = std::atoi(vs[3].c_str());
-    address = vs[4];
-    port = std::atoi(vs[5].c_str());
+    foundation_ = vs[0];
+    component_id_ = std::atoi(vs[1].c_str());
+    transport_ = vs[2];
+    priority_ = std::atoi(vs[3].c_str());
+    address_ = vs[4];
+    port_ = std::atoi(vs[5].c_str());
     std::string t = vs[6]; // typ
     if (vs[7] == "host")
     {
-        cand_type = CAND_TYPE_HOST;
+        cand_type_ = CAND_TYPE_HOST;
     }
     else if (vs[7] == "srflx")
     {
-        cand_type = CAND_TYPE_SRFLX;
+        cand_type_ = CAND_TYPE_SRFLX;
     }
     else if (vs[7] == "prflx")
     {
-        cand_type = CAND_TYPE_PRFLX;
+        cand_type_ = CAND_TYPE_PRFLX;
     }
     else if (vs[7] == "relay")
     {
-        cand_type = CAND_TYPE_RELAY;
+        cand_type_ = CAND_TYPE_RELAY;
     }
 
     return true;
+}
+
+std::string Candidate::toString() const
+{
+    std::ostringstream oss;
+    std::string cand_type;
+    if (cand_type_ == CAND_TYPE_HOST)
+    {
+        cand_type = "host";
+    }
+    else if (cand_type_ == CAND_TYPE_SRFLX)
+    {
+        cand_type = "srflx";
+    }
+    else if (cand_type_ == CAND_TYPE_PRFLX)
+    {
+        cand_type = "prflx";
+    }
+    else if (cand_type_ == CAND_TYPE_RELAY)
+    {
+        cand_type = "relay";
+    }
+
+    oss << prefix << foundation_ << " " << component_id_ << " " << transport_ << " " << priority_ << " " << address_ << " " << port_ << " typ " << cand_type;
+    if (cand_type_ == CAND_TYPE_SRFLX)
+    {
+        oss << " " << rel_addr_ << " " << rel_port_;
+    }
+
+    for (auto &p : exts_)
+    {
+        oss << " " << p.first << " " << p.second;
+    }
+
+    oss << std::endl;
+    return oss.str();
 }

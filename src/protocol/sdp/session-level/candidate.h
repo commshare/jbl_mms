@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 /*
 15.1.  "candidate" Attribute
 
@@ -136,19 +137,26 @@ public:
     };
 
     static std::string prefix;
+
+    Candidate() = default;
+    Candidate(const std::string & foundation, uint32_t component_id, const std::string & transport, uint32_t priority, const std::string & address, uint16_t port, CANDIDATE_TYPE cand_type, const std::string & rel_addr, uint16_t rel_port, const std::unordered_map<std::string, std::string> & ext): foundation_(foundation), component_id_(component_id), transport_(transport), priority_(priority), address_(address), port_(port), cand_type_(cand_type), rel_addr_(rel_addr), rel_port_(rel_port), exts_(ext) {
+
+    }
+
     bool parse(const std::string & line);
     std::string toString() const;
 private:
-    std::string foundation;
-    uint32_t component_id;
-    std::string transport;
-    uint32_t priority;
-    std::string address;
-    uint16_t port;
+    std::string foundation_;
+    uint32_t component_id_;
+    std::string transport_;
+    uint32_t priority_;
+    std::string address_;
+    uint16_t port_;
     // typ
-    CANDIDATE_TYPE cand_type;
+    CANDIDATE_TYPE cand_type_;
     // std::string cand_type; //"host" / "srflx" / "prflx" / "relay"
-    std::string rel_addr;
-    uint16_t rel_port;
+    std::string rel_addr_;
+    uint16_t rel_port_;
+    std::unordered_map<std::string, std::string> exts_;
 };
 };

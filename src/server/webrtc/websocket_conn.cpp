@@ -23,3 +23,7 @@ std::shared_ptr<WebRtcSession> WebSocketConn::getSession() {
 void WebSocketConn::destroySession() {
     session_.reset();
 }
+
+std::string WebSocketConn::getLocalIp() {
+    return ws_conn_->get_host();
+}

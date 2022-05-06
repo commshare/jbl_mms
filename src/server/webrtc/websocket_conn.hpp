@@ -13,6 +13,8 @@ public:
     std::shared_ptr<WebRtcSession> createSession();
     std::shared_ptr<WebRtcSession> getSession();
     void destroySession();
+
+    std::string getLocalIp();
 private:
     websocketpp::server<websocketpp::config::asio>::connection_ptr ws_conn_;
     std::shared_ptr<WebRtcSession> session_;

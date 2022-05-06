@@ -1,9 +1,11 @@
 #include <iostream>
 
 #include "webrtc_session.hpp"
+#include "websocket_conn.hpp"
 #include "websocket_server.hpp"
 #include "json/json.h"
 #include "base/utils/utils.h"
+#include "config/config.h"
 
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn) {
@@ -61,19 +63,16 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
 
 bool WebRtcSession::processOfferMsg(const std::string & sdp) {
     session_id_ = Utils::rand64();
-    std::cout << "******************************* start parse remote sdp *******************************" << std::endl;
     auto ret = remote_sdp_.parse(sdp);
     if (0 != ret) {
-        std::cout << "******************************* parse remote sdp failed *******************************" << std::endl;
         return false;
     }
-    std::cout << "************************* parse remote sdp succeed ****************************" << std::endl;
+
     ice_ufrag_ = Utils::randStr(8);
     ice_pwd_ = Utils::randStr(8);
     if (0 != createLocalSdp()) {
         return false;
     }
-    
     return true;
 }
 
@@ -113,6 +112,21 @@ int32_t WebRtcSession::createLocalSdp() {
             audio_sdp.setDir(media.getReverseDir());
             audio_sdp.setSetup(SetupAttr(ROLE_PASSIVE));
             audio_sdp.setMidAttr(media.getMidAttr());
+            audio_sdp.setRtcpMux(RtcpMux());
+            audio_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
+            audio_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_audio"));
+
+            auto remote_audio_payload = media.searchPayload("opus");
+            if (!remote_audio_payload.has_value()) {
+                return -12;
+            }
+
+            auto & rap = remote_audio_payload.value();
+            Payload audio_payload(96, rap.getEncodingName(), rap.getClockRate(), rap.getEncodingParams());
+            audio_payload.addRtcpFb(RtcpFb(96, "nack"));
+            audio_payload.addRtcpFb(RtcpFb(96, "nack", "pli"));
+            audio_sdp.addPayload(audio_payload);
+
             local_sdp_.addMediaSdp(audio_sdp);
         } else if (media.getMedia() == "video") {
             MediaSdp video_sdp;
@@ -127,6 +141,21 @@ int32_t WebRtcSession::createLocalSdp() {
             video_sdp.setDir(media.getReverseDir());
             video_sdp.setSetup(SetupAttr(ROLE_PASSIVE));
             video_sdp.setMidAttr(media.getMidAttr());
+            video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
+            video_sdp.setRtcpMux(RtcpMux());
+            video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
+            auto remote_video_payload = media.searchPayload("H264");
+            if (!remote_video_payload.has_value()) {
+                return -13;
+            }
+            auto & rvp = remote_video_payload.value();
+            Payload video_payload(97, rvp.getEncodingName(), rvp.getClockRate(), rvp.getEncodingParams());
+            video_payload.addRtcpFb(RtcpFb(97, "ccm", "fir"));
+            video_payload.addRtcpFb(RtcpFb(97, "goog-remb"));
+            video_payload.addRtcpFb(RtcpFb(97, "nack"));
+            video_payload.addRtcpFb(RtcpFb(97, "nack", "pli"));
+            video_payload.addRtcpFb(RtcpFb(97, "transport-cc"));
+            video_sdp.addPayload(video_payload);
             local_sdp_.addMediaSdp(video_sdp);
         }
     }

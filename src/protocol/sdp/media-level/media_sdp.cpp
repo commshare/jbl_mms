@@ -1,6 +1,7 @@
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 #include "media_sdp.hpp"
+#include "rtcp_fb.h"
 #include <iostream>
 #include "base/utils/utils.h"
 
@@ -116,14 +117,29 @@ bool MediaSdp::parseAttr(const std::string &line)
         }
         mid = ma;
     }
-    else if (boost::starts_with(line, Rtpmap::prefix))
+    else if (Payload::isMyPrefix(line))
     {
-        Rtpmap m;
-        if (!m.parse(line))
+        Payload payload;
+        if (!payload.parse(line))
         {
             return false;
         }
-        rtpmaps.push_back(m);
+        curr_pt = payload.getPt();
+        payloads_.insert(std::pair(payload.getPt(), payload));
+    }
+    else if (RtcpFb::isMyPrefix(line))
+    {
+        if (0 != payloads_[curr_pt].parseRtcpFbAttr(line))
+        {
+            return false;
+        }
+    }
+    else if (Fmtp::isMyPrefix(line))
+    {
+        if (0 != payloads_[curr_pt].parseFmtpAttr(line))
+        {
+            return false;
+        }
     }
     else if (boost::starts_with(line, MaxPTimeAttr::prefix))
     {
@@ -141,7 +157,7 @@ bool MediaSdp::parseAttr(const std::string &line)
             return false;
         }
     }
-    else if (boost::starts_with(line, SetupAttr::prefix)) 
+    else if (boost::starts_with(line, SetupAttr::prefix))
     {
         if (!setup_.parse(line))
         {
@@ -170,25 +186,45 @@ std::string MediaSdp::toString() const
         oss << std::endl;
     }
 
-    if (connection_info) {
+    if (connection_info)
+    {
         oss << connection_info.value().toString();
     }
 
-    if (ice_ufrag) {
+    if (ice_ufrag)
+    {
         oss << ice_ufrag.value().toString();
     }
 
-    if (ice_pwd) {
+    if (ice_pwd)
+    {
         oss << ice_pwd.value().toString();
     }
 
-    if (ice_option) {
+    if (ice_option)
+    {
         oss << ice_option.value().toString();
+    }
+
+    for (auto &c : candidates_)
+    {
+        oss << c.toString();
+    }
+
+    if (rtcp_mux_)
+    {
+        oss << rtcp_mux_.value().toString();
+    }
+
+    for (auto &p : payloads_)
+    {
+        oss << p.second.toString();
     }
 
     oss << dir.toString();
     oss << setup_.toString();
     oss << mid.toString();
+    oss << ssrc_.toString();
 
     return oss.str();
 }
