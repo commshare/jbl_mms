@@ -54,14 +54,14 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio>* se
             const std::string &app = root["app"].asString();
             const std::string &stream = root["stream"].asString();
             setSessionName(app+"/"+stream);
-            if (!processOfferMsg(msg["sdp"].asString())) {
+            if (!processOfferMsg(server, hdl, msg["sdp"].asString())) {
                 close();
             }
         }
     }
 }
 
-bool WebRtcSession::processOfferMsg(const std::string & sdp) {
+bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp) {
     session_id_ = Utils::rand64();
     auto ret = remote_sdp_.parse(sdp);
     if (0 != ret) {
@@ -69,14 +69,14 @@ bool WebRtcSession::processOfferMsg(const std::string & sdp) {
     }
 
     ice_ufrag_ = Utils::randStr(8);
-    ice_pwd_ = Utils::randStr(8);
-    if (0 != createLocalSdp()) {
+    ice_pwd_ = Utils::randStr(24);
+    if (0 != createLocalSdp(server, hdl)) {
         return false;
     }
     return true;
 }
 
-int32_t WebRtcSession::createLocalSdp() {
+int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl) {
     local_sdp_.setVersion(0);
     local_sdp_.setOrigin({"-", Utils::rand64(), 1, "IN", "IP4", "127.0.0.1"});//o=- rand64 1 IN IP4 127.0.0.1
     local_sdp_.setSessionName(session_name_);//
@@ -115,7 +115,7 @@ int32_t WebRtcSession::createLocalSdp() {
             audio_sdp.setRtcpMux(RtcpMux());
             audio_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             audio_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_audio"));
-
+            audio_sdp.setFingerPrint(FingerPrint("sha-256", "12:E8:21:31:B3:E0:97:70:8B:6E:FB:C2:20:B9:71:E2:EE:49:51:C1:C5:4E:FB:6F:55:A2:9E:1E:F7:11:13:47"));
             auto remote_audio_payload = media.searchPayload("opus");
             if (!remote_audio_payload.has_value()) {
                 return -12;
@@ -144,6 +144,7 @@ int32_t WebRtcSession::createLocalSdp() {
             video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             video_sdp.setRtcpMux(RtcpMux());
             video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
+            video_sdp.setFingerPrint(FingerPrint("sha-256", "12:E8:21:31:B3:E0:97:70:8B:6E:FB:C2:20:B9:71:E2:EE:49:51:C1:C5:4E:FB:6F:55:A2:9E:1E:F7:11:13:47"));
             auto remote_video_payload = media.searchPayload("H264");
             if (!remote_video_payload.has_value()) {
                 return -13;
@@ -155,14 +156,26 @@ int32_t WebRtcSession::createLocalSdp() {
             video_payload.addRtcpFb(RtcpFb(97, "nack"));
             video_payload.addRtcpFb(RtcpFb(97, "nack", "pli"));
             video_payload.addRtcpFb(RtcpFb(97, "transport-cc"));
+
             video_sdp.addPayload(video_payload);
             local_sdp_.addMediaSdp(video_sdp);
         }
     }
     
-    
-
     std::string sdp = local_sdp_.toString();
+    Json::Value root;
+    Json::Value message;
+    message["type"] = "answer";
+    message["sdp"] = sdp;
+    root["message"] = message; 
+
+    try {
+        server->send(hdl, root.toStyledString(), websocketpp::frame::opcode::text);
+    } catch (websocketpp::exception const & e) {
+        std::cout << "Echo failed because: "
+                  << "(" << e.what() << ")" << std::endl;
+    }
+
     std::cout << "local sdp:" << sdp << std::endl;
     return 0;
 }

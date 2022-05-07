@@ -34,7 +34,7 @@
 
     const config = {
         iceServers: [
-            { urls: 'stun:192.168.16.129:3478?transport=udp' }
+            { urls: 'stun:192.168.95.129:3478?transport=udp' }
         ],
     };
 
@@ -100,7 +100,7 @@
 
     function startWebsocket() {
         toUserId = document.getElementById('toUserId').value
-        let webSocketUrl = 'ws://192.168.16.129:8282/app/' + userId
+        let webSocketUrl = 'ws://192.168.95.129:8282/app/' + userId
         if ('WebSocket' in window) {
             // console.log(1) 
             socket = new WebSocket(webSocketUrl);
@@ -149,6 +149,7 @@
                 startConnection()
                 break;
             case 'offer':
+                alert('set remote sdp');
                 peerConnection.setRemoteDescription(new RTCSessionDescription(description)).then(() => {
 
                 }).catch((err) => {

@@ -22,8 +22,8 @@ public:
     }
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 private:
-    bool processOfferMsg(const std::string & sdp);
-    int32_t createLocalSdp();
+    bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);
+    int32_t createLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl);
 private:
     ThreadWorker *worker_;
     WebSocketConn *ws_conn_;

@@ -73,10 +73,16 @@ int main(int argc, char *argv[]) {
     }
 
     StunServer stun_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
-    stun_server.start();
+    if (!stun_server.start()) {
+        std::cout << "start stun server failed." << std::endl;
+        return -3;
+    }
 
     WebRtcServer webrtc_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
-    webrtc_server.start();
+    if (!webrtc_server.start()) {
+        std::cout << "start webrtc server failed." << std::endl;
+        return -4;
+    }
     
     waitExit();
 

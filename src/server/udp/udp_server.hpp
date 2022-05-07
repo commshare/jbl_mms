@@ -26,12 +26,13 @@ public:
         }
     }
 
-    int32_t startListen(uint16_t port) {
+    bool startListen(uint16_t port) {
         if (!worker_) {
-            return -1;
+            return false;
         }
-
+        std::cout << "start listen udp:" << port << std::endl;
         boost::asio::spawn(worker_->getIOContext(), [this, port](boost::asio::yield_context yield) {
+            std::cout << "start listen udp port start:" << port << std::endl;
             running_ = true;
             boost::system::error_code ec;
             auto sock = std::unique_ptr<boost::asio::ip::udp::socket>(new boost::asio::ip::udp::socket(worker_->getIOContext()));
@@ -40,9 +41,10 @@ public:
             sock->set_option(boost::asio::ip::udp::socket::reuse_address(true));
             sock->bind(local_endpoint);
             if (!sock->is_open()) {
+                std::cout << "start listen udp port:" << port << " failed." << std::endl;
                 return;
             }
-
+            std::cout << "start listen udp port:" << port << std::endl;
             udp_sock_ = new UdpSocket(this, std::move(sock));
             while(running_) {
                 boost::asio::ip::udp::endpoint remote_endpoint;
@@ -54,7 +56,7 @@ public:
                 }
             }
         });
-        return 0;
+        return true;
     }
 
     void stopListen() {

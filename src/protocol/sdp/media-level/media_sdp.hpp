@@ -20,6 +20,7 @@
 #include "protocol/sdp/attribute/common/maxptime.hpp"
 #include "protocol/sdp/attribute/common/dir.hpp"
 #include "protocol/sdp/dtls/setup.h"
+#include "protocol/sdp/dtls/fingerprint.h"
 #include "protocol/sdp/session-level/candidate.h"
 
 #include "payload.h"
@@ -301,6 +302,10 @@ namespace mms
             }
             return std::nullopt;
         }
+
+        void setFingerPrint(const FingerPrint & fp) {
+            fingerprint_ = fp;
+        }
     private:
         // <media> is the media type.  Currently defined media are "audio",
         //   "video", "text", "application", and "message", although this list
@@ -408,6 +413,7 @@ namespace mms
         std::vector<Candidate> candidates_;
         std::optional<RtcpMux> rtcp_mux_;
         std::unordered_map<int, Payload> payloads_;
+        FingerPrint fingerprint_;
         int curr_pt;
         // Direction dir;
         DirAttr dir;

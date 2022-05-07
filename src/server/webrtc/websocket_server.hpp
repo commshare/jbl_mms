@@ -7,7 +7,7 @@ namespace mms {
 #define DEFAULT_ROOM_SERVER_PORT 8282
 class WebsocketServer : public websocketpp::server<websocketpp::config::asio> {
 public:
-    WebsocketServer(ThreadWorker *worker);
+    WebsocketServer() = default;
     virtual ~WebsocketServer();
 public:
     bool start(uint16_t port = DEFAULT_ROOM_SERVER_PORT);
@@ -17,6 +17,6 @@ protected:
     virtual void onWebsocketClose(websocketpp::connection_hdl hdl) = 0;
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, message_ptr msg);
 private:
-    ThreadWorker *worker_;
+    std::shared_ptr<std::thread> work_thread_;
 };
 };

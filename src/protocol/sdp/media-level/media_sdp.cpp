@@ -171,7 +171,7 @@ std::string MediaSdp::toString() const
 {
     std::ostringstream oss;
     {
-        oss << prefix << media << " " << proto;
+        oss << prefix << media << " " << port << " " << proto;
         for (size_t i = 0; i < fmts.size(); i++)
         {
             if (i != fmts.size() - 1)
@@ -224,6 +224,7 @@ std::string MediaSdp::toString() const
     oss << dir.toString();
     oss << setup_.toString();
     oss << mid.toString();
+    oss << fingerprint_.toString();
     oss << ssrc_.toString();
 
     return oss.str();

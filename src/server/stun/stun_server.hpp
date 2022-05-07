@@ -23,11 +23,8 @@ public:
     }
 public:
     bool start(uint32_t port = STUN_DEFAULT_PORT) {
-        int32_t ret = startListen(port);
-        if (0 != ret) {
-            return false;
-        }
-        return true;
+        bool ret = startListen(port);
+        return ret;
     }
 private:
     void onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep) {

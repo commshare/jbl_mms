@@ -8,7 +8,7 @@ namespace mms {
 class WebSocketConn;
 class WebRtcServer : public UdpServer, public WebsocketServer {
 public:
-    WebRtcServer(ThreadWorker *worker) : UdpServer(worker), WebsocketServer(worker) {
+    WebRtcServer(ThreadWorker *worker) : UdpServer(worker) {
         worker_ = worker;
     }
 
