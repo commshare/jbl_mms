@@ -2,6 +2,8 @@
 #include <memory>
 
 #include "stun_define.hpp"
+#include "stun_msg.h"
+#include "stun_error_code_attr.h"
 namespace mms {
 struct StunBindingErrorResponseMsg : public StunMsg {
 public:

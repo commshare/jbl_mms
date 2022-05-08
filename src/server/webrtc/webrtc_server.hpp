@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <memory>
 #include <iostream>
+#include "webrtc_session.hpp"
 #include "server/udp/udp_server.hpp"
 #include "websocket_server.hpp"
 namespace mms {
@@ -22,5 +23,7 @@ private:
     ThreadWorker *worker_;
     std::mutex mtx_;
     std::unordered_map<websocketpp::server<websocketpp::config::asio>::connection_ptr, std::shared_ptr<WebSocketConn>> conn_map_;
+    std::mutex ufrag_session_map_mtx_;
+    std::unordered_map<std::string, std::shared_ptr<WebRtcSession>> ufrag_session_map_;
 };
 };

@@ -82,6 +82,53 @@ namespace mms
        HMAC.  Such adjustment is necessary when attributes, such as
        FINGERPRINT, appear after MESSAGE-INTEGRITY.
     */
+    /*关于消息校验时机问题*/
+//     10.  Authentication and Message-Integrity Mechanisms
+
+//    This section defines two mechanisms for STUN that a client and server
+//    can use to provide authentication and message integrity; these two
+//    mechanisms are known as the short-term credential mechanism and the
+//    long-term credential mechanism.  These two mechanisms are optional,
+//    and each usage must specify if and when these mechanisms are used.
+//    Consequently, both clients and servers will know which mechanism (if
+//    any) to follow based on knowledge of which usage applies.  For
+//    example, a STUN server on the public Internet supporting ICE would
+//    have no authentication, whereas the STUN server functionality in an
+//    agent supporting connectivity checks would utilize short-term
+//    credentials.  An overview of these two mechanisms is given in
+//    Section 3.
+
+//    Each mechanism specifies the additional processing required to use
+//    that mechanism, extending the processing specified in Section 7.  The
+//    additional processing occurs in three different places: when forming
+//    a message, when receiving a message immediately after the basic
+//    checks have been performed, and when doing the detailed processing of
+//    error responses.
+
+// 10.1.  Short-Term Credential Mechanism
+
+//    The short-term credential mechanism assumes that, prior to the STUN
+//    transaction, the client and server have used some other protocol to
+//    exchange a credential in the form of a username and password.  This
+//    credential is time-limited.  The time limit is defined by the usage.
+
+
+
+// Rosenberg, et al.           Standards Track                    [Page 22]
+
+// RFC 5389                          STUN                      October 2008
+
+
+//    As an example, in the ICE usage [MMUSIC-ICE], the two endpoints use
+//    out-of-band signaling to agree on a username and password, and this
+//    username and password are applicable for the duration of the media
+//    session.
+
+//    This credential is used to form a message-integrity check in each
+//    request and in many responses.  There is no challenge and response as
+//    in the long-term mechanism; consequently, replay is prevented by
+//    virtue of the time-limited nature of the credential.
+
     struct StunMessageIntegrityAttr : public StunMsgAttr
     {
         StunMessageIntegrityAttr(uint8_t *data, size_t len, bool has_finger_print, const std::string & pwd);
@@ -92,6 +139,7 @@ namespace mms
 
         int32_t decode(uint8_t *data, size_t len);
 
+        bool check(uint8_t *data, size_t len);
         std::string hmac_sha1; // 20字节
     };
 

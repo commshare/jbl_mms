@@ -20,6 +20,15 @@ public:
     ThreadWorker *getWorker() {
         return worker_;
     }
+
+    const std::string & getICEUfrag() const {
+        return ice_ufrag_;
+    }
+
+    const std::string & getICEPwd() const {
+        return ice_pwd_;
+    }
+
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 private:
     bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);

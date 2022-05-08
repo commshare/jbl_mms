@@ -39,6 +39,8 @@ namespace mms {
             crc32 = Utils::getCRC32(data, len) ^ 0x5354554e;
         }
 
+        StunFingerPrintAttr() = default;
+        
         size_t size()
         {
             return StunMsgAttr::size() + sizeof(uint32_t);

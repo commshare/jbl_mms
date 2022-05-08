@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "stun_define.hpp"
+#include "stun_msg.h"
+
 #include "stun_message_integrity_attr.h"
 #include "stun_username_attr.h"
 #include "stun_goog_network_info_attr.h"
@@ -10,24 +12,33 @@
 #include "stun_ice_controlling_attr.h"
 #include "stun_message_integrity_attr.h"
 #include "stun_fingerprint_attr.h"
+#include "stun_mapped_address_attr.h"
+#include "stun_password_attr.h"
+#include "stun_reflect_from_attr.h"
+#include "stun_response_address_attr.h"
+#include "stun_source_address_attr.h"
+#include "stun_unknown_attributes_attr.h"
+#include "stun_change_address_attr.h"
+#include "stun_error_code_attr.h"
 
 using namespace mms;
 
 int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
+    uint8_t *data_start = data;
     int32_t consumed = header.decode(data, len);
-    std::cout << "header consumed:" << consumed << std::endl;
+    // std::cout << "header consumed:" << consumed << std::endl;
     if (consumed < 0)
     {
         return -1;
     }
-
+    
     data += consumed;
     len -= consumed;
     while (len > 0)
     {
         uint16_t t = ntohs(*(uint16_t *)data);
-        std::cout << std::hex << "attr type:" << t << std::endl;
+        // std::cout << std::hex << "attr type:" << t << std::endl;
         switch (t)
         {
         case STUN_ATTR_MAPPED_ADDRESS:
@@ -69,7 +80,6 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             }
             data += c;
             len -= c;
-            std::cout << "username, consumed:" << c << std::endl;
             attrs.emplace_back(std::move(username_attr));
             break;
         }
@@ -88,6 +98,19 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             data += c;
             len -= c;
             attrs.emplace_back(std::move(message_integrity_attr));
+            break;
+        }
+        case STUN_ATTR_FINGERPRINT:
+        {
+            auto stun_fingerprint = std::unique_ptr<StunFingerPrintAttr>(new StunFingerPrintAttr);
+            int32_t c = stun_fingerprint->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(stun_fingerprint));
             break;
         }
         case STUN_ATTR_ERROR_CODE:
@@ -172,7 +195,7 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         }
     }
-    return consumed;
+    return 0;
 }
 
 size_t StunMsg::size(bool add_finger_print)

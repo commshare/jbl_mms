@@ -10,6 +10,8 @@
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn) {
     std::cout << "create webrtcsession" << std::endl;
+    ice_ufrag_ = Utils::randStr(8);
+    ice_pwd_ = Utils::randStr(24);
 }
 
 WebRtcSession::~WebRtcSession() {
@@ -68,8 +70,6 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
         return false;
     }
 
-    ice_ufrag_ = Utils::randStr(8);
-    ice_pwd_ = Utils::randStr(24);
     if (0 != createLocalSdp(server, hdl)) {
         return false;
     }

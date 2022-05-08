@@ -3,7 +3,9 @@
 #include "webrtc_session.hpp"
 #include "config/config.h"
 
+
 #include "server/stun/protocol/stun_define.hpp"
+#include "server/stun/protocol/stun_msg.h"
 
 using namespace mms;
 
@@ -25,8 +27,9 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
     std::cout << "webrtc server recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
         StunMsg stun_msg;
-        if (0 != stun_msg.decode(recv_data.get(), len)) {
-            std::cout << "webrtc decode stun msg failed." << std::endl;
+        int ret = stun_msg.decode(recv_data.get(), len);
+        if (0 != ret) {
+            std::cout << "webrtc decode stun msg failed. ret:" << ret << std::endl;
             return;
         }
 
@@ -34,7 +37,9 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
         switch(stun_msg.type()) {
             case STUN_BINDING_REQUEST : {
                 std::cout << "process binding resquest" << std::endl;
-                // processBindMsg(stun_msg, sock, remote_ep, yield);
+                // 校验完整性
+                // 校验fingerprint
+                // 返回响应
                 break;
             }
         }
@@ -49,6 +54,10 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl) {
         {
             std::lock_guard<std::mutex> lck(mtx_);
             conn_map_.insert(std::pair(conn, ws_conn));
+        }
+        {
+            std::lock_guard<std::mutex> lck(ufrag_session_map_mtx_);
+            ufrag_session_map_.insert(std::pair(webrtc_session->getICEUfrag(), webrtc_session));
         }
         
         conn->set_message_handler(std::bind(&WebRtcSession::onMessage, webrtc_session.get(), this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
