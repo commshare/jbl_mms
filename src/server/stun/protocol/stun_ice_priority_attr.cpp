@@ -1,15 +1,15 @@
 #include <iostream>
-#include "stun_username_attr.h"
+#include "stun_ice_priority_attr.h"
 using namespace mms;
 
-size_t StunUsernameAttr::size()
+size_t StunIcePriorityAttr::size()
 {
-    return StunMsgAttr::size() + user_name_.size();
+    return StunMsgAttr::size() + 4;
 }
 
-int32_t StunUsernameAttr::encode(uint8_t *data, size_t len)
+int32_t StunIcePriorityAttr::encode(uint8_t *data, size_t len)
 {
-    length = user_name_.size();
+    length = 4;
     uint8_t *data_start = data;
     int32_t consumed = StunMsgAttr::encode(data, len);
     if (consumed < 0)
@@ -18,17 +18,17 @@ int32_t StunUsernameAttr::encode(uint8_t *data, size_t len)
     }
     data += consumed;
     len -= consumed;
-    if (len < user_name_.size())
+    if (len < length)
     {
         return -2;
     }
-
-    memcpy(data, user_name_.data(), user_name_.size());
-    data += ((length+3)>>2)<<2;
+    
+    *(uint32_t *)data = htonl(priority_);
+    data += 4;
     return data - data_start;
 }
 
-int32_t StunUsernameAttr::decode(uint8_t *data, size_t len)
+int32_t StunIcePriorityAttr::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     int32_t consumed = StunMsgAttr::decode(data, len);
@@ -39,11 +39,17 @@ int32_t StunUsernameAttr::decode(uint8_t *data, size_t len)
     data += consumed;
     len -= consumed;
 
-    if (len <= 0)
+    if (len < 4)
     {
         return -2;
     }
-    user_name_.assign((char*)data, length);
-    data += ((length+3)>>2)<<2;
+
+    if (length != 4) 
+    {
+        return -3;
+    }
+
+    priority_ = ntohl(*(uint32_t *)data);
+    data += length;
     return data - data_start;
 }

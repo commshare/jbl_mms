@@ -3,6 +3,8 @@
 #include "webrtc_session.hpp"
 #include "config/config.h"
 
+#include "server/stun/protocol/stun_define.hpp"
+
 using namespace mms;
 
 bool WebRtcServer::start() {
@@ -22,6 +24,20 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
     std::cout << "webrtc server recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+        StunMsg stun_msg;
+        if (0 != stun_msg.decode(recv_data.get(), len)) {
+            std::cout << "webrtc decode stun msg failed." << std::endl;
+            return;
+        }
+
+        std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
+        switch(stun_msg.type()) {
+            case STUN_BINDING_REQUEST : {
+                std::cout << "process binding resquest" << std::endl;
+                // processBindMsg(stun_msg, sock, remote_ep, yield);
+                break;
+            }
+        }
     });
 }
 

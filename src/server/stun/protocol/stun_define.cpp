@@ -2,6 +2,15 @@
 
 #include "stun_define.hpp"
 #include "stun_message_integrity_attr.h"
+#include "stun_username_attr.h"
+#include "stun_goog_network_info_attr.h"
+#include "stun_ice_priority_attr.h"
+#include "stun_ice_use_candidate_attr.h"
+#include "stun_ice_controlled_attr.h"
+#include "stun_ice_controlling_attr.h"
+#include "stun_message_integrity_attr.h"
+#include "stun_fingerprint_attr.h"
+
 using namespace mms;
 
 int32_t StunMsg::decode(uint8_t *data, size_t len)
@@ -18,12 +27,12 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
     while (len > 0)
     {
         uint16_t t = ntohs(*(uint16_t *)data);
-        std::cout << "attr type:" << t << std::endl;
+        std::cout << std::hex << "attr type:" << t << std::endl;
         switch (t)
         {
         case STUN_ATTR_MAPPED_ADDRESS:
         {
-            auto mapped_addr_attr = std::unique_ptr<StunMappedAddressAttr>();
+            auto mapped_addr_attr = std::unique_ptr<StunMappedAddressAttr>(new StunMappedAddressAttr);
             int32_t c = mapped_addr_attr->decode(data, len);
             if (c < 0)
             {
@@ -52,6 +61,16 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         case STUN_ATTR_USERNAME:
         {
+            auto username_attr = std::unique_ptr<StunUsernameAttr>(new StunUsernameAttr);
+            int32_t c = username_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            std::cout << "username, consumed:" << c << std::endl;
+            attrs.emplace_back(std::move(username_attr));
             break;
         }
         case STUN_ATTR_PASSWORD:
@@ -60,6 +79,15 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         case STUN_ATTR_MESSAGE_INTEGRITY:
         {
+            auto message_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr);
+            int32_t c = message_integrity_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(message_integrity_attr));
             break;
         }
         case STUN_ATTR_ERROR_CODE:
@@ -73,6 +101,74 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         case STUN_ATTR_REFLECTED_FROM:
         {
             break;
+        }
+        case STUN_ATTR_GOOG_NETWORK_INFO:
+        {
+            auto goog_network_info_attr = std::unique_ptr<StunGoogNetworkInfoAttr>(new StunGoogNetworkInfoAttr);
+            int32_t c = goog_network_info_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(goog_network_info_attr));
+            break;
+        }
+        case STUN_ICE_ATTR_PRIORITY:
+        {
+            auto ice_priority_attr = std::unique_ptr<StunIcePriorityAttr>(new StunIcePriorityAttr);
+            int32_t c = ice_priority_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(ice_priority_attr));
+            break;
+        }
+        case STUN_ICE_ATTR_USE_CANDIDATE:
+        {
+            auto ice_use_candidate_attr = std::unique_ptr<StunIceUseCandidateAttr>(new StunIceUseCandidateAttr);
+            int32_t c = ice_use_candidate_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(ice_use_candidate_attr));
+            break;
+        }
+        case STUN_ICE_ATTR_ICE_CONTROLLED:
+        {
+            auto ice_controlled_attr = std::unique_ptr<StunIceControlledAttr>(new StunIceControlledAttr);
+            int32_t c = ice_controlled_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(ice_controlled_attr));
+            break;
+        }
+        case STUN_ICE_ATTR_ICE_CONTROLLING:
+        {
+            auto ice_controlling_attr = std::unique_ptr<StunIceControllingAttr>(new StunIceControllingAttr);
+            int32_t c = ice_controlling_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
+            len -= c;
+            attrs.emplace_back(std::move(ice_controlling_attr));
+            break;
+        }
+        default: {
+            return -2;
         }
         }
     }

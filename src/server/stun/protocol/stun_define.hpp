@@ -44,28 +44,46 @@ ICE-CONTROLLED或者是ICE-CONTROLLING，这两个属性都会携带一个Tie br
 原文链接：https://blog.csdn.net/u012538729/article/details/115694308
 */
 
-#define STUN_BINDING_REQUEST 0x0001
-#define STUN_BINDING_RESPONSE 0x0101
-#define STUN_BINDING_ERROR_RESPONSE 0x0111
-#define STUN_SHARED_SECRET_REQUEST 0x0002
-#define STUN_SHARED_SECRET_RESPONSE 0x0102
-#define STUN_SHARED_SECRET_ERROR_RESPONSE 0x0112
+#define STUN_BINDING_REQUEST                0x0001
+#define STUN_BINDING_RESPONSE               0x0101
+#define STUN_BINDING_ERROR_RESPONSE         0x0111
+#define STUN_SHARED_SECRET_REQUEST          0x0002
+#define STUN_SHARED_SECRET_RESPONSE         0x0102
+#define STUN_SHARED_SECRET_ERROR_RESPONSE   0x0112
 
-#define STUN_ATTR_MAPPED_ADDRESS 0x0001
-#define STUN_ATTR_RESPONSE_ADDRESS 0x0002
-#define STUN_ATTR_CHANGE_REQUEST 0x0003
-#define STUN_ATTR_SOURCE_ADDRESS 0x0004
-#define STUN_ATTR_CHANGED_ADDRESS 0x0005
-#define STUN_ATTR_USERNAME 0x0006
-#define STUN_ATTR_PASSWORD 0x0007
-#define STUN_ATTR_MESSAGE_INTEGRITY 0x0008
-#define STUN_ATTR_ERROR_CODE 0x0009
-#define STUN_ATTR_UNKNOWN_ATTRIBUTES 0x000a
-#define STUN_ATTR_REFLECTED_FROM 0x000b
+#define STUN_ATTR_MAPPED_ADDRESS            0x0001
+#define STUN_ATTR_RESPONSE_ADDRESS          0x0002
+#define STUN_ATTR_CHANGE_REQUEST            0x0003
+#define STUN_ATTR_SOURCE_ADDRESS            0x0004
+#define STUN_ATTR_CHANGED_ADDRESS           0x0005
+#define STUN_ATTR_USERNAME                  0x0006
+#define STUN_ATTR_PASSWORD                  0x0007
+#define STUN_ATTR_MESSAGE_INTEGRITY         0x0008
+#define STUN_ATTR_ERROR_CODE                0x0009
+#define STUN_ATTR_UNKNOWN_ATTRIBUTES        0x000a
+#define STUN_ATTR_REFLECTED_FROM            0x000b
 
-#define STUN_ATTR_SOFTWARE 0x8022
-#define STUN_ATTR_ALTERNATE_SERVER 0x8023
-#define STUN_ATTR_FINGERPRINT 0x8028
+#define STUN_ATTR_SOFTWARE                  0x8022
+#define STUN_ATTR_ALTERNATE_SERVER          0x8023
+#define STUN_ATTR_FINGERPRINT               0x8028
+
+#define STUN_ATTR_GOOG_NETWORK_INFO         0xc057
+
+/*
+21.2.  STUN Attributes
+
+   This section registers four new STUN attributes per the procedures in
+   [RFC5389].
+
+      0x0024 PRIORITY
+      0x0025 USE-CANDIDATE
+      0x8029 ICE-CONTROLLED
+      0x802A ICE-CONTROLLING
+*/
+#define STUN_ICE_ATTR_PRIORITY              0x0024
+#define STUN_ICE_ATTR_USE_CANDIDATE         0x0025
+#define STUN_ICE_ATTR_ICE_CONTROLLED        0x8029
+#define STUN_ICE_ATTR_ICE_CONTROLLING       0x802A
 
 namespace mms
 {
@@ -83,7 +101,6 @@ namespace mms
                 return -1;
             }
 
-            uint8_t *data_start = data;
             type = ntohs(*(uint16_t *)data);
             data += 2;
             len = ntohs(*(uint16_t *)data);
@@ -305,19 +322,6 @@ namespace mms
         uint32_t address;
     };
 
-    /*
-    @https://blog.csdn.net/u012538729/article/details/115694308
-    USERNAME：用户名，用于消息完整性，在webrtc中的规则为 “对端的ice-ufrag：自己的ice-ufrag”，其中ice-ufrag已通过提议/应答的SDP信息进行交互。
-    */
-    struct StunUsernameAttr : public StunMsgAttr
-    {
-        StunUsernameAttr() : StunMsgAttr(STUN_ATTR_SOURCE_ADDRESS)
-        {
-        }
-
-        std::string user_name;
-    };
-
     struct StunPasswordAttr : public StunMsgAttr
     {
         StunPasswordAttr() : StunMsgAttr(STUN_ATTR_PASSWORD)
@@ -338,70 +342,6 @@ namespace mms
 
     //     std::string hmac_sha1;
     // };
-
-    /*
-    @15.5.  FINGERPRINT
-    */
-    struct StunFingerPrintAttr : public StunMsgAttr
-    {
-        StunFingerPrintAttr(uint8_t *data, size_t len) : StunMsgAttr(STUN_ATTR_FINGERPRINT)
-        {
-            crc32 = Utils::getCRC32(data, len) ^ 0x5354554e;
-        }
-
-        size_t size()
-        {
-            return StunMsgAttr::size() + sizeof(uint32_t);
-        }
-
-        int32_t encode(uint8_t *data, size_t len)
-        {
-            length = sizeof(uint32_t);
-            uint8_t *data_start = data;
-            int32_t consumed = StunMsgAttr::encode(data, len);
-            if (consumed < 0)
-            {
-                return -1;
-            }
-            data += consumed;
-            len -= consumed;
-            if (len < sizeof(uint32_t))
-            {
-                return -2;
-            }
-            *(uint32_t *)data = htonl(crc32);
-            data += sizeof(uint32_t);
-            return data - data_start;
-        }
-
-        int32_t decode(uint8_t *data, size_t len)
-        {
-            uint8_t *data_start = data;
-            int32_t consumed = StunMsgAttr::decode(data, len);
-            if (consumed < 0)
-            {
-                return -1;
-            }
-            data += consumed;
-            len -= consumed;
-
-            if (len < sizeof(uint32_t))
-            {
-                return -2;
-            }
-
-            if (length != sizeof(uint32_t))
-            {
-                return -3;
-            }
-
-            crc32 = ntohl(*(uint32_t *)data);
-            data += 4;
-            return data - data_start;
-        }
-
-        uint32_t crc32;
-    };
 
     struct StunErrorCodeAttr : public StunMsgAttr
     {
