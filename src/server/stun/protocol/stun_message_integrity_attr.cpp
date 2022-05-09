@@ -64,13 +64,15 @@ using namespace mms;
 //    the end of the MESSAGE-INTEGRITY attribute prior to calculating the
 //    HMAC.  Such adjustment is necessary when attributes, such as
 //    FINGERPRINT, appear after MESSAGE-INTEGRITY.
+
+#include "stun_msg.h"
 StunMessageIntegrityAttr::StunMessageIntegrityAttr(uint8_t *data, size_t len, bool has_finger_print, const std::string & pwd) : StunMsgAttr(STUN_ATTR_MESSAGE_INTEGRITY)
 {
     unsigned int digest_len;
     hmac_sha1.resize(20);
     size_t len_with_message_integrity = len;
     if (has_finger_print) {
-        len_with_message_integrity -= 24;//4byte attr header + 20 byte finger print data
+        len_with_message_integrity -= 8;//4byte attr header + 4 byte finger print data
     }
     *(uint16_t *)(data+2) = htons(len_with_message_integrity);
     HMAC_CTX *ctx = HMAC_CTX_new();
@@ -132,20 +134,25 @@ int32_t StunMessageIntegrityAttr::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-bool StunMessageIntegrityAttr::check(uint8_t *data, size_t len)
+bool StunMessageIntegrityAttr::check(StunMsg & stun_msg, uint8_t *data, size_t len, const std::string & pwd)
 {
-    // unsigned int digest_len;
-    // hmac_sha1.resize(20);
-    // size_t len_with_message_integrity = len;
-    // if (has_finger_print) {
-    //     len_with_message_integrity -= 24;//4byte attr header + 20 byte finger print data
-    // }
-    // *(uint16_t *)(data+2) = htons(len_with_message_integrity);
-    // HMAC_CTX *ctx = HMAC_CTX_new();
-    // HMAC_Init_ex(ctx, pwd.c_str(), pwd.size(), EVP_sha1(), NULL);
-    // HMAC_Update(ctx, (const unsigned char *)data, len_with_message_integrity);
-    // HMAC_Final(ctx, (unsigned char *)hmac_sha1.data(), &digest_len);
-    // HMAC_CTX_free(ctx);
-    // *(uint16_t *)(data+2) = htons(len);
-    // return true;
+    unsigned int digest_len;
+    std::string hmac_sha1_check;
+    hmac_sha1_check.resize(20);
+    uint16_t len_backup = *(uint16_t *)(data+2);
+    size_t len_with_message_integrity = len - 20;// 20 byte header（减掉20字节的头部）
+    if (stun_msg.fingerprint_attr) {
+        len_with_message_integrity -= 8;//4byte attr header + 4 byte finger print data
+    }
+    *(uint16_t *)(data+2) = htons(len_with_message_integrity);
+    HMAC_CTX *ctx = HMAC_CTX_new();
+    HMAC_Init_ex(ctx, pwd.c_str(), pwd.size(), EVP_sha1(), NULL);
+    HMAC_Update(ctx, (const unsigned char *)data, len_with_message_integrity + 20 - 24);//把头部长度加上，再减掉message integrity attr自己的长度
+    HMAC_Final(ctx, (unsigned char *)hmac_sha1_check.data(), &digest_len);
+    HMAC_CTX_free(ctx);
+    *(uint16_t *)(data+2) = len_backup;
+    if (hmac_sha1_check == hmac_sha1) {
+        return true;
+    }
+    return false;
 }

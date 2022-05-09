@@ -128,6 +128,7 @@ namespace mms
 //    request and in many responses.  There is no challenge and response as
 //    in the long-term mechanism; consequently, replay is prevented by
 //    virtue of the time-limited nature of the credential.
+    struct StunMsg;
 
     struct StunMessageIntegrityAttr : public StunMsgAttr
     {
@@ -139,7 +140,7 @@ namespace mms
 
         int32_t decode(uint8_t *data, size_t len);
 
-        bool check(uint8_t *data, size_t len);
+        bool check(StunMsg & stun_msg, uint8_t *data, size_t len, const std::string & pwd);
         std::string hmac_sha1; // 20字节
     };
 

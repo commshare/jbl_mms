@@ -5,6 +5,8 @@
 #include "webrtc_session.hpp"
 #include "server/udp/udp_server.hpp"
 #include "websocket_server.hpp"
+
+#include "server/stun/protocol/stun_msg.h"
 namespace mms {
 class WebSocketConn;
 class WebRtcServer : public UdpServer, public WebsocketServer {
@@ -16,6 +18,7 @@ public:
     bool start();
 private:
     void onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep) override;
+    bool processStunPacket(StunMsg & stun_msg, uint8_t *data, size_t len);
 private:
     virtual void onWebsocketOpen(websocketpp::connection_hdl hdl);
     virtual void onWebsocketClose(websocketpp::connection_hdl hdl);

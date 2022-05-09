@@ -8,17 +8,58 @@
 
 #include "stun_message_integrity_attr.h"
 #include "stun_fingerprint_attr.h"
+#include "stun_username_attr.h"
 
+/*
+RFC3489中定义：
+11.1  Message Header
+
+   All STUN messages consist of a 20 byte header:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      STUN Message Type        |         Message Length        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                            Transaction ID
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                                                                   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+/*
+RFC5389中定义：
+   STUN messages MUST start with a 20-byte header followed by zero
+   or more Attributes.  The STUN header contains a STUN message type,
+   magic cookie, transaction ID, and message length.
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |0 0|     STUN Message Type     |         Message Length        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         Magic Cookie                          |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                                                               |
+      |                     Transaction ID (96 bits)                  |
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+// 现在应该都用RFC5389的格式了
+
+#define STUN_MAGIC_COOKIE 0x2112A442
 namespace mms
 {
-    struct StunMessageIntegrityAttr;
-    struct StunFingerPrintAttr;
-
     struct StunMsgHeader
     {
         uint16_t type;
         uint16_t length;
-        uint8_t transaction_id[16];
+        uint32_t magic_cookie = STUN_MAGIC_COOKIE;
+        uint8_t transaction_id[12];
         int32_t decode(uint8_t *data, size_t len)
         {
             if (len < 20)
@@ -27,10 +68,21 @@ namespace mms
             }
 
             type = ntohs(*(uint16_t *)data);
+            if ((type & 0xC0) != 0) 
+            {
+                return -2;
+            }
+
             data += 2;
             len = ntohs(*(uint16_t *)data);
             data += 2;
-            memcpy(transaction_id, data, 16);
+            magic_cookie = ntohl(*(uint32_t *)data);
+            if (magic_cookie != STUN_MAGIC_COOKIE)
+            {
+                return -2;
+            }
+            data += 4;
+            memcpy(transaction_id, data, 12);
             return 20;
         }
 
@@ -44,7 +96,9 @@ namespace mms
             data += 2;
             *(uint16_t *)data = htons(length);
             data += 2;
-            memcpy(data, transaction_id, 16);
+            *(uint32_t *)data = htonl(magic_cookie);
+            data += 4;
+            memcpy(data, transaction_id, 12);
             return 20;
         }
 
@@ -58,6 +112,7 @@ namespace mms
     {
         StunMsgHeader header;
         std::vector<std::unique_ptr<StunMsgAttr>> attrs;
+        std::unique_ptr<StunUsernameAttr> username_attr;
         std::unique_ptr<StunMessageIntegrityAttr> msg_integrity_attr;
         std::unique_ptr<StunFingerPrintAttr> fingerprint_attr;
 
@@ -71,10 +126,42 @@ namespace mms
             return header.type;
         }
 
+        bool hasMsgIntegrityAttr() const
+        {
+            return msg_integrity_attr != nullptr;
+        }
+
+        bool hasFingerPrint() const
+        {
+            return fingerprint_attr != nullptr;
+        }
+
         int32_t decode(uint8_t *data, size_t len);
 
         size_t size(bool add_finger_print = false);
 
-        virtual int32_t encode(uint8_t *data, size_t len, bool add_message_integrity = false, bool add_finger_print = false, const std::string &pwd = "");
+        virtual int32_t encode(uint8_t *data, size_t len, bool add_message_integrity = false, const std::string &pwd = "", bool add_finger_print = false);
+
+        bool checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pwd);
+
+        const std::string &getLocalUserName() const
+        {
+            if (!username_attr)
+            {
+                return "";
+            }
+
+            return username_attr->getLocalUserName();
+        }
+
+        const std::string &getRemoteUserName() const
+        {
+            if (!username_attr)
+            {
+                return "";
+            }
+
+            return username_attr->getRemoteUserName();
+        }
     };
 };

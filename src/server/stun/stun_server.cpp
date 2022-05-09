@@ -7,8 +7,9 @@ void StunServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> dat
     std::cout << "recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
         StunMsg stun_msg;
-        if (0 != stun_msg.decode(recv_data.get(), len)) {
-            std::cout << "decode stun message failed." << std::endl;
+        int32_t ret = stun_msg.decode(recv_data.get(), len);
+        if (0 != ret) {
+            std::cout << "decode stun message failed, code:" << ret << ", len:" << len << std::endl;
             return;
         }
         std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
