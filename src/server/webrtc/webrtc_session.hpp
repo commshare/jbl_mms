@@ -21,12 +21,12 @@ public:
         return worker_;
     }
 
-    const std::string & getICEUfrag() const {
-        return ice_ufrag_;
+    const std::string & getLocalICEUfrag() const {
+        return local_ice_ufrag_;
     }
 
-    const std::string & getICEPwd() const {
-        return ice_pwd_;
+    const std::string & getLocalICEPwd() const {
+        return local_ice_pwd_;
     }
 
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
@@ -41,8 +41,10 @@ private:
     uint64_t session_id_ = 0;
     std::string app_;
     std::string stream_;
-    std::string ice_ufrag_;
-    std::string ice_pwd_;
+    std::string local_ice_ufrag_;
+    std::string local_ice_pwd_;
+    std::string remote_ice_ufrag_;
+    std::string remote_ice_pwd_;
 };
 
 };

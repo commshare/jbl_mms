@@ -59,7 +59,7 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
             return false;
         }
         session = it_session->second;
-        const std::string & pwd = session->getICEPwd();
+        const std::string & pwd = session->getLocalICEPwd();
         if (!stun_msg.checkMsgIntegrity(data, len, pwd)) 
         {
             std::cout << "check msg integrity failed." << std::endl;
@@ -97,7 +97,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
         }
         {
             std::lock_guard<std::mutex> lck(ufrag_session_map_mtx_);
-            ufrag_session_map_.insert(std::pair(webrtc_session->getICEUfrag(), webrtc_session));
+            ufrag_session_map_.insert(std::pair(webrtc_session->getLocalICEUfrag(), webrtc_session));
         }
 
         conn->set_message_handler(std::bind(&WebRtcSession::onMessage, webrtc_session.get(), this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
