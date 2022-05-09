@@ -65,6 +65,12 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
             std::cout << "check msg integrity failed." << std::endl;
             return false;
         }
+
+        if (!stun_msg.checkFingerPrint(data, len))
+        {
+            std::cout << "check finger print failed." << std::endl;
+            return false;
+        }
     }
 
     switch (stun_msg.type())

@@ -143,12 +143,13 @@ namespace mms
         virtual int32_t encode(uint8_t *data, size_t len, bool add_message_integrity = false, const std::string &pwd = "", bool add_finger_print = false);
 
         bool checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pwd);
-
+        bool checkFingerPrint(uint8_t *data, size_t len);
+        static std::string null_string;
         const std::string &getLocalUserName() const
         {
             if (!username_attr)
             {
-                return "";
+                return null_string;
             }
 
             return username_attr->getLocalUserName();
@@ -158,7 +159,7 @@ namespace mms
         {
             if (!username_attr)
             {
-                return "";
+                return null_string;
             }
 
             return username_attr->getRemoteUserName();

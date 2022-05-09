@@ -31,6 +31,7 @@
 #include <string>
 #include "stun_define.hpp"
 #include "base/utils/utils.h"
+#include <iostream>
 namespace mms {
     struct StunFingerPrintAttr : public StunMsgAttr
     {
@@ -90,6 +91,13 @@ namespace mms {
             crc32 = ntohl(*(uint32_t *)data);
             data += 4;
             return data - data_start;
+        }
+
+        bool check(uint8_t *data, size_t len)
+        {
+            len -= 8;//去掉fingerprint本身长度
+            uint32_t crc32_check = Utils::getCRC32(data, len) ^ 0x5354554e;
+            return crc32 == crc32_check;
         }
 
         uint32_t crc32;

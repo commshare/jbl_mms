@@ -122,7 +122,7 @@ uint32_t Utils::getCRC32(uint8_t* buf, size_t len)
     if (len < 1)
         return 0xffffffff;
 
-    uint32_t crc = 0;
+    uint32_t crc = 0xffffffff;
 
     for (size_t i = 0; i != len; ++i)
     {

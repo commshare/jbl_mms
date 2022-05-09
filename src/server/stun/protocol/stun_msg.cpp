@@ -51,6 +51,8 @@
 //    parse the message as a different protocol.
 
 using namespace mms;
+
+std::string StunMsg::null_string = "";
 int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
@@ -339,10 +341,19 @@ bool StunMsg::checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pw
     {
         return false;
     }
-    std::cout << "start check msg integrity" << std::endl;
+    
     if (!msg_integrity_attr->check(*this, data, len, pwd))
     {
         return false;
     }
     return true;
+}
+
+bool StunMsg::checkFingerPrint(uint8_t *data, size_t len) 
+{
+    if (!fingerprint_attr) 
+    {
+        return true;
+    }
+    return fingerprint_attr->check(data, len);
 }
