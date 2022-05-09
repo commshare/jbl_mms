@@ -70,7 +70,8 @@ StunMessageIntegrityAttr::StunMessageIntegrityAttr(uint8_t *data, size_t len, bo
 {
     unsigned int digest_len;
     hmac_sha1.resize(20);
-    size_t len_with_message_integrity = len;
+    uint16_t len_backup = *(uint16_t *)(data+2);
+    size_t len_with_message_integrity = len;//stun包，包括了message_integrity_attr的总长度
     if (has_finger_print) {
         len_with_message_integrity -= 8;//4byte attr header + 4 byte finger print data
     }
@@ -80,7 +81,7 @@ StunMessageIntegrityAttr::StunMessageIntegrityAttr(uint8_t *data, size_t len, bo
     HMAC_Update(ctx, (const unsigned char *)data, len_with_message_integrity);
     HMAC_Final(ctx, (unsigned char *)hmac_sha1.data(), &digest_len);
     HMAC_CTX_free(ctx);
-    *(uint16_t *)(data+2) = htons(len);
+    *(uint16_t *)(data+2) = len_backup;
 }
 
 size_t StunMessageIntegrityAttr::size()
@@ -139,7 +140,7 @@ bool StunMessageIntegrityAttr::check(StunMsg & stun_msg, uint8_t *data, size_t l
     unsigned int digest_len;
     std::string hmac_sha1_check;
     hmac_sha1_check.resize(20);
-    uint16_t len_backup = *(uint16_t *)(data+2);
+    uint16_t len_backup = *(uint16_t *)(data+2);//先把原来的长度备份下
     size_t len_with_message_integrity = len - 20;// 20 byte header（减掉20字节的头部）
     if (stun_msg.fingerprint_attr) {
         len_with_message_integrity -= 8;//4byte attr header + 4 byte finger print data
@@ -150,7 +151,7 @@ bool StunMessageIntegrityAttr::check(StunMsg & stun_msg, uint8_t *data, size_t l
     HMAC_Update(ctx, (const unsigned char *)data, len_with_message_integrity + 20 - 24);//把头部长度加上，再减掉message integrity attr自己的长度
     HMAC_Final(ctx, (unsigned char *)hmac_sha1_check.data(), &digest_len);
     HMAC_CTX_free(ctx);
-    *(uint16_t *)(data+2) = len_backup;
+    *(uint16_t *)(data+2) = len_backup;//还原原来的长度
     if (hmac_sha1_check == hmac_sha1) {
         return true;
     }
