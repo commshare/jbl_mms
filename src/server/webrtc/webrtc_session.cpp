@@ -7,6 +7,9 @@
 #include "base/utils/utils.h"
 #include "config/config.h"
 
+#include "server/stun/protocol/stun_binding_response_msg.hpp"
+#include "server/stun/protocol/stun_mapped_address_attr.h"
+
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn)
 {
@@ -85,19 +88,20 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     }
 
     auto remote_ice_ufrag = remote_sdp_.getIceUfrag();
-    if (!remote_ice_ufrag) 
+    if (!remote_ice_ufrag)
     {
+        std::cout << "remote ice ufrag is empty" << std::endl;
         return false;
     }
     remote_ice_ufrag_ = remote_ice_ufrag.value().getUfrag();
 
     auto remote_ice_pwd = remote_sdp_.getIcePwd();
-    if (!remote_ice_pwd) 
+    if (!remote_ice_pwd)
     {
+        std::cout << "remote ice pwd is empty" << std::endl;
         return false;
     }
     remote_ice_pwd_ = remote_ice_pwd.value().getPwd();
-
 
     if (0 != createLocalSdp(server, hdl))
     {
@@ -223,6 +227,103 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
 
     std::cout << "local sdp:" << sdp << std::endl;
     return 0;
+}
+
+bool WebRtcSession::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+{
+    const std::string &pwd = getLocalICEPwd();
+    if (!stun_msg.checkMsgIntegrity(data, len, pwd))
+    {
+        std::cout << "check msg integrity failed." << std::endl;
+        return false;
+    }
+
+    if (!stun_msg.checkFingerPrint(data, len))
+    {
+        std::cout << "check finger print failed." << std::endl;
+        return false;
+    }
+
+    switch (stun_msg.type())
+    {
+    case STUN_BINDING_REQUEST:
+    {
+        // 返回响应
+        return processStunBindingReq(stun_msg, sock, remote_ep, yield);
+    }
+    }
+    return true;
+}
+
+bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+{
+    StunBindingResponseMsg binding_resp(stun_msg);
+
+    auto mapped_addr_attr = std::make_unique<StunMappedAddressAttr>(remote_ep.address().to_v4().to_uint(), remote_ep.port());
+    binding_resp.addAttr(std::move(mapped_addr_attr));
+
+    // 校验完整性
+    auto req_username_attr = stun_msg.getUserNameAttr();
+    if (!req_username_attr)
+    {
+        return false;
+    }
+
+    const std::string &local_user_name = req_username_attr.value().getLocalUserName();
+    if (local_user_name.empty())
+    {
+        return false;
+    }
+
+    const std::string &remote_user_name = req_username_attr.value().getRemoteUserName();
+    if (remote_user_name.empty())
+    {
+        return false;
+    }
+
+    if (remote_user_name != remote_ice_ufrag_)//用户名与sdp中给的不一致
+    {
+        return false;
+    }
+
+    StunUsernameAttr resp_username_attr(local_user_name, remote_user_name);
+    binding_resp.setUserNameAttr(resp_username_attr);
+    auto size = binding_resp.size(true, true);
+    std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
+    int32_t consumed = binding_resp.encode(data.get(), size, true, local_ice_pwd_, true);
+    if (consumed < 0) 
+    {// todo:add log
+        return false;
+    }
+
+    // 自己校验下
+    // StunMsg stun_msg_check;
+    // int32_t ret = stun_msg_check.decode(data.get(), size);
+    // if (0 != ret) 
+    // {
+    //     std::cout << "********************* stun_msg_check failed *********************" << std::endl;
+    // }
+    // else
+    // {
+    //     if (!stun_msg_check.checkMsgIntegrity(data.get(), size, local_ice_pwd_))
+    //     {
+    //         std::cout << "check msg integrity failed." << std::endl;
+    //         return false;
+    //     }
+
+    //     if (!stun_msg_check.checkFingerPrint(data.get(), size))
+    //     {
+    //         std::cout << "check finger print failed." << std::endl;
+    //         return false;
+    //     }
+    // }
+
+    if (!sock->sendTo(std::move(data), size, remote_ep, yield)) 
+    {//todo log error
+    }
+
+    
+    return true;
 }
 
 void WebRtcSession::service()

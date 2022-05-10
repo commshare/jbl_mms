@@ -5,14 +5,18 @@ using namespace mms;
 
 size_t StunUsernameAttr::size()
 {
+    int32_t header_size = StunMsgAttr::size();
+    int32_t len;
     if (remote_user_name_.size() > 0) 
     {
-        return StunMsgAttr::size() + local_user_name_.size() + 1 + remote_user_name_.size();
+        len = local_user_name_.size() + 1 + remote_user_name_.size();
     }
     else 
     {
-        return StunMsgAttr::size() + local_user_name_.size();
+        len = local_user_name_.size();
     }
+    std::cout << " **************** StunUsernameAttr:size=" << (header_size + (((len+3)>>2)<<2)) << " ***************" << std::endl;
+    return header_size + (((len+3)>>2)<<2);
 }
 
 int32_t StunUsernameAttr::encode(uint8_t *data, size_t len)
@@ -31,17 +35,17 @@ int32_t StunUsernameAttr::encode(uint8_t *data, size_t len)
         return -2;
     }
 
-    memcpy(data, local_user_name_.data(), local_user_name_.size());
     uint8_t * tmp = data;
+    memcpy(tmp, local_user_name_.data(), local_user_name_.size());
     tmp += local_user_name_.size();
     if (remote_user_name_.size() > 0) {
         memcpy(tmp, ":", 1);
         tmp++;
         memcpy(tmp, remote_user_name_.data(), remote_user_name_.size());
-        tmp += remote_user_name_.size();
     }
 
     data += ((length+3)>>2)<<2;
+    std::cout << "***************** stun username attr size:" << (((length+3)>>2)<<2) << " ******************" << std::endl;
     return data - data_start;
 }
 

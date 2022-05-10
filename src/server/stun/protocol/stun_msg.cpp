@@ -52,7 +52,6 @@
 
 using namespace mms;
 
-std::string StunMsg::null_string = "";
 int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
@@ -103,12 +102,13 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         case STUN_ATTR_USERNAME:
         {
-            username_attr = std::unique_ptr<StunUsernameAttr>(new StunUsernameAttr);
-            int32_t c = username_attr->decode(data, len);
+            StunUsernameAttr username;
+            int32_t c = username.decode(data, len);
             if (c < 0)
             {
                 return -3;
             }
+            username_attr = username;
             data += c;
             len -= c;
             break;
@@ -249,13 +249,24 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
     return 0;
 }
 
-size_t StunMsg::size(bool add_finger_print)
+size_t StunMsg::size(bool add_message_integrity, bool add_finger_print)
 {
     int32_t s = 0;
     s += header.size();
     for (auto &attr : attrs)
     {
         s += attr->size();
+    }
+
+    if (username_attr)
+    {
+        std::cout << "username.size:" << username_attr.value().size() << std::endl;
+        s += username_attr.value().size();
+    }
+
+    if (add_message_integrity) 
+    {
+        s += 24;/*StunMsgAttr::size() + 20bytes*/
     }
 
     if (add_finger_print)
@@ -268,20 +279,27 @@ size_t StunMsg::size(bool add_finger_print)
 int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, const std::string &pwd, bool add_finger_print)
 {
     int32_t content_len = 0;
+    if (username_attr)
+    {
+        content_len += username_attr.value().size();
+    }
+
     for (auto &attr : attrs)
     {
         content_len += attr->size();
     }
     header.length = content_len;
-    if (add_finger_print)
-    {
-        header.length += 8;
-    }
 
     if (add_message_integrity)
     {
         header.length += 4 + 20;
     }
+
+    if (add_finger_print)
+    {
+        header.length += 8;
+    }
+
     uint8_t *data_start = data;
     int32_t consumed = header.encode(data, len);
     if (consumed < 0)
@@ -291,6 +309,19 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, c
 
     data += consumed;
     len -= consumed;
+
+    if (username_attr)
+    {
+        consumed = username_attr.value().encode(data, len);
+        std::cout << "username_attr consumed:" << consumed << std::endl;
+        if (consumed < 0)
+        {
+            return -1;
+        }
+    }
+    data += consumed;
+    len -= consumed;
+
     for (auto &attr : attrs)
     {
         consumed = attr->encode(data, len);
@@ -304,7 +335,7 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, c
 
     if (add_message_integrity)
     {
-        msg_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr(data_start, data - data_start, add_finger_print, pwd));
+        msg_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr(data_start, header.length + 20, add_finger_print, pwd));
         consumed = msg_integrity_attr->encode(data, len);
         if (consumed < 0)
         {
@@ -331,17 +362,6 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, c
 
 bool StunMsg::checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pwd)
 {
-    if (!username_attr)
-    {
-        return false;
-    }
-
-    const std::string &local_user_name = username_attr->getLocalUserName();
-    if (!hasMsgIntegrityAttr())
-    {
-        return false;
-    }
-    
     if (!msg_integrity_attr->check(*this, data, len, pwd))
     {
         return false;

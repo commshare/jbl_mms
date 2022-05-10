@@ -3,6 +3,9 @@
 #include "webrtc_session.hpp"
 #include "config/config.h"
 
+#include "server/stun/protocol/stun_binding_response_msg.hpp"
+#include "server/stun/protocol/stun_mapped_address_attr.h"
+
 using namespace mms;
 
 bool WebRtcServer::start()
@@ -30,21 +33,25 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
         int32_t ret = stun_msg.decode(recv_data.get(), len);
         if (0 == ret) 
         {
-            if (processStunPacket(stun_msg, recv_data.get(), len)) 
+            if (processStunPacket(stun_msg, recv_data.get(), len, sock, remote_ep, yield)) 
             {
                 return;
             }
         }
-
-
     });
 }
 
-bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len)
+bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
     // 校验完整性
-    const std::string &local_user_name = stun_msg.getLocalUserName();
+    auto username_attr = stun_msg.getUserNameAttr();
+    if (!username_attr)
+    {
+        return false;
+    }
+
+    const std::string &local_user_name = username_attr.value().getLocalUserName();
     if (local_user_name.empty())
     {
         return false;
@@ -59,29 +66,13 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
             return false;
         }
         session = it_session->second;
-        const std::string & pwd = session->getLocalICEPwd();
-        if (!stun_msg.checkMsgIntegrity(data, len, pwd)) 
-        {
-            std::cout << "check msg integrity failed." << std::endl;
-            return false;
-        }
-
-        if (!stun_msg.checkFingerPrint(data, len))
-        {
-            std::cout << "check finger print failed." << std::endl;
-            return false;
-        }
     }
 
-    switch (stun_msg.type())
+    if (!session) //todo add log
     {
-    case STUN_BINDING_REQUEST:
-    {
-        // 返回响应
-        break;
+        return false;
     }
-    }
-    return true;
+    return session->processStunPacket(stun_msg, data, len, sock, remote_ep, yield);
 }
 
 void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)

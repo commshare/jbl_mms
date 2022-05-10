@@ -68,7 +68,7 @@ namespace mms
             }
 
             type = ntohs(*(uint16_t *)data);
-            if ((type & 0xC0) != 0) 
+            if ((type & 0xC0) != 0)
             {
                 return -2;
             }
@@ -110,9 +110,10 @@ namespace mms
 
     struct StunMsg
     {
+        StunMsg() = default;
         StunMsgHeader header;
         std::vector<std::unique_ptr<StunMsgAttr>> attrs;
-        std::unique_ptr<StunUsernameAttr> username_attr;
+        std::optional<StunUsernameAttr> username_attr;
         std::unique_ptr<StunMessageIntegrityAttr> msg_integrity_attr;
         std::unique_ptr<StunFingerPrintAttr> fingerprint_attr;
 
@@ -138,31 +139,21 @@ namespace mms
 
         int32_t decode(uint8_t *data, size_t len);
 
-        size_t size(bool add_finger_print = false);
+        size_t size(bool add_message_integrity = false, bool add_finger_print = false);
 
         virtual int32_t encode(uint8_t *data, size_t len, bool add_message_integrity = false, const std::string &pwd = "", bool add_finger_print = false);
 
         bool checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pwd);
         bool checkFingerPrint(uint8_t *data, size_t len);
-        static std::string null_string;
-        const std::string &getLocalUserName() const
-        {
-            if (!username_attr)
-            {
-                return null_string;
-            }
 
-            return username_attr->getLocalUserName();
+        const std::optional<StunUsernameAttr> &getUserNameAttr() const
+        {
+            return username_attr;
         }
 
-        const std::string &getRemoteUserName() const
+        void setUserNameAttr(const StunUsernameAttr &username)
         {
-            if (!username_attr)
-            {
-                return null_string;
-            }
-
-            return username_attr->getRemoteUserName();
+            username_attr = username;
         }
     };
 };

@@ -95,7 +95,8 @@ public:
         for (auto & media : media_sdps_) {
             return media.getIceUfrag();
         }
-        return std::nullopt;
+        static std::optional<IceUfrag> nullopt = std::nullopt;
+        return nullopt;
     }
 
     const std::optional<IcePwd> & getIcePwd() const {
@@ -106,7 +107,8 @@ public:
         for (auto & media : media_sdps_) {
             return media.getIcePwd();
         }
-        return std::nullopt;
+        static std::optional<IcePwd> nullopt = std::nullopt;
+        return nullopt;
     }
 
     std::string toString() const;

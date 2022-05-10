@@ -6,9 +6,7 @@
 #include "base/network/udp_socket.hpp"
 #include "base/thread/thread_pool.hpp"
 
-#include "protocol/stun_define.hpp"
-#include "protocol/stun_binding_error_response_msg.hpp"
-#include "protocol/stun_binding_response_msg.hpp"
+#include "protocol/stun_msg.h"
 
 namespace mms {
 #define STUN_DEFAULT_PORT 3478

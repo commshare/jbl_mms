@@ -60,7 +60,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         {
             return false;
         }
-        ice_ufrag = ice_ufrag;
+        ice_ufrag_ = ice_ufrag;
         return true;
     }
     else if (boost::starts_with(line, IcePwd::prefix))
@@ -70,7 +70,7 @@ bool MediaSdp::parseAttr(const std::string &line)
         {
             return false;
         }
-        ice_pwd = ice_pwd;
+        ice_pwd_ = ice_pwd;
         return true;
     }
     else if (boost::starts_with(line, IceOption::prefix))
@@ -191,19 +191,19 @@ std::string MediaSdp::toString() const
         oss << connection_info.value().toString();
     }
 
-    if (ice_ufrag)
+    if (ice_ufrag_)
     {
-        oss << ice_ufrag.value().toString();
+        oss << ice_ufrag_.value().toString();
     }
 
-    if (ice_pwd)
+    if (ice_pwd_)
     {
-        oss << ice_pwd.value().toString();
+        oss << ice_pwd_.value().toString();
     }
 
-    if (ice_option)
+    if (ice_option_)
     {
-        oss << ice_option.value().toString();
+        oss << ice_option_.value().toString();
     }
 
     for (auto &c : candidates_)

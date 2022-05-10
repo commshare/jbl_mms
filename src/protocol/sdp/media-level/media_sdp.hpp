@@ -155,32 +155,32 @@ namespace mms
 
         const std::optional<IceUfrag> &getIceUfrag() const
         {
-            return ice_ufrag;
+            return ice_ufrag_;
         }
 
         void setIceUfrag(const IceUfrag &val)
         {
-            ice_ufrag = val;
+            ice_ufrag_ = val;
         }
 
         const std::optional<IcePwd> &getIcePwd() const
         {
-            return ice_pwd;
+            return ice_pwd_;
         }
 
         void setIcePwd(const IcePwd &val)
         {
-            ice_pwd = val;
+            ice_pwd_ = val;
         }
 
         const std::optional<IceOption> getIceOption() const
         {
-            return ice_option;
+            return ice_option_;
         }
 
         void setIceOption(const IceOption &val)
         {
-            ice_option = val;
+            ice_option_ = val;
         }
 
         void addCandidate(const Candidate &c)
@@ -407,9 +407,9 @@ namespace mms
         //   Section 6).
         std::vector<uint16_t> fmts;
 
-        std::optional<IceUfrag> ice_ufrag;
-        std::optional<IcePwd> ice_pwd;
-        std::optional<IceOption> ice_option;
+        std::optional<IceUfrag> ice_ufrag_;
+        std::optional<IcePwd> ice_pwd_;
+        std::optional<IceOption> ice_option_;
         std::vector<Candidate> candidates_;
         std::optional<RtcpMux> rtcp_mux_;
         std::unordered_map<int, Payload> payloads_;
