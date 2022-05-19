@@ -111,6 +111,7 @@ namespace mms
     struct StunMsg
     {
         StunMsg() = default;
+        static bool isStunMsg(const uint8_t *data, size_t len);
         StunMsgHeader header;
         std::vector<std::unique_ptr<StunMsgAttr>> attrs;
         std::optional<StunUsernameAttr> username_attr;

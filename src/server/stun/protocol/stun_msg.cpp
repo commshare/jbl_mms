@@ -51,7 +51,6 @@
 //    parse the message as a different protocol.
 
 using namespace mms;
-
 int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;

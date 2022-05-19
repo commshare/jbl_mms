@@ -5,6 +5,7 @@
 
 #include "server/stun/protocol/stun_binding_response_msg.hpp"
 #include "server/stun/protocol/stun_mapped_address_attr.h"
+#include "udp_msg_demultiplex.hpp"
 
 using namespace mms;
 
@@ -29,13 +30,16 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
     std::cout << "webrtc server recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
-        StunMsg stun_msg;
-        int32_t ret = stun_msg.decode(recv_data.get(), len);
-        if (0 == ret) 
-        {
-            if (processStunPacket(stun_msg, recv_data.get(), len, sock, remote_ep, yield)) 
+        uint8_t *data = recv_data.get();
+        if (detectMsgType(data, len) == UDP_MSG_STUN) {
+            StunMsg stun_msg;
+            int32_t ret = stun_msg.decode(data, len);
+            if (0 == ret) 
             {
-                return;
+                if (processStunPacket(stun_msg, data, len, sock, remote_ep, yield)) 
+                {
+                    return;
+                }
             }
         }
     });
