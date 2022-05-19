@@ -5,7 +5,7 @@
 
 #include "server/stun/protocol/stun_binding_response_msg.hpp"
 #include "server/stun/protocol/stun_mapped_address_attr.h"
-#include "udp_msg_demultiplex.hpp"
+#include "udp_msg_demultiplex.h"
 
 using namespace mms;
 
@@ -31,7 +31,8 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
     std::cout << "webrtc server recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
         uint8_t *data = recv_data.get();
-        if (detectMsgType(data, len) == UDP_MSG_STUN) {
+        UDP_MSG_TYPE t = detectMsgType(data, len);
+        if (UDP_MSG_STUN == t) {
             StunMsg stun_msg;
             int32_t ret = stun_msg.decode(data, len);
             if (0 == ret) 
@@ -41,6 +42,8 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
                     return;
                 }
             }
+        } else if (UDP_MSG_DTLS == t) {
+            
         }
     });
 }
@@ -120,4 +123,20 @@ void WebRtcServer::onWebsocketClose(websocketpp::connection_hdl hdl)
     }
 
     conn_map_.erase(conn);
+}
+
+UDP_MSG_TYPE WebRtcServer::detectMsgType(uint8_t * data, size_t len)
+{
+    if (data[0] >= 0 && data[0] <= 3) {
+        return UDP_MSG_STUN;
+    } else if (data[0] >= 16 && data[0] <= 19) {
+        return UDP_MSG_ZRTP;
+    } else if (data[0] >= 20 && data[0] <= 63) {
+        return UDP_MSG_DTLS;
+    } else if (data[0] >= 64 && data[0] <= 79) {
+        return UDP_MSG_TURN;
+    } else if (data[0] >= 128 && data[0] <= 191) {
+        return UDP_MSG_RTP;
+    }
+    return UDP_MSG_UNKNOWN;
 }

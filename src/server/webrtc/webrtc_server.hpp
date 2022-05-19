@@ -9,6 +9,16 @@
 #include "server/stun/protocol/stun_msg.h"
 namespace mms {
 class WebSocketConn;
+
+enum UDP_MSG_TYPE {
+    UDP_MSG_UNKNOWN = 0,
+    UDP_MSG_STUN    = 1,
+    UDP_MSG_ZRTP    = 2,
+    UDP_MSG_DTLS    = 3,
+    UDP_MSG_TURN    = 4,
+    UDP_MSG_RTP     = 5,
+};
+
 class WebRtcServer : public UdpServer, public WebsocketServer {
 public:
     WebRtcServer(ThreadWorker *worker) : UdpServer(worker) {
@@ -22,6 +32,8 @@ private:
 private:
     virtual void onWebsocketOpen(websocketpp::connection_hdl hdl);
     virtual void onWebsocketClose(websocketpp::connection_hdl hdl);
+private:
+    UDP_MSG_TYPE detectMsgType(uint8_t * data, size_t len);
 private:
     ThreadWorker *worker_;
     std::mutex mtx_;
