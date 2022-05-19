@@ -85,30 +85,44 @@ Internet-Draft                ICE SDP Usage                  August 2019
 #pragma once
 #include <string>
 #include "stun_define.hpp"
-namespace mms {
-struct StunUsernameAttr : public StunMsgAttr
+namespace mms
 {
-    StunUsernameAttr(const std::string & username) : StunMsgAttr(STUN_ATTR_USERNAME), user_name_(username)
+    struct StunUsernameAttr : public StunMsgAttr
     {
-        
-    }
+        StunUsernameAttr(const std::string &local_user_name, const std::string &remote_user_name = "") : StunMsgAttr(STUN_ATTR_USERNAME), local_user_name_(local_user_name), remote_user_name_(remote_user_name)
+        {
+        }
 
-    StunUsernameAttr() = default;
+        StunUsernameAttr() = default;
 
-    size_t size();
+        size_t size();
 
-    int32_t encode(uint8_t *data, size_t len);
+        int32_t encode(uint8_t *data, size_t len);
 
-    int32_t decode(uint8_t *data, size_t len);
+        int32_t decode(uint8_t *data, size_t len);
 
-    const std::string & getUserName() const {
-        return user_name_;
-    }
+        const std::string &getLocalUserName() const
+        {
+            return local_user_name_;
+        }
 
-    void setUserName(const std::string & username) {
-        user_name_ = username;
-    }
-private:
-    std::string user_name_;
-};
+        void setLocalUserName(const std::string &username)
+        {
+            local_user_name_ = username;
+        }
+
+        const std::string &getRemoteUserName() const
+        {
+            return remote_user_name_;
+        }
+
+        void setRemoteUserName(const std::string &username)
+        {
+            remote_user_name_ = username;
+        }
+
+    private:
+        std::string local_user_name_;
+        std::string remote_user_name_;
+    };
 };

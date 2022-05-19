@@ -18,6 +18,8 @@
 #include "session-level/tool.hpp"
 #include "attribute/common/dir.hpp"
 #include "session-level/ssrc_group.h"
+#include "protocol/sdp/ice/ice_ufrag.h"
+#include "protocol/sdp/ice/ice_pwd.h"
 
 #include "media-level/media_sdp.hpp"
 #include "webrtc/ssrc.h"
@@ -85,6 +87,30 @@ public:
         attrs_.emplace_back(val);
     }
     
+    const std::optional<IceUfrag> & getIceUfrag() const {
+        if (ice_ufrag_) {
+            return ice_ufrag_;
+        }
+
+        for (auto & media : media_sdps_) {
+            return media.getIceUfrag();
+        }
+        static std::optional<IceUfrag> nullopt = std::nullopt;
+        return nullopt;
+    }
+
+    const std::optional<IcePwd> & getIcePwd() const {
+        if (ice_pwd_) {
+            return ice_pwd_;
+        }
+
+        for (auto & media : media_sdps_) {
+            return media.getIcePwd();
+        }
+        static std::optional<IcePwd> nullopt = std::nullopt;
+        return nullopt;
+    }
+
     std::string toString() const;
 protected:
     ProtocolVersion protocol_version_;
@@ -92,7 +118,7 @@ protected:
     SessionName     session_name_;
     Timing          time_;
     std::vector<std::string> attrs_;
-
+    
     std::optional<SessionInformation> session_info_;
     std::optional<ToolAttr> tool_;
     std::optional<DirAttr> dir_;
@@ -100,10 +126,11 @@ protected:
     std::optional<EmailAddress> email_;
     std::optional<Phone> phone_;
     std::optional<ConnectionInfo> conn_info_;
+    std::optional<IceUfrag> ice_ufrag_;
+    std::optional<IcePwd> ice_pwd_;
     std::optional<BundleAttr> bundle_attr_;
     
     std::vector<MediaSdp> media_sdps_;
-    std::set<std::string> candidates_;
     std::optional<SsrcGroup> ssrc_group_;
 };
 };

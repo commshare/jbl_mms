@@ -117,6 +117,24 @@ int32_t Sdp::parse(const std::string &sdp)
             }
             conn_info_ = conn_info;
         }
+        else if (boost::starts_with(lines[i], IceUfrag::prefix))
+        {
+            IceUfrag ice_ufrag;
+            if (!ice_ufrag.parse(lines[i]))
+            {
+                return -14;
+            }
+            ice_ufrag_ = ice_ufrag;
+        }
+        else if (boost::starts_with(lines[i], IcePwd::prefix))
+        {
+            IcePwd ice_pwd;
+            if (!ice_pwd.parse(lines[i]))
+            {
+                return -15;
+            }
+            ice_pwd_ = ice_pwd;
+        }
 
         i++;
     }
@@ -141,7 +159,9 @@ int32_t Sdp::parse(const std::string &sdp)
             }
             curr_media_sdp = msdp;
             continue;
-        } else if (boost::starts_with(lines[i], SsrcGroup::prefix)) {
+        }
+        else if (boost::starts_with(lines[i], SsrcGroup::prefix))
+        {
             break;
         }
 
@@ -171,23 +191,27 @@ int32_t Sdp::parse(const std::string &sdp)
         media_sdps_.emplace_back(curr_media_sdp.value());
     }
 
-    for (; i < lines.size(); i++) {
-        if (boost::starts_with(lines[i], SsrcGroup::prefix)) {
+    for (; i < lines.size(); i++)
+    {
+        if (boost::starts_with(lines[i], SsrcGroup::prefix))
+        {
             SsrcGroup ssrc_group;
-            if (!ssrc_group.parse(lines[i])) {
+            if (!ssrc_group.parse(lines[i]))
+            {
                 return -8;
             }
             ssrc_group_ = ssrc_group;
             continue;
         }
 
-        if (ssrc_group_) {
-            if (!ssrc_group_.value().parseSsrc(lines[i])) {
+        if (ssrc_group_)
+        {
+            if (!ssrc_group_.value().parseSsrc(lines[i]))
+            {
                 return -9;
             }
         }
     }
-    
 
     return 0;
 }
@@ -209,23 +233,38 @@ std::string Sdp::toString() const
     oss << origin_.toString();
     oss << session_name_.toString();
     oss << time_.toString();
-    if (session_info_) {
+    if (session_info_)
+    {
         oss << session_info_.value().toString();
     }
 
-    if (tool_) {
+    if (tool_)
+    {
         oss << tool_.value().toString();
     }
 
-    for (auto & a : attrs_) {
-        oss << "a=" << a << std::endl; 
+    for (auto &a : attrs_)
+    {
+        oss << "a=" << a << std::endl;
     }
 
-    if (bundle_attr_) {
+    if (ice_ufrag_)
+    {
+        oss << ice_ufrag_.value().toString();
+    }
+
+    if (ice_pwd_)
+    {
+        oss << ice_pwd_.value().toString();
+    }
+
+    if (bundle_attr_)
+    {
         oss << bundle_attr_.value().toString();
     }
 
-    for (auto & m : media_sdps_) {
+    for (auto &m : media_sdps_)
+    {
         oss << m.toString();
     }
     // std::optional<ToolAttr> tool_;
@@ -235,7 +274,7 @@ std::string Sdp::toString() const
     // std::optional<Phone> phone_;
     // std::optional<ConnectionInfo> conn_info_;
     // std::optional<BundleAttr> bundle_attr_;
-    
+
     // std::vector<MediaSdp> media_sdps_;
     // std::set<std::string> candidates_;
     // std::unordered_map<uint32_t, Ssrc> ssrcs_;

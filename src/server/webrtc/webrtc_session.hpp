@@ -7,6 +7,12 @@
 #include "core/session.hpp"
 #include "protocol/sdp/sdp.hpp"
 
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/spawn.hpp>
+
+#include "base/network/udp_socket.hpp"
+#include "server/stun/protocol/stun_msg.h"
+
 namespace mms {
 class WebsocketServer;
 class WebSocketConn;
@@ -21,14 +27,16 @@ public:
         return worker_;
     }
 
-    const std::string & getICEUfrag() const {
-        return ice_ufrag_;
+    const std::string & getLocalICEUfrag() const {
+        return local_ice_ufrag_;
     }
 
-    const std::string & getICEPwd() const {
-        return ice_pwd_;
+    const std::string & getLocalICEPwd() const {
+        return local_ice_pwd_;
     }
 
+    bool processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processStunBindingReq(StunMsg & stun_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 private:
     bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);
@@ -41,8 +49,10 @@ private:
     uint64_t session_id_ = 0;
     std::string app_;
     std::string stream_;
-    std::string ice_ufrag_;
-    std::string ice_pwd_;
+    std::string local_ice_ufrag_;
+    std::string local_ice_pwd_;
+    std::string remote_ice_ufrag_;
+    std::string remote_ice_pwd_;
 };
 
 };

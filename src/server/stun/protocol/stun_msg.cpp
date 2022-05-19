@@ -4,7 +4,6 @@
 #include "stun_msg.h"
 
 #include "stun_message_integrity_attr.h"
-#include "stun_username_attr.h"
 #include "stun_goog_network_info_attr.h"
 #include "stun_ice_priority_attr.h"
 #include "stun_ice_use_candidate_attr.h"
@@ -21,8 +20,37 @@
 #include "stun_change_address_attr.h"
 #include "stun_error_code_attr.h"
 
-using namespace mms;
+// 7.3.  Receiving a STUN Message
 
+//    This section specifies the processing of a STUN message.  The
+//    processing specified here is for STUN messages as defined in this
+//    specification; additional rules for backwards compatibility are
+//    defined in Section 12.  Those additional procedures are optional, and
+//    usages can elect to utilize them.  First, a set of processing
+//    operations is applied that is independent of the class.  This is
+//    followed by class-specific processing, described in the subsections
+//    that follow.
+
+// Rosenberg, et al.           Standards Track                    [Page 16]
+
+// RFC 5389                          STUN                      October 2008
+
+//    When a STUN agent receives a STUN message, it first checks that the
+//    message obeys the rules of Section 6.  It checks that the first two
+//    bits are 0, that the magic cookie field has the correct value, that
+//    the message length is sensible, and that the method value is a
+//    supported method.  It checks that the message class is allowed for
+//    the particular method.  If the message class is "Success Response" or
+//    "Error Response", the agent checks that the transaction ID matches a
+//    transaction that is still in progress.  If the FINGERPRINT extension
+//    is being used, the agent checks that the FINGERPRINT attribute is
+//    present and contains the correct value.  If any errors are detected,
+//    the message is silently discarded.  In the case when STUN is being
+//    multiplexed with another protocol, an error may indicate that this is
+//    not really a STUN message; in this case, the agent should try to
+//    parse the message as a different protocol.
+
+using namespace mms;
 int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
@@ -30,9 +58,10 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
     // std::cout << "header consumed:" << consumed << std::endl;
     if (consumed < 0)
     {
+        std::cout << "decode stun msg header failed." << std::endl;
         return -1;
     }
-    
+
     data += consumed;
     len -= consumed;
     while (len > 0)
@@ -72,15 +101,15 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         case STUN_ATTR_USERNAME:
         {
-            auto username_attr = std::unique_ptr<StunUsernameAttr>(new StunUsernameAttr);
-            int32_t c = username_attr->decode(data, len);
+            StunUsernameAttr username;
+            int32_t c = username.decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -3;
             }
+            username_attr = username;
             data += c;
             len -= c;
-            attrs.emplace_back(std::move(username_attr));
             break;
         }
         case STUN_ATTR_PASSWORD:
@@ -89,28 +118,19 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
         }
         case STUN_ATTR_MESSAGE_INTEGRITY:
         {
-            auto message_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr);
-            int32_t c = message_integrity_attr->decode(data, len);
+            /*
+            With the exception of the FINGERPRINT
+            attribute, which appears after MESSAGE-INTEGRITY, agents MUST ignore
+            all other attributes that follow MESSAGE-INTEGRITY.
+            */
+            msg_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr);
+            int32_t c = msg_integrity_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -4;
             }
             data += c;
             len -= c;
-            attrs.emplace_back(std::move(message_integrity_attr));
-            break;
-        }
-        case STUN_ATTR_FINGERPRINT:
-        {
-            auto stun_fingerprint = std::unique_ptr<StunFingerPrintAttr>(new StunFingerPrintAttr);
-            int32_t c = stun_fingerprint->decode(data, len);
-            if (c < 0)
-            {
-                return -2;
-            }
-            data += c;
-            len -= c;
-            attrs.emplace_back(std::move(stun_fingerprint));
             break;
         }
         case STUN_ATTR_ERROR_CODE:
@@ -131,7 +151,7 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             int32_t c = goog_network_info_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -5;
             }
             data += c;
             len -= c;
@@ -144,7 +164,8 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             int32_t c = ice_priority_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                std::cout << "decode STUN_ICE_ATTR_PRIORITY failed." << std::endl;
+                return -6;
             }
             data += c;
             len -= c;
@@ -157,7 +178,7 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             int32_t c = ice_use_candidate_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -7;
             }
             data += c;
             len -= c;
@@ -170,7 +191,7 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             int32_t c = ice_controlled_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -8;
             }
             data += c;
             len -= c;
@@ -183,28 +204,68 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
             int32_t c = ice_controlling_attr->decode(data, len);
             if (c < 0)
             {
-                return -2;
+                return -9;
             }
             data += c;
             len -= c;
             attrs.emplace_back(std::move(ice_controlling_attr));
             break;
         }
-        default: {
-            return -2;
+        default:
+        {
+            std::cout << std::hex << "attr type:" << t << std::endl;
+            return -10;
         }
+        }
+
+        /*
+            With the exception of the FINGERPRINT
+            attribute, which appears after MESSAGE-INTEGRITY, agents MUST ignore
+            all other attributes that follow MESSAGE-INTEGRITY.
+        */
+        if (msg_integrity_attr)
+        { //如果解析到message integrity了，则最后只解析fingerprint了
+            break;
         }
     }
+
+    if (len > 0)
+    {
+        uint16_t t = ntohs(*(uint16_t *)data);
+        if (STUN_ATTR_FINGERPRINT == t)
+        {
+            fingerprint_attr = std::unique_ptr<StunFingerPrintAttr>(new StunFingerPrintAttr);
+            int32_t c = fingerprint_attr->decode(data, len);
+            if (c < 0)
+            {
+                return -11;
+            }
+            data += c;
+            len -= c;
+        }
+    }
+
     return 0;
 }
 
-size_t StunMsg::size(bool add_finger_print)
+size_t StunMsg::size(bool add_message_integrity, bool add_finger_print)
 {
     int32_t s = 0;
     s += header.size();
     for (auto &attr : attrs)
     {
         s += attr->size();
+    }
+
+    if (username_attr)
+    {
+        std::cout << "username.size:" << username_attr.value().size() << std::endl;
+        s += username_attr.value().size();
+    }
+
+    if (add_message_integrity) 
+    {
+        s += 24;/*StunMsgAttr::size() + 20bytes*/
     }
 
     if (add_finger_print)
@@ -214,23 +275,30 @@ size_t StunMsg::size(bool add_finger_print)
     return s;
 }
 
-int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, bool add_finger_print, const std::string &pwd)
+int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, const std::string &pwd, bool add_finger_print)
 {
     int32_t content_len = 0;
+    if (username_attr)
+    {
+        content_len += username_attr.value().size();
+    }
+
     for (auto &attr : attrs)
     {
         content_len += attr->size();
     }
     header.length = content_len;
-    if (add_finger_print)
-    {
-        header.length += 8;
-    }
 
     if (add_message_integrity)
     {
         header.length += 4 + 20;
     }
+
+    if (add_finger_print)
+    {
+        header.length += 8;
+    }
+
     uint8_t *data_start = data;
     int32_t consumed = header.encode(data, len);
     if (consumed < 0)
@@ -240,6 +308,19 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, b
 
     data += consumed;
     len -= consumed;
+
+    if (username_attr)
+    {
+        consumed = username_attr.value().encode(data, len);
+        std::cout << "username_attr consumed:" << consumed << std::endl;
+        if (consumed < 0)
+        {
+            return -1;
+        }
+    }
+    data += consumed;
+    len -= consumed;
+
     for (auto &attr : attrs)
     {
         consumed = attr->encode(data, len);
@@ -253,8 +334,8 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, b
 
     if (add_message_integrity)
     {
-        auto message_integrity = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr(data_start, data - data_start, add_finger_print, pwd));
-        consumed = message_integrity->encode(data, len);
+        msg_integrity_attr = std::unique_ptr<StunMessageIntegrityAttr>(new StunMessageIntegrityAttr(data_start, header.length + 20, add_finger_print, pwd));
+        consumed = msg_integrity_attr->encode(data, len);
         if (consumed < 0)
         {
             return -3;
@@ -265,8 +346,8 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, b
 
     if (add_finger_print)
     {
-        auto finger_print = std::unique_ptr<StunFingerPrintAttr>(new StunFingerPrintAttr(data_start, data - data_start));
-        consumed = finger_print->encode(data, len);
+        fingerprint_attr = std::unique_ptr<StunFingerPrintAttr>(new StunFingerPrintAttr(data_start, data - data_start));
+        consumed = fingerprint_attr->encode(data, len);
         if (consumed < 0)
         {
             return -4;
@@ -276,4 +357,22 @@ int32_t StunMsg::encode(uint8_t *data, size_t len, bool add_message_integrity, b
     }
 
     return data - data_start;
+}
+
+bool StunMsg::checkMsgIntegrity(uint8_t *data, size_t len, const std::string &pwd)
+{
+    if (!msg_integrity_attr->check(*this, data, len, pwd))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool StunMsg::checkFingerPrint(uint8_t *data, size_t len) 
+{
+    if (!fingerprint_attr) 
+    {
+        return true;
+    }
+    return fingerprint_attr->check(data, len);
 }
