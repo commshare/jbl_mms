@@ -43,7 +43,7 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
                 }
             }
         } else if (UDP_MSG_DTLS == t) {
-            
+
         }
     });
 }
@@ -66,9 +66,30 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
     std::cout << "local_user_name:" << local_user_name << std::endl;
     std::shared_ptr<WebRtcSession> session;
     {
-        std::lock_guard<std::mutex> lck(ufrag_session_map_mtx_);
+        std::lock_guard<std::mutex> lck(session_map_mtx_);
         auto it_session = ufrag_session_map_.find(local_user_name);
         if (it_session == ufrag_session_map_.end())
+        {
+            return false;
+        }
+        session = it_session->second;
+        endpoint_session_map_.insert(std::pair(remote_ep, session));
+    }
+
+    if (!session) //todo add log
+    {
+        return false;
+    }
+    return session->processStunPacket(stun_msg, data, len, sock, remote_ep, yield);
+}
+
+bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    std::shared_ptr<WebRtcSession> session;
+    {
+        std::lock_guard<std::mutex> lck(session_map_mtx_);
+        auto it_session = endpoint_session_map_.find(remote_ep);
+        if (it_session == endpoint_session_map_.end())
         {
             return false;
         }
@@ -79,7 +100,6 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
     {
         return false;
     }
-    return session->processStunPacket(stun_msg, data, len, sock, remote_ep, yield);
 }
 
 void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
@@ -94,7 +114,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
             conn_map_.insert(std::pair(conn, ws_conn));
         }
         {
-            std::lock_guard<std::mutex> lck(ufrag_session_map_mtx_);
+            std::lock_guard<std::mutex> lck(session_map_mtx_);
             ufrag_session_map_.insert(std::pair(webrtc_session->getLocalICEUfrag(), webrtc_session));
         }
 

@@ -1,5 +1,8 @@
 #pragma once
 #include <memory>
+#include <boost/array.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/spawn.hpp>
 
 namespace mms {
 class UdpSocket;
