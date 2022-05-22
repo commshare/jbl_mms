@@ -5,6 +5,14 @@
 
 namespace mms
 {
+    enum ContentType
+    {
+        change_cipher_spec = 20,
+        alert = 21,
+        handshake = 22,
+        application_data = 23
+    };
+
     enum HandshakeType
     {
         hello_request = 0,
@@ -20,20 +28,20 @@ namespace mms
         finished = 20
     };
 
-    struct
+    typedef struct ProtocolVersion
     {
         uint8_t major, minor;
-    } ProtocolVersion;
+    };
 
-    struct
+    typedef struct Random
     {
         uint32_t gmt_unix_time;
         uint8_t random_bytes[28];
-    } Random;
+    };
 
     typedef uint16_t CipherSuite;
     typedef uint8_t CompressionMethod;
-    struct
+    typedef struct
     {
         ProtocolVersion client_version;
         Random random;
@@ -43,21 +51,13 @@ namespace mms
         std::vector<CompressionMethod> compression_methods;
     } ClientHello;
 
-    struct
+    typedef struct
     {
         ProtocolVersion server_version;
         std::string cookie;
     } HelloVerifyRequest;
 
-    enum
-    {
-        change_cipher_spec = 20,
-        alert = 21,
-        handshake = 22,
-        application_data = 23
-    } ContentType;
-
-    struct
+    typedef struct
     {
         ContentType type;
         ProtocolVersion version;
@@ -67,7 +67,7 @@ namespace mms
         std::string fragment;
     } DTLSPlaintext;
 
-    struct
+    typedef struct
     {
         ContentType type;         /* same as TLSPlaintext.type */
         ProtocolVersion version;  /* same as TLSPlaintext.version */
@@ -77,7 +77,7 @@ namespace mms
         std::string fragment;
     } DTLSCompressed;
 
-    struct
+    typedef struct
     {
         ContentType type;
         ProtocolVersion version;

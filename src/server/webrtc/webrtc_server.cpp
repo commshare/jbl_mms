@@ -100,6 +100,8 @@ bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock,
     {
         return false;
     }
+
+    return session->processDtlsPacket(data, len, sock, remote_ep, yield);
 }
 
 void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
