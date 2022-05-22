@@ -19,6 +19,12 @@ enum UDP_MSG_TYPE {
     UDP_MSG_RTP     = 5,
 };
 
+struct hash_endpoint {
+    size_t operator()(const boost::asio::ip::udp::endpoint& p) const {
+        return std::hash<std::string>()(p.address().to_string()) ^ std::hash<int>()(p.port());
+    }
+};
+
 class WebRtcServer : public UdpServer, public WebsocketServer {
 public:
     WebRtcServer(ThreadWorker *worker) : UdpServer(worker) {
@@ -40,7 +46,7 @@ private:
     std::mutex mtx_;
     std::unordered_map<websocketpp::server<websocketpp::config::asio>::connection_ptr, std::shared_ptr<WebSocketConn>> conn_map_;
     std::mutex session_map_mtx_;
-    std::unordered_map<boost::asio::ip::udp::endpoint, std::shared_ptr<WebRtcSession>> endpoint_session_map_;
+    std::unordered_map<boost::asio::ip::udp::endpoint, std::shared_ptr<WebRtcSession>, hash_endpoint> endpoint_session_map_;
     std::unordered_map<std::string, std::shared_ptr<WebRtcSession>> ufrag_session_map_;
 };
 };
