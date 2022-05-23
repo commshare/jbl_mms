@@ -6,6 +6,8 @@ public:
     ~DtlsCtx() {
 
     }
+
+    bool processDtlsPacket(uint8_t *data, size_t len);
 public:
     bool init();
 };

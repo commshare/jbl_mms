@@ -96,7 +96,7 @@ bool DtlsCert::createCert()
         return false;
     }
 
-    // Step5, 生成证书签名
+    // Step6, 生成证书签名
     ret = X509_sign(certificate_, private_key_, EVP_sha1());
     if (ret == 0)
     {

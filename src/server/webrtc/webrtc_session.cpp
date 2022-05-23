@@ -16,6 +16,7 @@ WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker
     std::cout << "create webrtcsession" << std::endl;
     local_ice_ufrag_ = Utils::randStr(4);
     local_ice_pwd_ = Utils::randStr(24);
+    dtls_ctx_.init();
 }
 
 WebRtcSession::~WebRtcSession()
@@ -328,7 +329,6 @@ bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, co
 
 bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
-    
     return true;
 }
 

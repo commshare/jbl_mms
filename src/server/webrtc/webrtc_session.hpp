@@ -13,6 +13,7 @@
 #include "base/network/udp_socket.hpp"
 #include "server/stun/protocol/stun_msg.h"
 
+#include "dtls/dtls_ctx.h"
 namespace mms {
 class WebsocketServer;
 class WebSocketConn;
@@ -55,6 +56,8 @@ private:
     std::string local_ice_pwd_;
     std::string remote_ice_ufrag_;
     std::string remote_ice_pwd_;
+
+    DtlsCtx dtls_ctx_;
 };
 
 };
