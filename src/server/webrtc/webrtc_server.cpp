@@ -43,7 +43,12 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
                 }
             }
         } else if (UDP_MSG_DTLS == t) {
-
+            std::cout << "***************** start process dtls packet ****************" << std::endl;
+            if (!processDtlsPacket(data, len, sock, remote_ep, yield))
+            {
+                std::cout << "process dtls packet failed." << std::endl;
+                return;
+            }
         }
     });
 }

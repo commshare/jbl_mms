@@ -188,8 +188,16 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
         }
 
         ExtensionType t = (ExtensionType)ntohs(*(uint16_t*)data);
+        data += 2;
+        length -= 2;
         if (t == use_srtp)
         {
+            std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
+            int32_t c = item->decode(data, length);
+            data += c; 
+            length -= c;
+            len -= c;
+        } else {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
             int32_t c = item->decode(data, length);
             data += c; 
