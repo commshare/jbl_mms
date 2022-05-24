@@ -34,5 +34,10 @@ namespace mms
         uint32_t length;        /* bytes in message (24bit) */
         std::unique_ptr<HandShakeMsg> msg;
         int32_t decode(uint8_t *data, size_t len);
+        int32_t encode(uint8_t *data, size_t len);
+        uint32_t size();
+        HandshakeType getType() const {
+            return msg_type;
+        }
     };
 };

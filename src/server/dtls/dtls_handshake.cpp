@@ -47,3 +47,42 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
 
     return data - data_start;
 }
+
+int32_t HandShake::encode(uint8_t *data, size_t len)
+{
+    uint8_t *data_start = data;
+    if (len < 1) 
+    {
+        return -1;
+    }
+    data[0] = msg_type;
+    data++;
+    len--;
+
+    uint8_t *plen = data;
+    data += 3;
+    len -= 3;
+    uint32_t content_len = 0;
+    if (msg)
+    {
+        int32_t c = msg->encode(data, len);
+        if (c < 0)
+        {
+            return -2;
+        }
+        data += c;
+        len -= c;
+        content_len += c;
+    }
+
+    uint8_t * p = (uint8_t*)&content_len;
+    plen[0] = p[2];
+    plen[1] = p[1];
+    plen[2] = p[0];
+    return data - data_start;
+}
+
+uint32_t HandShake::size()
+{
+    return 0;
+}
