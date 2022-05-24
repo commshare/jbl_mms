@@ -5,11 +5,11 @@ namespace mms
 {
     struct ServerHello : public HandShakeMsg
     {
-        ProtocolVersion server_version;
+        DtlsProtocolVersion server_version;
         Random random;
         std::string session_id;
         CipherSuite cipher_suite;
-        CompressionMethod compression_method;
+        CompressionMethod compression_method = COMPRESSION_METHOD_NULL;
         // 1.2版本才有
         DtlsExtension extension;
 
@@ -17,12 +17,12 @@ namespace mms
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size();
 
-        void setProtocolVersion(const ProtocolVersion &pv)
+        void setDtlsProtocolVersion(const DtlsProtocolVersion &pv)
         {
             server_version = pv;
         }
 
-        const ProtocolVersion &getProtocolVersion() const
+        const DtlsProtocolVersion &getDtlsProtocolVersion() const
         {
             return server_version;
         }

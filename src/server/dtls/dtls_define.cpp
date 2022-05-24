@@ -9,7 +9,7 @@
 #include "./extension/dtls_use_srtp.h"
 using namespace mms;
 
-int32_t ProtocolVersion::decode(uint8_t *data, size_t len)
+int32_t DtlsProtocolVersion::decode(uint8_t *data, size_t len)
 {
     if (len < 2)
     {
@@ -21,7 +21,7 @@ int32_t ProtocolVersion::decode(uint8_t *data, size_t len)
     return 2;
 }
 
-int32_t ProtocolVersion::encode(uint8_t *data, size_t len)
+int32_t DtlsProtocolVersion::encode(uint8_t *data, size_t len)
 {
     if (len < 2)
     {
@@ -214,6 +214,31 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     data += c;
     len -= c;
 
+    return data - data_start;
+}
+
+int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
+{
+    if (!msg) {
+        return -1;
+    }
+    uint8_t *data_start = data;
+    header.length = msg->size();
+    int32_t c = header.encode(data, len);
+    if (c < 0)
+    {
+        return -1;
+    }
+    data += c;
+    len -= c;
+
+    c = msg->encode(data, len);
+    if (c < 0)
+    {
+        return -2;
+    }
+    data += c;
+    len -= c;
     return data - data_start;
 }
 

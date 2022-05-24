@@ -5,7 +5,8 @@ namespace mms
 {
     struct ClientHello : public HandShakeMsg
     {
-        ProtocolVersion client_version;
+        ClientHello() = default;
+        DtlsProtocolVersion client_version;
         Random random;
         std::string session_id;
         std::string cookie; // 0-32

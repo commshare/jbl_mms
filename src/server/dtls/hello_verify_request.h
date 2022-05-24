@@ -4,7 +4,7 @@
 namespace mms {
     struct HelloVerifyRequest : public DtlsMsg
     {
-        ProtocolVersion server_version;
+        DtlsProtocolVersion server_version;
         std::string cookie;
         int32_t decode(uint8_t *data, size_t len);
     };
