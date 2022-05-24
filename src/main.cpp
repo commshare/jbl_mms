@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
     std::cout << "stop rtmp server" << std::endl;
     http_server.stop();
     rtmp_server.stop();
+    webrtc_server.stop();
     thread_pool_inst::get_mutable_instance().stop();
     return 0;
 }

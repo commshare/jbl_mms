@@ -100,5 +100,8 @@ void WebsocketServer::onMessage(websocketpp::server<websocketpp::config::asio>* 
 }
 
 void WebsocketServer::stop() {
-
+    stop_listening();
+    if (work_thread_ && work_thread_->joinable()) {
+        work_thread_->join();
+    }
 }

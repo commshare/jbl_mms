@@ -167,3 +167,8 @@ UDP_MSG_TYPE WebRtcServer::detectMsgType(uint8_t * data, size_t len)
     }
     return UDP_MSG_UNKNOWN;
 }
+
+void WebRtcServer::stop()
+{
+    WebsocketServer::stop();
+}

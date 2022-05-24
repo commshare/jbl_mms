@@ -2,6 +2,8 @@
 #include <string.h>
 #include <iostream>
 
+#include "base/utils/utils.h"
+
 #include "dtls_define.h"
 #include "dtls_handshake.h"
 #include "./extension/dtls_use_srtp.h"
@@ -16,6 +18,17 @@ int32_t ProtocolVersion::decode(uint8_t *data, size_t len)
 
     major = data[0];
     minor = data[1];
+    return 2;
+}
+
+int32_t ProtocolVersion::encode(uint8_t *data, size_t len)
+{
+    if (len < 2)
+    {
+        return -1;
+    }
+    data[0] = major;
+    data[1] = minor;
     return 2;
 }
 
@@ -38,6 +51,34 @@ int32_t Random::decode(uint8_t *data, size_t len)
     memcpy(random_bytes, data, 28);
     data += 28;
     return data - data_start;
+}
+
+int32_t Random::encode(uint8_t *data, size_t len)
+{
+    uint8_t *data_start = data;
+    if (len < 4)
+    {
+        return -1;
+    }
+
+    *(uint32_t*)data = htonl(gmt_unix_time);
+    data += 4;
+    len -= 4;
+
+    if (len < 28)
+    {
+        return -2;
+    }
+    memcpy(data, random_bytes, 28);
+    data += 28;
+    return data - data_start;
+}
+
+void Random::genRandom()
+{
+    std::string s = Utils::randStr(28);
+    memcpy(random_bytes, s.data(), 28);
+    gmt_unix_time = time(NULL);
 }
 
 int32_t DtlsHeader::decode(uint8_t *data, size_t len)
@@ -191,18 +232,11 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     uint16_t length = ntohs(*(uint16_t *)data);
+    data += 2;
+    len -= 2;
     while (length > 0)
     {
-        if (length < 2)
-        {
-            return data - data_start;
-        }
-
         ExtensionType t = (ExtensionType)ntohs(*(uint16_t *)data);
-        data += 2;
-        length -= 2;
-        len -= 2;
-
         if (t == use_srtp)
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
@@ -217,7 +251,7 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
         }
         else
         {
-            std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
+            std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UnknownExtItem);
             int32_t c = item->decode(data, length);
             if (c < 0)
             {
@@ -229,6 +263,41 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
         }
     }
     return data - data_start;
+}
+
+int32_t DtlsExtension::encode(uint8_t *data, size_t len)
+{
+    uint8_t *data_start = data;
+    if (len < 2)
+    {
+        return -1;
+    }
+    *(uint16_t*)data = htons(size() - 2);
+    data += 2;
+    len -= 2;
+
+    for (auto & p : extensions) 
+    {
+        int32_t c = p.second->encode(data, len);
+        if (c < 0)
+        {
+            return -2;
+        }
+        data += c;
+        len -= c;
+    }
+
+    return data - data_start;
+}
+
+uint32_t DtlsExtension::size()
+{
+    uint32_t size = 0;
+    size += 2; // length
+    for (auto & p : extensions) {
+        size += p.second->size();
+    }
+    return size;
 }
 
 int32_t UnknownExtItem::decode(uint8_t *d, size_t len)
@@ -243,6 +312,11 @@ int32_t UnknownExtItem::decode(uint8_t *d, size_t len)
     d += header.length;
     len -= header.length;
     return d - data_start;
+}
+
+int32_t UnknownExtItem::encode(uint8_t *d, size_t len)
+{
+    return 0;
 }
 
 int32_t DtlsExtensionHeader::decode(uint8_t *data, size_t len)
@@ -263,5 +337,20 @@ int32_t DtlsExtensionHeader::decode(uint8_t *data, size_t len)
     length = ntohs(*(uint16_t *)data);
     data += 2;
     len -= 2;
+    return data - data_start;
+}
+
+int32_t DtlsExtensionHeader::encode(uint8_t *data, size_t len)
+{
+    uint8_t *data_start = data;
+    if (len < 4)
+    {
+        return -1;
+    }
+
+    *(uint16_t*)data = htons(type);
+    *(uint16_t*)data = htons(length);
+    data += 4;
+    len -= 4;
     return data - data_start;
 }

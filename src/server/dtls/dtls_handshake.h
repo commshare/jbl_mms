@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include "dtls_define.h"
-#include "dtls_msg.h"
 
 namespace mms
 {
@@ -26,6 +25,7 @@ namespace mms
     struct HandShakeMsg
     {
         virtual int32_t decode(uint8_t *data, size_t len) = 0;
+        virtual int32_t encode(uint8_t *data, size_t len) = 0;
     };
 
     struct HandShake : public DtlsMsg
@@ -35,27 +35,4 @@ namespace mms
         std::unique_ptr<HandShakeMsg> msg;
         int32_t decode(uint8_t *data, size_t len);
     };
-
-    struct ClientHello : public HandShakeMsg
-    {
-        ProtocolVersion client_version;
-        Random random;
-        std::string session_id;
-        std::string cookie; // 0-32
-        CipherSuites cipher_suites;
-        CompressionMethods compression_methods;
-        // 1.2版本才有
-        DtlsExtension extension;
-        // std::vector<std::unique_ptr
-
-        int32_t decode(uint8_t *data, size_t len);
-    };
-
-    struct HelloVerifyRequest : public DtlsMsg
-    {
-        ProtocolVersion server_version;
-        std::string cookie;
-        int32_t decode(uint8_t *data, size_t len);
-    };
-
 };
