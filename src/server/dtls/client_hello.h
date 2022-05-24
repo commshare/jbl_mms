@@ -16,5 +16,16 @@ namespace mms
 
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
+        uint32_t size() {
+            uint32_t s = 0;
+            s += client_version.size();
+            s += random.size();
+            s += session_id.size() + 1;
+            s += cookie.size() + 1;
+            s += cipher_suites.size();
+            s += compression_methods.size();
+            s += extension.size();
+            return s;
+        }
     };
 };

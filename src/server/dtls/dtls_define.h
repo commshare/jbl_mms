@@ -42,15 +42,22 @@ namespace mms
         ContentType type;         /* same as TLSPlaintext.type */
         ProtocolVersion version;  /* same as TLSPlaintext.version */
         uint16_t epoch;           // New field
-        uint64_t sequence_number; // New field
+        uint64_t sequence_number; // New field(48bit)
         uint16_t length;
         int32_t decode(uint8_t *data, size_t len);
+        int32_t encode(uint8_t *data, size_t len);
+        uint32_t size() {
+            uint32_t s = 0;
+            s = 13;//1 + 2 + 2 + 6 + 2
+            return s;
+        }
     };
 
     struct DtlsMsg
     {
         virtual int32_t decode(uint8_t *data, size_t len) = 0;
         virtual int32_t encode(uint8_t *data, size_t len) = 0;
+        virtual uint32_t size() = 0;
     };
 
     typedef uint16_t CipherSuite;
@@ -78,6 +85,7 @@ namespace mms
     {
         std::vector<CipherSuite> cipher_suites;
         int32_t decode(uint8_t *data, size_t len);
+        uint32_t size();
     };
 
     typedef uint8_t CompressionMethod;
@@ -86,6 +94,7 @@ namespace mms
     {
         std::vector<CompressionMethod> compression_methods;
         int32_t decode(uint8_t *data, size_t len);
+        uint32_t size();
     };
 
     struct DTLSCiphertext
@@ -96,7 +105,17 @@ namespace mms
         {
             return header.type;
         }
+
+        void setMsg(std::unique_ptr<DtlsMsg> val)
+        {
+            msg = std::move(val);
+        }
+
         int32_t decode(uint8_t *data, size_t len);
+        int32_t encode(uint8_t *data, size_t len);
+        uint32_t size() {
+            return header.size() + msg->size();
+        }
     };
 
     // @doc https://datatracker.ietf.org/doc/html/rfc5246#page-44

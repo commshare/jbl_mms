@@ -26,6 +26,7 @@ namespace mms
     {
         virtual int32_t decode(uint8_t *data, size_t len) = 0;
         virtual int32_t encode(uint8_t *data, size_t len) = 0;
+        virtual uint32_t size() = 0;
     };
 
     struct HandShake : public DtlsMsg

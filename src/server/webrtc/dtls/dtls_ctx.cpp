@@ -22,7 +22,11 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len)
 
     if (dtls_msg.getType() == handshake)
     {
-        HandShake * handshake = (HandShake*)dtls_msg.msg.get();
+        HandShake *handshake = (HandShake *)dtls_msg.msg.get();
+        if (handshake->getType() == client_hello)
+        {
+            
+        }
     }
 
     return true;

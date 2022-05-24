@@ -134,6 +134,56 @@ int32_t DtlsHeader::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
+int32_t DtlsHeader::encode(uint8_t *data, size_t len)
+{
+    uint8_t * data_start = data;
+    if (len < 1)
+    {
+        return -1;
+    }
+    data[0] = type;
+    data++;
+    len--;
+
+    int32_t c = version.encode(data, len);
+    if (c < 0)
+    {
+        return -2;
+    }
+    data += c;
+    len -= c;
+
+    if (len < 2)
+    {
+        return -3;
+    }
+    *(uint16_t*)data = htons(epoch);
+    data += 2;
+    len -= 2;
+
+    if (len < 6)
+    {
+        return -4;
+    }
+    uint8_t *p = (uint8_t *)&sequence_number;
+    data[0] = p[5];
+    data[1] = p[4];
+    data[2] = p[3];
+    data[3] = p[2];
+    data[4] = p[1];
+    data[5] = p[0];
+    data += 6;
+    len -= 6;
+    
+    if (len < 2)
+    {
+        return -5;
+    }
+    *(uint16_t*)data = htons(length);
+    data += 2;
+    return data - data_start;
+}
+
 int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
@@ -197,6 +247,13 @@ int32_t CipherSuites::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
+uint32_t CipherSuites::size()
+{
+    uint32_t s = 2;
+    s += cipher_suites.size()*2;
+    return s;
+}
+
 int32_t CompressionMethods::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
@@ -226,6 +283,13 @@ int32_t CompressionMethods::decode(uint8_t *data, size_t len)
     }
 
     return data - data_start;
+}
+
+uint32_t CompressionMethods::size()
+{
+    uint32_t s = 1;
+    s += compression_methods.size();
+    return s;
 }
 
 int32_t DtlsExtension::decode(uint8_t *data, size_t len)

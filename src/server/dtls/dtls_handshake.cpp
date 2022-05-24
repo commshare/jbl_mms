@@ -84,5 +84,7 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
 
 uint32_t HandShake::size()
 {
-    return 0;
+    uint32_t s = 4;
+    s += msg->size();
+    return s;
 }
