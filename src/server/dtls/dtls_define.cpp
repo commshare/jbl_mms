@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <string.h>
+#include <iostream>
 
 #include "dtls_define.h"
 #include "dtls_handshake.h"
@@ -116,6 +117,7 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     c = msg->decode(data, len);
     if (c < 0)
     {
+        std::cout << "handshake decode failed, code:" << c << std::endl;
         return -3;
     }
     data += c;
@@ -127,21 +129,24 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
 int32_t CipherSuites::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
-    if (len < 2) {
+    if (len < 2)
+    {
         return -1;
     }
 
-    uint16_t length = ntohs(*(uint16_t*)data);
+    uint16_t length = ntohs(*(uint16_t *)data);
     data += 2;
     len -= 2;
 
-    int16_t count = length>>1;
-    if (len < length) {
+    int16_t count = length >> 1;
+    if (len < length)
+    {
         return -2;
     }
 
-    while (count > 0) {
-        uint16_t cipher = ntohs(*(uint16_t*)data);
+    while (count > 0)
+    {
+        uint16_t cipher = ntohs(*(uint16_t *)data);
         cipher_suites.push_back(cipher);
         data += 2;
         len -= 2;
@@ -151,22 +156,26 @@ int32_t CipherSuites::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-int32_t CompressionMethods::decode(uint8_t *data,size_t len)
+int32_t CompressionMethods::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
-    if (len < 1) {
+    if (len < 1)
+    {
         return -1;
     }
 
     uint8_t length = data[0];
     data += 1;
     len -= 1;
-    if (len < length) {
+    if (len < length)
+    {
         return -2;
     }
 
-    while (length > 0) {
-        if (len < 1) {
+    while (length > 0)
+    {
+        if (len < 1)
+        {
             return -3;
         }
         compression_methods.push_back(data[0]);
@@ -181,26 +190,40 @@ int32_t CompressionMethods::decode(uint8_t *data,size_t len)
 int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
-    uint16_t length = ntohs(*(uint16_t*)data);
-    while (length > 0) {
-        if (length < 2) {
+    uint16_t length = ntohs(*(uint16_t *)data);
+    while (length > 0)
+    {
+        if (length < 2)
+        {
             return data - data_start;
         }
 
-        ExtensionType t = (ExtensionType)ntohs(*(uint16_t*)data);
+        ExtensionType t = (ExtensionType)ntohs(*(uint16_t *)data);
         data += 2;
         length -= 2;
+        len -= 2;
+
         if (t == use_srtp)
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
             int32_t c = item->decode(data, length);
-            data += c; 
+            if (c < 0)
+            {
+                return -1;
+            }
+            data += c;
             length -= c;
             len -= c;
-        } else {
+        }
+        else
+        {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
             int32_t c = item->decode(data, length);
-            data += c; 
+            if (c < 0)
+            {
+                return -2;
+            }
+            data += c;
             length -= c;
             len -= c;
         }
@@ -210,11 +233,35 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 
 int32_t UnknownExtItem::decode(uint8_t *d, size_t len)
 {
-    return 0;
+    uint8_t *data_start = d;
+    int32_t c = header.decode(d, len);
+    if (c < 0) {
+        return -1;
+    }
+    d += c;
+    len -= c;
+    d += header.length;
+    len -= header.length;
+    return d - data_start;
 }
-
 
 int32_t DtlsExtensionHeader::decode(uint8_t *data, size_t len)
 {
-    
+    uint8_t *data_start = data;
+    if (len < 2)
+    {
+        return -1;
+    }
+    type = (ExtensionType)ntohs(*(uint16_t *)data);
+    data += 2;
+    len -= 2;
+
+    if (len < 2)
+    {
+        return -2;
+    }
+    length = ntohs(*(uint16_t *)data);
+    data += 2;
+    len -= 2;
+    return data - data_start;
 }

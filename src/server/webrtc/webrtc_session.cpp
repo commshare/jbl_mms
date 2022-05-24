@@ -331,7 +331,7 @@ bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock
 {
     bool ret = dtls_ctx_.processDtlsPacket(data, len);
     if (!ret) {
-        std::cout << "process dtls packet failed." << std::endl;
+        std::cout << "process dtls packet failed" << std::endl;
         return false;
     }
     std::cout << "process dtls packet success" << std::endl;

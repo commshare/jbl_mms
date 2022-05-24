@@ -15,6 +15,7 @@ bool WebsocketServer::start(uint16_t port) {
 
             // Initialize Asio
             init_asio();
+            set_reuse_addr(true);
             // Register our message handler
             set_open_handler(std::bind(&WebsocketServer::onWebsocketOpen, this, websocketpp::lib::placeholders::_1));
             set_close_handler(std::bind(&WebsocketServer::onWebsocketClose, this, websocketpp::lib::placeholders::_1));
@@ -22,7 +23,7 @@ bool WebsocketServer::start(uint16_t port) {
 
             // Listen on port
             listen(port);
-
+            
             // Start the server accept loop
             start_accept();
 
