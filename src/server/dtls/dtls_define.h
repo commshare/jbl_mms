@@ -90,7 +90,7 @@ namespace mms
     #define TLS_ECDHE_RSA_WITH_RC4_128_SHA          0xC011
     #define TLS_ECDH_anon_WITH_RC4_128_SHA          0xC016
     #define TLS_ECDHE_PSK_WITH_RC4_128_SHA          0xC033
-    
+
     #define TLS_RSA_WITH_NULL_MD5                   0x0001
     #define TLS_RSA_WITH_NULL_SHA                   0x0002
     #define TLS_RSA_WITH_NULL_SHA256                0x003B
@@ -147,6 +147,18 @@ namespace mms
     {
         DtlsHeader header;
         std::unique_ptr<DtlsMsg> msg;
+        DTLSCiphertext() = default;
+        DTLSCiphertext(DTLSCiphertext & other) {
+            header = other.header;
+            msg = std::move(other.msg);
+        }
+
+        DTLSCiphertext & operator=(DTLSCiphertext & other) {
+            header = other.header;
+            msg = std::move(other.msg);
+            return *this;
+        }
+
         ContentType getType() const
         {
             return header.type;

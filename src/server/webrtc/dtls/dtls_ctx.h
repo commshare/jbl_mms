@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include "server/dtls/dtls_define.h"
 namespace mms {
 class DtlsCtx {
@@ -13,5 +14,9 @@ public:
     bool init();
 private:
     bool processClientHello(DTLSCiphertext & msg);
+
+private:
+    std::optional<DTLSCiphertext> client_hello_;
+    std::optional<DTLSCiphertext> server_hello_;
 };
 };
