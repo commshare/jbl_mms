@@ -37,7 +37,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg)
 {
     client_hello_ = recv_msg;
 
-    HandShake * handshake_msg = (HandShake *)client_hello_.msg.get();
+    HandShake * handshake_msg = (HandShake *)client_hello_.value().msg.get();
     ClientHello *client_hello = (ClientHello *)handshake_msg->msg.get();
     DTLSCiphertext resp_msg;
     resp_msg.setType(handshake);

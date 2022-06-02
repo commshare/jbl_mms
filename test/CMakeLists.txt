@@ -11,31 +11,17 @@ include_directories("${MMS_SOURCE_DIR}/src" "${CMAKE_BINARY_DIR}/include")
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_BINARY_DIR}/lib64")
 #source files
-file(GLOB_RECURSE MMS_SOURCES "${MMS_SOURCE_DIR}/src/*.h" "${MMS_SOURCE_DIR}/src/*.c" "${MMS_SOURCE_DIR}/src/*.cpp" "${MMS_SOURCE_DIR}/src/*.cc")
+file(GLOB_RECURSE TEST_SOURCES "${MMS_SOURCE_DIR}/test/*.h" "${MMS_SOURCE_DIR}/test/*.c" "${MMS_SOURCE_DIR}/test/*.cpp" "${MMS_SOURCE_DIR}/test/*.cc")
 
-add_executable(mms ${MMS_SOURCES})
-add_dependencies(mms 
-    libboost-1.75.0
-    libjemalloc
-    libjsoncpp
+add_executable(test_cert ${TEST_SOURCES})
+add_dependencies(
+    test_cert
     libopenssl-1.1.1
-    libwebsocket++-0.8.2
 )
-
-target_link_libraries(mms
-    boost_system.a
-    boost_serialization.a
-    boost_date_time.a
-    boost_regex.a
-    boost_coroutine.a
-    boost_thread.a
-    boost_context.a
-    boost_program_options.a
+target_link_libraries(test_cert
     ssl.a 
     crypto.a
-    libjemalloc.a
-    libjsoncpp.a
     dl
     pthread
 )
-install(TARGETS mms RUNTIME DESTINATION bin)
+install(TARGETS test_cert RUNTIME DESTINATION bin)
