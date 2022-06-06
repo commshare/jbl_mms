@@ -6,7 +6,9 @@
 
 #include "dtls_define.h"
 #include "dtls_handshake.h"
+
 #include "./extension/dtls_use_srtp.h"
+#include "./extension/signature_algorithm.h"
 using namespace mms;
 
 int32_t DtlsProtocolVersion::decode(uint8_t *data, size_t len)
@@ -329,6 +331,18 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
         if (t == use_srtp)
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
+            int32_t c = item->decode(data, length);
+            if (c < 0)
+            {
+                return -1;
+            }
+            data += c;
+            length -= c;
+            len -= c;
+        }
+        else if (t == signature_algorithms)
+        {
+            std::unique_ptr<SignatureAndHashAlgorithmExt> item = std::unique_ptr<SignatureAndHashAlgorithmExt>(new SignatureAndHashAlgorithmExt);
             int32_t c = item->decode(data, length);
             if (c < 0)
             {

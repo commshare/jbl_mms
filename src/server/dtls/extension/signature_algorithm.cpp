@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 
-#include "signature_algorigthm.h"
+#include "signature_algorithm.h"
 using namespace mms;
 
 int32_t SignatureAndHashAlgorithmExt::decode(uint8_t *data, size_t len)
