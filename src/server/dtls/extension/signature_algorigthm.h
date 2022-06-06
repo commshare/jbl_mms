@@ -101,6 +101,8 @@
 //    When performing session resumption, this extension is not included in
 //    Server Hello, and the server ignores the extension in Client Hello
 //    (if present).
+
+#include "../dtls_define.h"
 namespace mms {
     enum HashAlgorithm {
         none    = 0,
@@ -122,5 +124,36 @@ namespace mms {
     struct SignatureAndHashAlgorithm {
         HashAlgorithm hash;
         SignatureAlgorithm signature;
+        int32_t encode(uint8_t *data, size_t len) 
+        {
+            if (len < 2) 
+            {
+                return -1;
+            }
+
+            *data = hash;
+            *(data + 1) = signature;
+            return 2;
+        }
+
+        int32_t decode(uint8_t *data, size_t len)
+        {
+            if (len < 2) 
+            {
+                return -1;
+            }
+
+            hash = (HashAlgorithm)(*data);
+            signature = (SignatureAlgorithm)(*(data + 1));
+            return 2;
+        }
+    };
+
+    struct SignatureAndHashAlgorithmExt : public DtlsExtItem {
+        int32_t decode(uint8_t *data, size_t len);
+        int32_t encode(uint8_t *data, size_t len);
+        uint32_t size();
+
+        std::vector<SignatureAndHashAlgorithm> shas;
     };
 };

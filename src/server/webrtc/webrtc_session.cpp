@@ -9,6 +9,7 @@
 
 #include "server/stun/protocol/stun_binding_response_msg.hpp"
 #include "server/stun/protocol/stun_mapped_address_attr.h"
+#include "dtls/dtls_cert.h"
 
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn)
@@ -190,7 +191,7 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             video_sdp.setRtcpMux(RtcpMux());
             video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
-            video_sdp.setFingerPrint(FingerPrint("sha-256", "12:E8:21:31:B3:E0:97:70:8B:6E:FB:C2:20:B9:71:E2:EE:49:51:C1:C5:4E:FB:6F:55:A2:9E:1E:F7:11:13:47"));
+            video_sdp.setFingerPrint(FingerPrint("sha-1", DtlsCert::getInstance()->getFingerPrint()));
             auto remote_video_payload = media.searchPayload("H264");
             if (!remote_video_payload.has_value())
             {
