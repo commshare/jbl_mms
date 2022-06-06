@@ -37,23 +37,29 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg)
 {
     client_hello_ = recv_msg;
 
-    HandShake * handshake_msg = (HandShake *)client_hello_.value().msg.get();
-    ClientHello *client_hello = (ClientHello *)handshake_msg->msg.get();
+    HandShake * recv_handshake_msg = (HandShake *)client_hello_.value().msg.get();
+    ClientHello *client_hello = (ClientHello *)recv_handshake_msg->msg.get();
+
     DTLSCiphertext resp_msg;
     resp_msg.setType(handshake);
     resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION1));
 
-    std::unique_ptr<HandShake> handshake = std::unique_ptr<HandShake>(new HandShake);
+    std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
     auto *s = new ServerHello;
-    std::unique_ptr<HandShakeMsg> server_hello = std::unique_ptr<HandShakeMsg>(s);
+    std::unique_ptr<HandShakeMsg> resp_server_hello = std::unique_ptr<HandShakeMsg>(s);
     s->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
     s->genRandom();
     s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
-    
+    resp_handshake->setMsg(std::move(resp_server_hello));
+    resp_msg.setMsg(std::move(resp_handshake));
+    auto resp_size = s->size();
 
+    std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+    int32_t consumed = resp_msg.encode(data.get(), resp_size);
+    if (consumed < 0) 
+    {// todo:add log
+        return false;
+    }
 
-
-    handshake->setMsg(std::move(server_hello));
-    resp_msg.setMsg(std::move(handshake));
     return true;
 }
