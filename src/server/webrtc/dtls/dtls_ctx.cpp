@@ -12,7 +12,7 @@ bool DtlsCtx::init()
     return true;
 }
 
-bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len)
+bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     DTLSCiphertext dtls_msg;
     int32_t c = dtls_msg.decode(data, len);
@@ -26,14 +26,14 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len)
         HandShake *handshake = (HandShake *)dtls_msg.msg.get();
         if (handshake->getType() == client_hello)
         {
-            return processClientHello(dtls_msg);
+            return processClientHello(dtls_msg, sock, remote_ep, yield);
         }
     }
 
     return true;
 }
 
-bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg)
+bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     client_hello_ = recv_msg;
 
