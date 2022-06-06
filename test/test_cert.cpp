@@ -12,7 +12,6 @@ typedef uint8_t uchar;
 bool generateX509(const std::string &certFileName, const std::string &keyFileName, long daysValid)
 {
     bool result = false;
-    std::unique_ptr<uint8_t[]> buff = std::unique_ptr<uint8_t[]>(new uint8_t[1024]);
     std::unique_ptr<BIO, void (*)(BIO *)> certFile{BIO_new_file(certFileName.data(), "wb"), BIO_free_all};
     std::unique_ptr<BIO, void (*)(BIO *)> keyFile{BIO_new_file(keyFileName.data(), "wb"), BIO_free_all};
     std::unique_ptr<BIO, void (*)(BIO *)> memIO(BIO_new(BIO_s_mem()), BIO_free_all);
@@ -24,7 +23,6 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
 
         BN_set_word(bn.get(), RSA_F4);
         int rsa_ok = RSA_generate_key_ex(rsa.get(), RSA_KEY_LENGTH, bn.get(), nullptr);
-
         if (rsa_ok == 1)
         {
             // --- cert generation ---
@@ -66,7 +64,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
             unsigned char md[EVP_MAX_MD_SIZE];
             unsigned int n;
             X509_digest(cert.get(), digest, md, &n);
-            for(int pos = 0; pos < n; pos++) {
+            for (int pos = 0; pos < n; pos++) {
                 if (pos != n - 1) {
                     printf("%02x:", md[pos]);
                 } else {
