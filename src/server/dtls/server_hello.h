@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+
 #include "dtls_define.h"
 #include "dtls_handshake.h"
 namespace mms

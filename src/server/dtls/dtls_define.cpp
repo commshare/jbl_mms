@@ -63,7 +63,7 @@ int32_t Random::encode(uint8_t *data, size_t len)
         return -1;
     }
 
-    *(uint32_t*)data = htonl(gmt_unix_time);
+    *(uint32_t *)data = htonl(gmt_unix_time);
     data += 4;
     len -= 4;
 
@@ -138,7 +138,7 @@ int32_t DtlsHeader::decode(uint8_t *data, size_t len)
 
 int32_t DtlsHeader::encode(uint8_t *data, size_t len)
 {
-    uint8_t * data_start = data;
+    uint8_t *data_start = data;
     if (len < 1)
     {
         return -1;
@@ -159,7 +159,7 @@ int32_t DtlsHeader::encode(uint8_t *data, size_t len)
     {
         return -3;
     }
-    *(uint16_t*)data = htons(epoch);
+    *(uint16_t *)data = htons(epoch);
     data += 2;
     len -= 2;
 
@@ -176,18 +176,19 @@ int32_t DtlsHeader::encode(uint8_t *data, size_t len)
     data[5] = p[0];
     data += 6;
     len -= 6;
-    
+
     if (len < 2)
     {
         return -5;
     }
-    *(uint16_t*)data = htons(length);
+    *(uint16_t *)data = htons(length);
     data += 2;
     return data - data_start;
 }
 
 int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
 {
+    std::cout << "DTLSCiphertext::decode len:" << len << std::endl;
     uint8_t *data_start = data;
     int32_t c = header.decode(data, len);
     if (c < 0)
@@ -195,7 +196,7 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
         return -1;
     }
     data += c;
-    len += c;
+    len -= c;
 
     if (header.type == handshake)
     {
@@ -221,7 +222,8 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
 
 int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
 {
-    if (!msg) {
+    if (!msg)
+    {
         return -1;
     }
 
@@ -278,7 +280,7 @@ int32_t CipherSuites::decode(uint8_t *data, size_t len)
 uint32_t CipherSuites::size()
 {
     uint32_t s = 2;
-    s += cipher_suites.size()*2;
+    s += cipher_suites.size() * 2;
     return s;
 }
 
@@ -324,15 +326,18 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     uint16_t length = ntohs(*(uint16_t *)data);
+    std::cout << "extension len:" << length << std::endl;
     data += 2;
     len -= 2;
     while (length > 0)
     {
+        int32_t c;
         ExtensionType t = (ExtensionType)ntohs(*(uint16_t *)data);
+        //std::cout << "ExtensionType:" << t << std::endl;
         if (t == use_srtp)
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
-            int32_t c = item->decode(data, length);
+            c = item->decode(data, length);
             if (c < 0)
             {
                 return -1;
@@ -340,23 +345,12 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
             data += c;
             length -= c;
             len -= c;
+            std::cout << "use srtp consumed:" << c << std::endl;
         }
         else if (t == signature_algorithms)
         {
             std::unique_ptr<SignatureAndHashAlgorithmExt> item = std::unique_ptr<SignatureAndHashAlgorithmExt>(new SignatureAndHashAlgorithmExt);
-            int32_t c = item->decode(data, length);
-            if (c < 0)
-            {
-                return -1;
-            }
-            data += c;
-            length -= c;
-            len -= c;
-        }
-        else
-        {
-            std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UnknownExtItem);
-            int32_t c = item->decode(data, length);
+            c = item->decode(data, length);
             if (c < 0)
             {
                 return -2;
@@ -365,6 +359,19 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
             length -= c;
             len -= c;
         }
+        else
+        {
+            std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UnknownExtItem);
+            c = item->decode(data, length);
+            if (c < 0)
+            {
+                return -3;
+            }
+            data += c;
+            length -= c;
+            len -= c;
+        }
+        //std::cout << "dtls ext item consumed:" << c << std::endl;
     }
     return data - data_start;
 }
@@ -376,11 +383,11 @@ int32_t DtlsExtension::encode(uint8_t *data, size_t len)
     {
         return -1;
     }
-    *(uint16_t*)data = htons(size() - 2);
+    *(uint16_t *)data = htons(size() - 2);
     data += 2;
     len -= 2;
 
-    for (auto & p : extensions) 
+    for (auto &p : extensions)
     {
         int32_t c = p.second->encode(data, len);
         if (c < 0)
@@ -398,7 +405,8 @@ uint32_t DtlsExtension::size()
 {
     uint32_t size = 0;
     size += 2; // length
-    for (auto & p : extensions) {
+    for (auto &p : extensions)
+    {
         size += p.second->size();
     }
     return size;
@@ -408,7 +416,8 @@ int32_t UnknownExtItem::decode(uint8_t *d, size_t len)
 {
     uint8_t *data_start = d;
     int32_t c = header.decode(d, len);
-    if (c < 0) {
+    if (c < 0)
+    {
         return -1;
     }
     d += c;
@@ -452,8 +461,8 @@ int32_t DtlsExtensionHeader::encode(uint8_t *data, size_t len)
         return -1;
     }
 
-    *(uint16_t*)data = htons(type);
-    *(uint16_t*)data = htons(length);
+    *(uint16_t *)data = htons(type);
+    *(uint16_t *)data = htons(length);
     data += 4;
     len -= 4;
     return data - data_start;

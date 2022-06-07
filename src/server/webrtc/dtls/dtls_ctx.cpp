@@ -35,7 +35,6 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
 
 bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
-    std::cout << "********************** start process processClientHello ********************" << std::endl;
     client_hello_ = recv_msg;
 
     HandShake * recv_handshake_msg = (HandShake *)client_hello_.value().msg.get();
@@ -53,7 +52,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
     s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
     resp_handshake->setMsg(std::move(resp_server_hello));
     resp_msg.setMsg(std::move(resp_handshake));
-    auto resp_size = s->size();
+    auto resp_size = resp_msg.size();
 
     std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
     int32_t consumed = resp_msg.encode(data.get(), resp_size);
