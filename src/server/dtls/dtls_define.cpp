@@ -224,7 +224,7 @@ int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
     if (!msg) {
         return -1;
     }
-    
+
     uint8_t *data_start = data;
     header.length = msg->size();
     int32_t c = header.encode(data, len);

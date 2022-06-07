@@ -20,13 +20,23 @@ int32_t ClientHello::decode(uint8_t *data, size_t len)
     data += c;
     len -= c;
 
-    session_id.assign((char*)data);
-    data += session_id.size() + 1;
-    len -= session_id.size() + 1;
+    uint8_t session_id_len = *data;
+    data++;
+    len--;
+    if (session_id_len > 0) {
+        session_id.assign((char*)data, session_id_len);
+        data += session_id_len;
+        len -= session_id_len;
+    }
 
-    cookie.assign((char*)data);
-    data += cookie.size() + 1;
-    len -= cookie.size() + 1;
+    uint8_t cookie_len = *data;
+    data++;
+    len--;
+    if (cookie_len > 0) {
+        cookie.assign((char*)data, cookie_len);
+        data += cookie_len;
+        len -= cookie_len;
+    }
 
     c = cipher_suites.decode(data, len);
     if (c < 0)
