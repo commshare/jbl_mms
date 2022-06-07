@@ -127,4 +127,5 @@ uint32_t ServerHello::size()
     size += sizeof(cipher_suite);
     size += sizeof(compression_method);
     size += extension.size();
+    return size;
 }

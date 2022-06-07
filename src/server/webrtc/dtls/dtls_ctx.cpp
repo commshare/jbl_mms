@@ -58,9 +58,15 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
     int32_t consumed = resp_msg.encode(data.get(), resp_size);
     if (consumed < 0) 
     {// todo:add log
-        std::cout << "************************* encode failed ******************" << std::endl;
+        std::cout << "************************* encode failed, consumed:" << consumed << " resp_size:" << resp_size << " ******************" << std::endl;
         return false;
+    } 
+    else 
+    {
+        std::cout << "************************ encode consumed:" << consumed << " *******************" << std::endl;
     }
+
+    sock->sendTo(std::move(data), resp_size, remote_ep, yield);
 
     return true;
 }

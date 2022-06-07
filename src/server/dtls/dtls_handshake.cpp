@@ -57,8 +57,6 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     p[2] = data[0];
     data += 3;
     len -= 3;
-    std::cout << "fragment_length=" << fragment_length << std::endl;
-
 
     if (msg_type == client_hello)
     {
@@ -96,6 +94,24 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
     uint8_t *plen = data;
     data += 3;
     len -= 3;
+    if (len < 3) 
+    {
+        return -4;
+    }
+
+    uint8_t *pfragment_offset = data;
+    data += 3;
+    len -= 3;
+
+    if (len < 3) 
+    {
+        return -5;
+    }
+    
+    uint8_t *pfragment_length = data;
+    data += 3;
+    len -= 3;
+
     uint32_t content_len = 0;
     if (msg)
     {
@@ -108,17 +124,32 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
         len -= c;
         content_len += c;
     }
-
+    std::cout << "********************* encode content_len:" << content_len << " *******************" << std::endl;
     uint8_t * p = (uint8_t*)&content_len;
     plen[0] = p[2];
     plen[1] = p[1];
     plen[2] = p[0];
+
+    fragment_length = content_len - 12;
+    p = (uint8_t*)&fragment_length;
+    pfragment_length[0] = p[2];
+    pfragment_length[1] = p[1];
+    pfragment_length[2] = p[0];
+
+    std::cout << "********************* encode fragment_length:" << fragment_length << " *******************" << std::endl;
+
+    fragment_offset = 0;
+    p = (uint8_t*)&fragment_offset;
+    pfragment_length[0] = p[2];
+    pfragment_length[1] = p[1];
+    pfragment_length[2] = p[0];
+
     return data - data_start;
 }
 
 uint32_t HandShake::size()
 {
-    uint32_t s = 4;
+    uint32_t s = 12;
     s += msg->size();
     return s;
 }

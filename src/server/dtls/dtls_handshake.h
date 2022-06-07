@@ -35,9 +35,9 @@ namespace mms
         HandshakeType msg_type; /* handshake type */
         uint32_t length;        /* bytes in message (24bit) */
         uint16_t message_seq;                               // New field
-        uint32_t fragment_offset;                           // New field(24bit)
-        uint32_t fragment_length;                           // New field(24bit)
-        
+        uint32_t fragment_offset = 0;                           // New field(24bit)
+        uint32_t fragment_length = 0;                           // New field(24bit)
+
         std::unique_ptr<HandShakeMsg> msg;
         void setMsg(std::unique_ptr<HandShakeMsg> v)
         {
