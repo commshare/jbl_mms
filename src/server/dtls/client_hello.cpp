@@ -45,7 +45,6 @@ int32_t ClientHello::decode(uint8_t *data, size_t len)
     {
         return -3;
     }
-    std::cout << "cipher_suites consumed:" << c << std::endl;
     data += c;
     len -= c;
 
@@ -56,7 +55,6 @@ int32_t ClientHello::decode(uint8_t *data, size_t len)
     }
     data += c;
     len -= c;
-    std::cout << "compression_methods consumed:" << c << std::endl;
     std::cout << "left len:" << len << std::endl;
     if (len > 0) // has extension
     {

@@ -24,7 +24,7 @@ int32_t SignatureAndHashAlgorithmExt::decode(uint8_t *data, size_t len)
     }
 
     uint16_t signature_hash_algorithms_length = ntohs(*(uint16_t *)data);
-    uint16_t count = signature_hash_algorithms_length > 1;
+    uint16_t count = signature_hash_algorithms_length >> 1;
     data += 2;
     len -= 2;
     while (count > 0)
@@ -45,7 +45,6 @@ int32_t SignatureAndHashAlgorithmExt::decode(uint8_t *data, size_t len)
         len -= c;
         shas.push_back(sha);
     }
-
     return data - data_start;
 }
 

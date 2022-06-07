@@ -333,11 +333,10 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
     {
         int32_t c;
         ExtensionType t = (ExtensionType)ntohs(*(uint16_t *)data);
-        //std::cout << "ExtensionType:" << t << std::endl;
         if (t == use_srtp)
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UseSRtpExt);
-            c = item->decode(data, length);
+            c = item->decode(data, len);
             if (c < 0)
             {
                 return -1;
@@ -345,7 +344,6 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
             data += c;
             length -= c;
             len -= c;
-            std::cout << "use srtp consumed:" << c << std::endl;
         }
         else if (t == signature_algorithms)
         {
@@ -362,7 +360,7 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
         else
         {
             std::unique_ptr<DtlsExtItem> item = std::unique_ptr<DtlsExtItem>(new UnknownExtItem);
-            c = item->decode(data, length);
+            c = item->decode(data, len);
             if (c < 0)
             {
                 return -3;
@@ -371,7 +369,6 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
             length -= c;
             len -= c;
         }
-        //std::cout << "dtls ext item consumed:" << c << std::endl;
     }
     return data - data_start;
 }

@@ -24,7 +24,7 @@ int32_t UseSRtpExt::decode(uint8_t *data, size_t len)
     }
 
     uint16_t length = ntohs(*(uint16_t *)data);
-    uint16_t count = length > 1;
+    uint16_t count = length >> 1;
     data += 2;
     len -= 2;
     while (count > 0)
