@@ -33,7 +33,6 @@ int32_t ClientHello::decode(uint8_t *data, size_t len)
     uint8_t cookie_len = *data;
     data++;
     len--;
-    std::cout << "cookie_len:" << (uint32_t)cookie_len << std::endl;
     if (cookie_len > 0) {
         cookie.assign((char*)data, cookie_len);
         data += cookie_len;
@@ -55,7 +54,6 @@ int32_t ClientHello::decode(uint8_t *data, size_t len)
     }
     data += c;
     len -= c;
-    std::cout << "left len:" << len << std::endl;
     if (len > 0) // has extension
     {
         c = extension.decode(data, len);

@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 
 #include "client_hello.h"
+#include "server_hello.h"
 #include "dtls_handshake.h"
 using namespace mms;
 
@@ -28,15 +29,15 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     data += 3;
     len -= 3;
 
-    if (len < 2) 
+    if (len < 2)
     {
         return -3;
     }
-    message_seq = ntohs(*(uint16_t*)data);
+    message_seq = ntohs(*(uint16_t *)data);
     data += 2;
     len -= 2;
 
-    if (len < 3) 
+    if (len < 3)
     {
         return -4;
     }
@@ -47,7 +48,7 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     data += 3;
     len -= 3;
 
-    if (len < 3) 
+    if (len < 3)
     {
         return -5;
     }
@@ -62,6 +63,11 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     {
         msg = std::unique_ptr<HandShakeMsg>(new ClientHello);
     }
+    else if (msg_type == server_hello)
+    {
+        std::cout << "******************** server hello message **********************" << std::endl;
+        msg = std::unique_ptr<HandShakeMsg>(new ServerHello);
+    }
 
     if (!msg)
     {
@@ -71,7 +77,7 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     int32_t c = msg->decode(data, len);
     if (c < 0)
     {
-        std::cout << "client decode failed, code:" << c << std::endl;
+        std::cout << "server decode failed, code:" << c << std::endl;
         return -7;
     }
     data += c;
@@ -83,7 +89,7 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
 int32_t HandShake::encode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
-    if (len < 1) 
+    if (len < 1)
     {
         return -1;
     }
@@ -91,23 +97,34 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
     data++;
     len--;
 
+    if (len < 3)
+    {
+        return -2;
+    }
     uint8_t *plen = data;
     data += 3;
     len -= 3;
-    if (len < 3) 
+
+    if (len < 2)
+    {
+        return -3;
+    }
+    *((uint16_t *)data) = htons(message_seq);
+    data += 2;
+    len -= 2;
+
+    if (len < 3)
     {
         return -4;
     }
-
     uint8_t *pfragment_offset = data;
     data += 3;
     len -= 3;
 
-    if (len < 3) 
+    if (len < 3)
     {
         return -5;
     }
-    
     uint8_t *pfragment_length = data;
     data += 3;
     len -= 3;
@@ -123,15 +140,16 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
         data += c;
         len -= c;
         content_len += c;
+        std::cout << "**************** hello msg size:" << c << std::endl;
     }
     std::cout << "********************* encode content_len:" << content_len << " *******************" << std::endl;
-    uint8_t * p = (uint8_t*)&content_len;
+    uint8_t *p = (uint8_t *)&content_len;
     plen[0] = p[2];
     plen[1] = p[1];
     plen[2] = p[0];
 
-    fragment_length = content_len - 12;
-    p = (uint8_t*)&fragment_length;
+    fragment_length = content_len;
+    p = (uint8_t *)&fragment_length;
     pfragment_length[0] = p[2];
     pfragment_length[1] = p[1];
     pfragment_length[2] = p[0];
@@ -139,10 +157,10 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
     std::cout << "********************* encode fragment_length:" << fragment_length << " *******************" << std::endl;
 
     fragment_offset = 0;
-    p = (uint8_t*)&fragment_offset;
-    pfragment_length[0] = p[2];
-    pfragment_length[1] = p[1];
-    pfragment_length[2] = p[0];
+    p = (uint8_t *)&fragment_offset;
+    pfragment_offset[0] = p[2];
+    pfragment_offset[1] = p[1];
+    pfragment_offset[2] = p[0];
 
     return data - data_start;
 }

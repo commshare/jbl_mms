@@ -24,9 +24,14 @@ int32_t ServerHello::decode(uint8_t *data, size_t len)
     data += c;
     len -= c;
 
-    session_id.assign((char *)data);
-    data += session_id.size() + 1;
-    len -= session_id.size() + 1;
+    uint8_t session_id_len = *data;
+    data++;
+    len--;
+    if (session_id_len > 0) {
+        session_id.assign((char*)data, session_id_len);
+        data += session_id_len;
+        len -= session_id_len;
+    }
 
     if (len < 2)
     {

@@ -259,7 +259,6 @@ size_t StunMsg::size(bool add_message_integrity, bool add_finger_print)
 
     if (username_attr)
     {
-        std::cout << "username.size:" << username_attr.value().size() << std::endl;
         s += username_attr.value().size();
     }
 

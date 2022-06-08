@@ -15,7 +15,6 @@ size_t StunUsernameAttr::size()
     {
         len = local_user_name_.size();
     }
-    std::cout << " **************** StunUsernameAttr:size=" << (header_size + (((len+3)>>2)<<2)) << " ***************" << std::endl;
     return header_size + (((len+3)>>2)<<2);
 }
 

@@ -56,6 +56,8 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
             int ret = PEM_write_bio_PrivateKey(keyFile.get(), pkey.get(), nullptr, nullptr, 0, nullptr, nullptr);
             int ret2 = PEM_write_bio_X509(certFile.get(), cert.get());
             int ret3 = PEM_write_bio_X509(memIO.get(), cert.get());
+
+
             uchar *cert_data;
             int cert_len = BIO_get_mem_data(memIO.get(), &cert_data);
             printf("cert_len:%d\n", cert_len);

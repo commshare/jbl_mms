@@ -16,6 +16,8 @@ namespace mms
     };
 
 #define DTLS_MAJOR_VERSION1 0xfe
+
+#define DTLS_MINOR_VERSION0 0xff
 #define DTLS_MINOR_VERSION2 0xfd
 #define DTLS_MINOR_VERSION1 0xfe
 
@@ -55,14 +57,13 @@ namespace mms
         ContentType type;            /* same as TLSPlaintext.type */
         DtlsProtocolVersion version; /* same as TLSPlaintext.version */
         uint16_t epoch;              // New field
-        uint64_t sequence_number;    // New field(48bit)
+        uint64_t sequence_number = 1;    // New field(48bit)
         uint16_t length;
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
         {
-            uint32_t s = 0;
-            s = 13; // 1 + 2 + 2 + 6 + 2
+            uint32_t s = 13; // 1 + 2 + 2 + 6 + 2
             return s;
         }
     };

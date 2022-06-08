@@ -66,7 +66,7 @@ bool DtlsCert::createCert()
     {
         return false;
     }
-    // // 生成finger print
+    // 生成finger print
     std::unique_ptr<BIO, void (*)(BIO *)> memIO(BIO_new(BIO_s_mem()), BIO_free_all);
     auto digest = EVP_get_digestbyname("sha1");
     unsigned char md[EVP_MAX_MD_SIZE];

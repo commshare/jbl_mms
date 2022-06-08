@@ -188,7 +188,6 @@ int32_t DtlsHeader::encode(uint8_t *data, size_t len)
 
 int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
 {
-    std::cout << "DTLSCiphertext::decode len:" << len << std::endl;
     uint8_t *data_start = data;
     int32_t c = header.decode(data, len);
     if (c < 0)
@@ -211,7 +210,6 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     c = msg->decode(data, len);
     if (c < 0)
     {
-        std::cout << "handshake decode failed, code:" << c << std::endl;
         return -3;
     }
     data += c;
@@ -229,11 +227,14 @@ int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
 
     uint8_t *data_start = data;
     header.length = msg->size();
+    std::cout << "****************** DTLSCiphertext header len:" << header.length << " ********************" << std::endl;
     int32_t c = header.encode(data, len);
     if (c < 0)
     {
         return -1;
     }
+
+    std::cout << "header consumed:" << c << std::endl;
     data += c;
     len -= c;
 
@@ -242,6 +243,8 @@ int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
     {
         return -2;
     }
+
+    std::cout << "msg consumed:" << c << std::endl;
     data += c;
     len -= c;
     return data - data_start;
@@ -326,7 +329,6 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     uint16_t length = ntohs(*(uint16_t *)data);
-    std::cout << "extension len:" << length << std::endl;
     data += 2;
     len -= 2;
     while (length > 0)
@@ -375,6 +377,11 @@ int32_t DtlsExtension::decode(uint8_t *data, size_t len)
 
 int32_t DtlsExtension::encode(uint8_t *data, size_t len)
 {
+    if (extensions.size() <= 0) 
+    {
+        return 0;
+    }
+
     uint8_t *data_start = data;
     if (len < 2)
     {
@@ -400,6 +407,10 @@ int32_t DtlsExtension::encode(uint8_t *data, size_t len)
 
 uint32_t DtlsExtension::size()
 {
+    if (extensions.size() <= 0) 
+    {
+        return 0;
+    }
     uint32_t size = 0;
     size += 2; // length
     for (auto &p : extensions)

@@ -32,11 +32,11 @@ namespace mms
 
     struct HandShake : public DtlsMsg
     {
-        HandshakeType msg_type; /* handshake type */
-        uint32_t length;        /* bytes in message (24bit) */
-        uint16_t message_seq;                               // New field
-        uint32_t fragment_offset = 0;                           // New field(24bit)
-        uint32_t fragment_length = 0;                           // New field(24bit)
+        HandshakeType msg_type;       /* handshake type */
+        uint32_t length;              /* bytes in message (24bit) */
+        uint16_t message_seq = 1;     // New field
+        uint32_t fragment_offset = 0; // New field(24bit)
+        uint32_t fragment_length = 0; // New field(24bit)
 
         std::unique_ptr<HandShakeMsg> msg;
         void setMsg(std::unique_ptr<HandShakeMsg> v)
@@ -47,8 +47,14 @@ namespace mms
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size();
-        HandshakeType getType() const {
+        HandshakeType getType() const
+        {
             return msg_type;
+        }
+
+        void setType(HandshakeType type)
+        {
+            msg_type = type;
         }
     };
 };
