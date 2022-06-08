@@ -76,7 +76,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
             }
                 
             printf("\n");
-
+            std::cout << "ret4:" << ret4 << std::endl;
             result = (ret == 1) && (ret2 == 1) && (ret3 == 1) && (ret4 == 1); // OpenSSL return codes
         }
     }

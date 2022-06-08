@@ -1,6 +1,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <string.h>
+
 #include "dtls_cert.h"
 using namespace mms;
 DtlsCert DtlsCert::instance_;
@@ -16,7 +18,8 @@ bool DtlsCert::init()
 
 DtlsCert::~DtlsCert()
 {
-    if (certificate_) {
+    if (certificate_)
+    {
         X509_free(certificate_);
         certificate_ = nullptr;
     }
@@ -47,8 +50,8 @@ bool DtlsCert::createCert()
     EVP_PKEY_assign(pkey.get(), EVP_PKEY_RSA, reinterpret_cast<char *>(rsa.release()));
     X509_set_pubkey(certificate_, pkey.get());
     // 设置时长
-    X509_gmtime_adj(X509_get_notBefore(certificate_), 0);                    // now
-    X509_gmtime_adj(X509_get_notAfter(certificate_), 365 * 24 * 3600);    // accepts secs
+    X509_gmtime_adj(X509_get_notBefore(certificate_), 0);              // now
+    X509_gmtime_adj(X509_get_notAfter(certificate_), 365 * 24 * 3600); // accepts secs
     // 设置域名等信息
     // 1 -- X509_NAME may disambig with wincrypt.h
     // 2 -- DO NO FREE the name internal pointer
@@ -62,7 +65,7 @@ bool DtlsCert::createCert()
     X509_set_issuer_name(certificate_, name);
     // 生成签名
     ret = X509_sign(certificate_, pkey.get(), EVP_sha1()); // some hash type here
-    if (ret == 0) 
+    if (ret == 0)
     {
         return false;
     }
@@ -73,14 +76,28 @@ bool DtlsCert::createCert()
     unsigned int n;
     X509_digest(certificate_, digest, md, &n);
     std::ostringstream oss;
-    for (unsigned int pos = 0; pos < n; pos++) {
-        if (pos != n - 1) {
+    for (unsigned int pos = 0; pos < n; pos++)
+    {
+        if (pos != n - 1)
+        {
             oss << std::hex << std::setw(2) << std::setfill('0') << (int)md[pos] << ":";
-        } else {
+        }
+        else
+        {
             oss << std::hex << std::setw(2) << std::setfill('0') << (int)md[pos];
         }
     }
     finger_print_ = oss.str();
-    std::cout << "fingerprint=" << finger_print_ << std::endl;
+    // 写入der
+    std::unique_ptr<BIO, void (*)(BIO *)> memDER{BIO_new(BIO_s_mem()), BIO_free_all};
+    ret = i2d_X509_bio(memDER.get(), certificate_);
+    if (ret != 1)
+    {
+        return false;
+    }
+    char *der_ptr = NULL;
+    long der_len = BIO_get_mem_data(memDER.get(), &der_ptr);
+    der_.resize(der_len);
+    memcpy(der_.data(), der_ptr, der_len);
     return true;
 }

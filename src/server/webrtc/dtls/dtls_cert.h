@@ -25,10 +25,15 @@ namespace mms
         {
             return finger_print_;
         }
-        
+
+        const std::string &getDer() const {
+            return der_;
+        }
+
     private:
         X509 *certificate_ = nullptr;
         std::string finger_print_;
+        std::string der_;
         static DtlsCert instance_;
     private:
         bool createCert();
