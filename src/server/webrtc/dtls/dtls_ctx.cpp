@@ -4,6 +4,7 @@
 #include "server/dtls/server_hello.h"
 #include "server/dtls/client_hello.h"
 #include "server/dtls/server_certificate.h"
+#include "server/dtls/server_hello_done.h"
 #include "dtls_ctx.h"
 #include "dtls_cert.h"
 
@@ -45,6 +46,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         DTLSCiphertext resp_msg;
         resp_msg.setType(handshake);
         resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setSequenceNo(message_seq_);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         auto *s = new ServerHello;
@@ -54,6 +56,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
         resp_handshake->setType(server_hello);
         resp_handshake->setMsg(std::move(resp_server_hello));
+        resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg.size();
 
@@ -65,12 +68,14 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
             return false;
         }
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+        message_seq_++;
     }
 
     {
         DTLSCiphertext resp_msg;
         resp_msg.setType(handshake);
         resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setSequenceNo(message_seq_);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         resp_handshake->setType(certificate);
@@ -78,6 +83,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         std::unique_ptr<HandShakeMsg> resp_server_certificate = std::unique_ptr<HandShakeMsg>(s);
         s->addCert(DtlsCert::getInstance()->getDer());
         resp_handshake->setMsg(std::move(resp_server_certificate));
+        resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg.size();
 
@@ -89,6 +95,33 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
             return false;
         }
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+        message_seq_++;
+    }
+
+    {
+        DTLSCiphertext resp_msg;
+        resp_msg.setType(handshake);
+        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setSequenceNo(message_seq_);
+
+        std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
+        resp_handshake->setType(server_hello_done);
+        auto *s = new ServerHelloDone;
+        std::unique_ptr<HandShakeMsg> resp_server_hello_done = std::unique_ptr<HandShakeMsg>(s);
+        resp_handshake->setMsg(std::move(resp_server_hello_done));
+        resp_handshake->setMessageSeq(message_seq_);
+        resp_msg.setMsg(std::move(resp_handshake));
+        auto resp_size = resp_msg.size();
+
+        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+        int32_t consumed = resp_msg.encode(data.get(), resp_size);
+        if (consumed < 0) 
+        {// todo:add log
+            std::cout << "************************* encode failed, consumed:" << consumed << " resp_size:" << resp_size << " ******************" << std::endl;
+            return false;
+        }
+        sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+        message_seq_++;
     }
 
     return true;

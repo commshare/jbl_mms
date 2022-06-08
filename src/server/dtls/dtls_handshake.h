@@ -56,5 +56,10 @@ namespace mms
         {
             msg_type = type;
         }
+
+        void setMessageSeq(uint16_t val)
+        {
+            message_seq = val;
+        }
     };
 };

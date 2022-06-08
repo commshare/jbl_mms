@@ -50,8 +50,11 @@ bool DtlsCert::createCert()
     EVP_PKEY_assign(pkey.get(), EVP_PKEY_RSA, reinterpret_cast<char *>(rsa.release()));
     X509_set_pubkey(certificate_, pkey.get());
     // 设置时长
-    X509_gmtime_adj(X509_get_notBefore(certificate_), 0);              // now
-    X509_gmtime_adj(X509_get_notAfter(certificate_), 365 * 24 * 3600); // accepts secs
+    static const int      expired_days = 365 * 10;
+    static const long int expired_time_after  = 60 * 60 * 24 * expired_days;
+    static const long int expired_time_before = -1 * expired_days;
+    X509_gmtime_adj(X509_get_notBefore(certificate_), expired_time_before);              // now
+    X509_gmtime_adj(X509_get_notAfter(certificate_), expired_time_after); // accepts secs
     // 设置域名等信息
     // 1 -- X509_NAME may disambig with wincrypt.h
     // 2 -- DO NO FREE the name internal pointer
@@ -64,7 +67,7 @@ bool DtlsCert::createCert()
     X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, common_name, -1, -1, 0);
     X509_set_issuer_name(certificate_, name);
     // 生成签名
-    ret = X509_sign(certificate_, pkey.get(), EVP_sha1()); // some hash type here
+    ret = X509_sign(certificate_, pkey.get(), EVP_sha256()); // some hash type here
     if (ret == 0)
     {
         return false;

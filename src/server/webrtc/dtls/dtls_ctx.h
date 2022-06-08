@@ -24,5 +24,6 @@ private:
 private:
     std::optional<DTLSCiphertext> client_hello_;
     std::optional<DTLSCiphertext> server_hello_;
+    uint32_t message_seq_ = 0;
 };
 };

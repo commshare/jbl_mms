@@ -185,6 +185,11 @@ namespace mms
             msg = std::move(val);
         }
 
+        void setSequenceNo(uint32_t val)
+        {
+            header.sequence_number = val;
+        }
+
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
