@@ -14,6 +14,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
     bool result = false;
     std::unique_ptr<BIO, void (*)(BIO *)> certFile{BIO_new_file(certFileName.data(), "wb"), BIO_free_all};
     std::unique_ptr<BIO, void (*)(BIO *)> keyFile{BIO_new_file(keyFileName.data(), "wb"), BIO_free_all};
+    std::unique_ptr<BIO, void (*)(BIO *)> derFile{BIO_new_file("test.der", "wb"), BIO_free_all};
     std::unique_ptr<BIO, void (*)(BIO *)> memIO(BIO_new(BIO_s_mem()), BIO_free_all);
 
     if (certFile && keyFile)
@@ -56,7 +57,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
             int ret = PEM_write_bio_PrivateKey(keyFile.get(), pkey.get(), nullptr, nullptr, 0, nullptr, nullptr);
             int ret2 = PEM_write_bio_X509(certFile.get(), cert.get());
             int ret3 = PEM_write_bio_X509(memIO.get(), cert.get());
-
+            int ret4 = i2d_X509_bio(derFile.get(), cert.get());
 
             uchar *cert_data;
             int cert_len = BIO_get_mem_data(memIO.get(), &cert_data);
@@ -76,7 +77,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
                 
             printf("\n");
 
-            result = (ret == 1) && (ret2 == 1) && (ret3 == 1); // OpenSSL return codes
+            result = (ret == 1) && (ret2 == 1) && (ret3 == 1) && (ret4 == 1); // OpenSSL return codes
         }
     }
 
