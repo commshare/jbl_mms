@@ -45,7 +45,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
     {// send server hello
         DTLSCiphertext resp_msg;
         resp_msg.setType(handshake);
-        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg.setSequenceNo(message_seq_);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
@@ -74,7 +74,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
     {
         DTLSCiphertext resp_msg;
         resp_msg.setType(handshake);
-        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg.setSequenceNo(message_seq_);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
@@ -101,7 +101,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
     {
         DTLSCiphertext resp_msg;
         resp_msg.setType(handshake);
-        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION0));
+        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg.setSequenceNo(message_seq_);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
