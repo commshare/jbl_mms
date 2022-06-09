@@ -20,7 +20,8 @@ public:
     bool init();
 private:
     bool processClientHello(DTLSCiphertext & msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-
+    bool processClientKeyExchange(DTLSCiphertext & msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
 private:
     std::optional<DTLSCiphertext> client_hello_;
     std::optional<DTLSCiphertext> server_hello_;

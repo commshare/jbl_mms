@@ -30,8 +30,13 @@ namespace mms
             return der_;
         }
 
+        RSA *getRSA() {
+            return rsa_;
+        }
     private:
         X509 *certificate_ = nullptr;
+        RSA *rsa_ = nullptr;
+        EVP_PKEY *pkey_ = nullptr;
         std::string finger_print_;
         std::string der_;
         static DtlsCert instance_;

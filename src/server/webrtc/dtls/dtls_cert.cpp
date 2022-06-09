@@ -69,7 +69,7 @@ bool DtlsCert::createCert()
     // 生成随机序号
     std::srand(time(nullptr));
     int seq = std::rand() % 9999999;
-    ASN1_INTEGER_set(X509_get_serialNumber(certificate_), seq); // serial number
+    ASN1_INTEGER_set(X509_get_serialNumber(certificate_), 1); // serial number
     // 创建pkey
     std::unique_ptr<RSA, void (*)(RSA *)> rsa{RSA_new(), RSA_free};
     std::unique_ptr<BIGNUM, void (*)(BIGNUM *)> bn{BN_new(), BN_free};
@@ -92,12 +92,19 @@ bool DtlsCert::createCert()
     // 1 -- X509_NAME may disambig with wincrypt.h
     // 2 -- DO NO FREE the name internal pointer
     X509_NAME *name = X509_get_subject_name(certificate_);
-    const u_char country[] = "China";
-    const u_char company[] = "mms, PLC";
-    const u_char common_name[] = "mms.cn";
-    X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, country, -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, company, -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, common_name, -1, -1, 0);
+    // const u_char country[] = "China";
+    // const u_char company[] = "mms, PLC";
+    // const u_char common_name[] = "localhost";
+    // X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, country, -1, -1, 0);
+    // X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, company, -1, -1, 0);
+    // X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, common_name, -1, -1, 0);
+
+    X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC, (const unsigned char *)"SG", -1, -1, 0); //country
+    X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, (const unsigned char *)"SG", -1, -1, 0); //state
+    X509_NAME_add_entry_by_txt(name, "L",  MBSTRING_ASC, (const unsigned char *)"Singapore", -1, -1, 0); //locality
+    X509_NAME_add_entry_by_txt(name, "O",  MBSTRING_ASC, (const unsigned char *)"org", -1, -1, 0); //organisation
+    X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, (const unsigned char *)"unit", -1, -1, 0); //organisational unit
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)"name", -1, -1, 0); //common name
     X509_set_issuer_name(certificate_, name);
     // 添加ext
     /* Add various extensions: standard extensions */
@@ -119,7 +126,7 @@ bool DtlsCert::createCert()
     auto digest = EVP_get_digestbyname("sha1");
     unsigned char md[EVP_MAX_MD_SIZE];
     unsigned int n;
-    X509_digest(certificate_, digest, md, &n);
+    X509_digest(certificate_, EVP_sha1(), md, &n);
     std::ostringstream oss;
     for (unsigned int pos = 0; pos < n; pos++)
     {
@@ -133,6 +140,7 @@ bool DtlsCert::createCert()
         }
     }
     finger_print_ = oss.str();
+    std::cout << "finger print is :" << finger_print_ << std::endl;
     // 写入der
     std::unique_ptr<BIO, void (*)(BIO *)> memDER{BIO_new(BIO_s_mem()), BIO_free_all};
     ret = i2d_X509_bio(memDER.get(), certificate_);

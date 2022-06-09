@@ -44,7 +44,6 @@ int32_t StunUsernameAttr::encode(uint8_t *data, size_t len)
     }
 
     data += ((length+3)>>2)<<2;
-    std::cout << "***************** stun username attr size:" << (((length+3)>>2)<<2) << " ******************" << std::endl;
     return data - data_start;
 }
 

@@ -34,7 +34,7 @@ namespace mms
     {
         HandshakeType msg_type;       /* handshake type */
         uint32_t length;              /* bytes in message (24bit) */
-        uint16_t message_seq = 1;     // New field
+        uint16_t message_seq = 0;     // New field
         uint32_t fragment_offset = 0; // New field(24bit)
         uint32_t fragment_length = 0; // New field(24bit)
 
