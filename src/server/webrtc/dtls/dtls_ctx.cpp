@@ -62,7 +62,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
         resp_handshake->setType(server_hello);
         resp_handshake->setMsg(std::move(resp_server_hello));
-        //resp_handshake->setMessageSeq(message_seq_);
+        resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg.size();
 
@@ -89,7 +89,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         std::unique_ptr<HandShakeMsg> resp_server_certificate = std::unique_ptr<HandShakeMsg>(s);
         s->addCert(DtlsCert::getInstance()->getDer());
         resp_handshake->setMsg(std::move(resp_server_certificate));
-        //resp_handshake->setMessageSeq(message_seq_);
+        resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg.size();
 
@@ -115,7 +115,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         auto *s = new ServerHelloDone;
         std::unique_ptr<HandShakeMsg> resp_server_hello_done = std::unique_ptr<HandShakeMsg>(s);
         resp_handshake->setMsg(std::move(resp_server_hello_done));
-        //resp_handshake->setMessageSeq(message_seq_);
+        resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg.size();
 
