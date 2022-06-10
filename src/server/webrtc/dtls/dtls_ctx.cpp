@@ -3,6 +3,7 @@
 #include "server/dtls/dtls_handshake.h"
 #include "server/dtls/server_hello.h"
 #include "server/dtls/client_hello.h"
+#include "server/dtls/extension/dtls_use_srtp.h"
 
 #include "server/dtls/server_certificate.h"
 #include "server/dtls/server_hello_done.h"
@@ -35,7 +36,6 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
         }
         else if (handshake->getType() == client_key_exchange)
         {
-            std::cout << "**************************** processClientKeyExchange ***********************" << std::endl;
             return processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
         }
     }
@@ -58,6 +58,9 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         auto *s = new ServerHello;
         std::unique_ptr<HandShakeMsg> resp_server_hello = std::unique_ptr<HandShakeMsg>(s);
+        std::unique_ptr<UseSRtpExt> use_srtp_ext = std::unique_ptr<UseSRtpExt>(new UseSRtpExt);
+        use_srtp_ext->addProfile(SRTP_AES128_CM_HMAC_SHA1_80);
+        s->addExtension(std::move(use_srtp_ext));
         s->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         s->genRandom();
         s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
@@ -143,31 +146,79 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext & msg, UdpSocket *sock, co
     {
         return false;
     }
-    std::cout << "******************** processClientKeyExchange decryptRSA:" << n << " ********************" << std::endl;
     int consumed = pre_master_secret_.decode((uint8_t*)decoded_data.data(), n);
     if (consumed < 0)
     {
         return -1;
     }
-    std::cout << "******************** processClientKeyExchange pre_master_secret_:" << consumed << " ********************" << std::endl;
     HandShake * recv_client_hello_msg = (HandShake *)client_hello_.value().msg.get();
     ClientHello *client_hello = (ClientHello *)recv_client_hello_msg->msg.get();
     if (client_hello->client_version != pre_master_secret_.client_version)
     {
         return false;
     }
-
-    std::cout << "******************** processClientKeyExchange ok:" << n << " ********************" << std::endl;
     // 生成master secret
     HandShake * send_server_hello_msg = (HandShake *)server_hello_.value().msg.get();
     ServerHello *server_hello = (ServerHello *)send_server_hello_msg->msg.get();
     std::string seed;
     seed.append((char*)client_hello->random.random_raw, 32);
     seed.append((char*)server_hello->random.random_raw, 32);
-    master_secret_ = PRF(decoded_data, "master secret", seed);
+    master_secret_ = PRF(decoded_data, "master secret", seed, 48);
     memcpy(security_params_.master_secret, master_secret_.data(), 48);
     memcpy(security_params_.client_random, client_hello->random.random_raw, 32);
     memcpy(security_params_.server_random, server_hello->random.random_raw, 32);
+    // 生成key material
+    // @doc rfc5764 4.1.2.  SRTP Protection Profiles
+    //     SRTP_AES128_CM_HMAC_SHA1_80
+    //          cipher: AES_128_CM
+    //          cipher_key_length: 128
+    //          cipher_salt_length: 112
+    //          maximum_lifetime: 2^31
+    //          auth_function: HMAC-SHA1
+    //          auth_key_length: 160
+    //          auth_tag_length: 80
+    //    SRTP_AES128_CM_HMAC_SHA1_32
+    //          cipher: AES_128_CM
+    //          cipher_key_length: 128
+    //          cipher_salt_length: 112
+    //          maximum_lifetime: 2^31
+    //          auth_function: HMAC-SHA1
+    //          auth_key_length: 160
+    //          auth_tag_length: 32
+    //          RTCP auth_tag_length: 80
+    //    SRTP_NULL_HMAC_SHA1_80
+    //          cipher: NULL
+    //          cipher_key_length: 0
+    //          cipher_salt_length: 0
+    //          maximum_lifetime: 2^31
+    //          auth_function: HMAC-SHA1
+    //          auth_key_length: 160
+    //          auth_tag_length: 80
+
+    size_t srtp_cipher_key_length = 16;//128/8
+    size_t srtp_cipher_salt_length = 14;//112/8
+    // total:(16+14)*2
+    size_t total_key_material_need = (srtp_cipher_key_length + srtp_cipher_salt_length)*2;
+    std::string srtp_key_block = PRF(master_secret_, "EXTRACTOR-dtls_srtp", seed, total_key_material_need);
+
+    size_t offset = 0;
+    std::string client_master_key((char*)(srtp_key_block.data()), srtp_cipher_key_length);
+    offset += srtp_cipher_key_length;
+    std::string server_master_key((char*)(srtp_key_block.data() + offset), srtp_cipher_key_length);
+    offset += srtp_cipher_key_length;
+    std::string client_master_salt((char*)(srtp_key_block.data() + offset), srtp_cipher_salt_length);
+    offset += srtp_cipher_salt_length;
+    std::string server_master_salt((char*)(srtp_key_block.data() + offset), srtp_cipher_salt_length);
+
+    recv_key_ = client_master_key + client_master_salt;
+    send_key_ = server_master_key + server_master_salt;
+    
+    // printf("srtp key:");
+    // for (int pos = 0; pos < total_key_material_need; pos++) {
+    //     printf("%02x", (uint8_t)srtp_key_block[pos]);
+    // }
+    // printf("\r\n");
+    
     return true;
 }
 

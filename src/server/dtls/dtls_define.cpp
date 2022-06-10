@@ -469,8 +469,9 @@ int32_t DtlsExtensionHeader::encode(uint8_t *data, size_t len)
     }
 
     *(uint16_t *)data = htons(type);
+    data += 2;
     *(uint16_t *)data = htons(length);
-    data += 4;
+    data += 2;
     len -= 4;
     return data - data_start;
 }

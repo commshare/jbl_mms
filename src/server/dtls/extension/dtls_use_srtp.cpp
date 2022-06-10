@@ -54,16 +54,19 @@ int32_t UseSRtpExt::decode(uint8_t *data, size_t len)
 uint32_t UseSRtpExt::size()
 {
     uint32_t size = 0;
-    size += header.size();
+    uint32_t header_size = header.size();
+    size += header_size;
     size += 2; // profiles length
     size += profiles.size() * 2;
     size += srtp_mki.size() + 1;
+    header.length = size - header_size;
     return size;
 }
 
 int32_t UseSRtpExt::encode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
+    header.type = use_srtp;
     int32_t c = header.encode(data, len);
     if (c < 0)
     {
@@ -72,7 +75,7 @@ int32_t UseSRtpExt::encode(uint8_t *data, size_t len)
     data += c;
     len -= c;
 
-    uint16_t *plen = (uint16_t *)data;
+    *((uint16_t*)data) = ntohs(profiles.size()*2);
     data += 2;
     len -= 2;
     if (len < 0)
@@ -80,25 +83,19 @@ int32_t UseSRtpExt::encode(uint8_t *data, size_t len)
         return -2;
     }
 
-    uint32_t content_len = 0;
     for (auto &profile : profiles)
     {
         *(uint16_t *)data = htons(profile);
         data += 2;
         len -= 2;
-        content_len += 2;
     }
+
+    *data = srtp_mki.size();
+    data++;
+    len--;
 
     memcpy(data, srtp_mki.c_str(), srtp_mki.size());
     data += srtp_mki.size();
     len -= srtp_mki.size();
-    content_len += srtp_mki.size();
-
-    data[0] = 0;
-    data++;
-    len--;
-    content_len++;
-
-    *plen = htons(content_len);
     return data - data_start;
 }

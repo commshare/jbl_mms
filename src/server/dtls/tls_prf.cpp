@@ -14,10 +14,18 @@ using namespace mms;
 // A(0) = seed
 // A(i) = HMAC_hash(secret, A(i-1))    
 // If P_256 is being used, then SHA-256 is being used. This means the output of HMAC will be 256 bits (32 bytes). To get the 48 bytes of the master key, two iterations are enough, and the remaining bytes can be discarded.
-std::string mms::PRF(const std::string & pre_master_secret, const std::string & label, const std::string & seed)
+std::string mms::PRF(const std::string & secret, const std::string & label, const std::string & seed, int32_t need_bytes)
 {
-    //1. 调用两次sha256，生成64bytes的block
-    const std::string & A0 = pre_master_secret;
-    std::string A1 = Utils::calcHmacSHA256(pre_master_secret, A0 + label + seed);
-    return A1.substr(0, 48);
+    int32_t left = need_bytes;
+    std::string A0 = secret;
+    std::string Ai0 = Utils::calcHmacSHA256(secret, A0 + label + seed);
+    std::string out = Ai0;
+    while (left > 0) {
+        std::string Ai1 = Utils::calcHmacSHA256(secret, Ai0 + label + seed);
+        out += Ai1;
+        Ai0 = Ai1;
+        left -= 32;
+    }
+
+    return out.substr(0, need_bytes);
 }

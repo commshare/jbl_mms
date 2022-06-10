@@ -32,5 +32,7 @@ private:
     uint32_t message_seq_ = 0;
 
     SecurityParameters security_params_;
+    std::string recv_key_;
+    std::string send_key_;
 };
 };
