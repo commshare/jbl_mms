@@ -227,14 +227,12 @@ int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
 
     uint8_t *data_start = data;
     header.length = msg->size();
-    std::cout << "****************** DTLSCiphertext header len:" << header.length << " ********************" << std::endl;
     int32_t c = header.encode(data, len);
     if (c < 0)
     {
         return -1;
     }
 
-    std::cout << "header consumed:" << c << std::endl;
     data += c;
     len -= c;
 
@@ -244,7 +242,6 @@ int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
         return -2;
     }
 
-    std::cout << "msg consumed:" << c << std::endl;
     data += c;
     len -= c;
     return data - data_start;

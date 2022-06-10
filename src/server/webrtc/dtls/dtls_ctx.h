@@ -7,6 +7,7 @@
 #include "base/network/udp_socket.hpp"
 
 #include "server/dtls/dtls_define.h"
+#include "server/dtls/client_key_exchange.h"
 namespace mms {
 class DtlsCtx {
 public:
@@ -25,6 +26,7 @@ private:
 private:
     std::optional<DTLSCiphertext> client_hello_;
     std::optional<DTLSCiphertext> server_hello_;
+    PreMasterSecret pre_master_secret_;
     uint32_t message_seq_ = 0;
 };
 };

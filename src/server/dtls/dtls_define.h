@@ -30,6 +30,23 @@ namespace mms
             minor = mi;
         }
 
+        bool operator==(const DtlsProtocolVersion & b) const
+        {
+            if (major == b.major && minor == b.minor)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        bool operator!=(const DtlsProtocolVersion & b) const {
+            if (major == b.major && minor == b.minor)
+            {
+                return false;
+            }
+            return true;
+        }
+
         uint8_t major, minor;
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);

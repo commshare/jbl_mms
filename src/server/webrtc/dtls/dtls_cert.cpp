@@ -24,6 +24,12 @@ DtlsCert::~DtlsCert()
         X509_free(certificate_);
         certificate_ = nullptr;
     }
+
+    if (rsa_)
+    {
+        RSA_free(rsa_);
+        rsa_ = nullptr;
+    }
 }
 
 bool check_certificate_valid(X509 *x509)
@@ -71,16 +77,17 @@ bool DtlsCert::createCert()
     int seq = std::rand() % 9999999;
     ASN1_INTEGER_set(X509_get_serialNumber(certificate_), 1); // serial number
     // 创建pkey
-    std::unique_ptr<RSA, void (*)(RSA *)> rsa{RSA_new(), RSA_free};
+    // std::unique_ptr<RSA, void (*)(RSA *)> rsa{RSA_new(), RSA_free};
+    rsa_ = RSA_new();
     std::unique_ptr<BIGNUM, void (*)(BIGNUM *)> bn{BN_new(), BN_free};
     std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY *)> pkey{EVP_PKEY_new(), EVP_PKEY_free};
     BN_set_word(bn.get(), RSA_F4);
-    int ret = RSA_generate_key_ex(rsa.get(), RSA_KEY_LENGTH, bn.get(), nullptr);
+    int ret = RSA_generate_key_ex(rsa_, RSA_KEY_LENGTH, bn.get(), nullptr);
     if (ret != 1)
     {
         return false;
     }
-    EVP_PKEY_assign(pkey.get(), EVP_PKEY_RSA, reinterpret_cast<char *>(rsa.release()));
+    EVP_PKEY_assign(pkey.get(), EVP_PKEY_RSA, reinterpret_cast<char *>(rsa_));
     X509_set_pubkey(certificate_, pkey.get());
     // 设置时长
     static const int expired_days = 365 * 10;

@@ -69,11 +69,10 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     {
         msg = std::unique_ptr<HandShakeMsg>(new ServerHello);
     }
-    // else if (msg_type == client_key_exchange)
-    // {
-    //     msg = std::unique_ptr<HandShakeMsg>(new ClientKeyExchange);
-    //     std::cout << "client key exchange decode succeed." << std::endl;
-    // }
+    else if (msg_type == client_key_exchange)
+    {
+        msg = std::unique_ptr<HandShakeMsg>(new ClientKeyExchange);
+    }
 
     if (!msg)
     {
@@ -146,9 +145,7 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
         data += c;
         len -= c;
         content_len += c;
-        std::cout << "**************** hello msg size:" << c << std::endl;
     }
-    std::cout << "********************* encode content_len:" << content_len << " *******************" << std::endl;
     uint8_t *p = (uint8_t *)&content_len;
     plen[0] = p[2];
     plen[1] = p[1];
@@ -159,8 +156,6 @@ int32_t HandShake::encode(uint8_t *data, size_t len)
     pfragment_length[0] = p[2];
     pfragment_length[1] = p[1];
     pfragment_length[2] = p[0];
-
-    std::cout << "********************* encode fragment_length:" << fragment_length << " *******************" << std::endl;
 
     fragment_offset = 0;
     p = (uint8_t *)&fragment_offset;

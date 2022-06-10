@@ -55,7 +55,6 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     int32_t consumed = header.decode(data, len);
-    // std::cout << "header consumed:" << consumed << std::endl;
     if (consumed < 0)
     {
         std::cout << "decode stun msg header failed." << std::endl;
@@ -67,7 +66,6 @@ int32_t StunMsg::decode(uint8_t *data, size_t len)
     while (len > 0)
     {
         uint16_t t = ntohs(*(uint16_t *)data);
-        // std::cout << std::hex << "attr type:" << t << std::endl;
         switch (t)
         {
         case STUN_ATTR_MAPPED_ADDRESS:
