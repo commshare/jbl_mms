@@ -11,6 +11,7 @@
 #include "dtls_cert.h"
 #include "server/dtls/tls_prf.h"
 
+#include "base/utils/utils.h"
 using namespace mms;
 
 bool DtlsCtx::init()
@@ -20,26 +21,62 @@ bool DtlsCtx::init()
 
 bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
-    DTLSCiphertext dtls_msg;
-    int32_t c = dtls_msg.decode(data, len);
-    if (c < 0)
-    {
-        return false;
-    }
-
-    if (dtls_msg.getType() == handshake)
-    {
-        HandShake *handshake = (HandShake *)dtls_msg.msg.get();
-        if (handshake->getType() == client_hello)
+    int32_t consumed = 0;
+    while (len > 0) {
+        DTLSCiphertext dtls_msg;
+        consumed = dtls_msg.decode(data, len);
+        if (consumed < 0)
         {
-            return processClientHello(dtls_msg, sock, remote_ep, yield);
+            std::cout << "********************* return false here **********************" << std::endl;
+            std::string finished_data = PRF(master_secret_, "client finished", Utils::sha256(verify_data_), 64);
+            std::cout << "finished_data:" << std::endl;
+            for(int i = 0; i < finished_data.size(); i++) {
+                printf("%02x", (uint8_t)finished_data[i]);
+            }
+            printf("\r\n");
+            return false;
         }
-        else if (handshake->getType() == client_key_exchange)
-        {
-            return processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
-        }
-    }
 
+        bool ret = true;
+        if (dtls_msg.getType() == handshake)
+        {
+            verify_data_.append((char*)data, consumed);
+            HandShake *handshake = (HandShake *)dtls_msg.msg.get();
+            if (handshake->getType() == client_hello)
+            {
+                ret = processClientHello(dtls_msg, sock, remote_ep, yield);
+            }
+            else if (handshake->getType() == client_key_exchange)
+            {
+                ret = processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
+            }
+        }
+        else if (dtls_msg.getType() == change_cipher_spec)
+        {
+            // verify_data_.append((char*)data, consumed);
+            std::cout << "************************** get change_cipher_spec *************************" << std::endl;
+        }
+        else
+        {
+            std::string finished_data = PRF(master_secret_, "client finished", Utils::sha256(verify_data_), 64);
+            std::cout << "finished_data:" << std::endl;
+            for(int i = 0; i < finished_data.size(); i++) {
+                printf("%02x", (uint8_t)finished_data[i]);
+            }
+            printf("\r\n");
+            return true;
+        }
+        
+        if (!ret)
+        {
+            return false;
+        }
+
+        data += consumed;
+        len -= consumed;
+        std::cout << "********************* consumed:" << consumed << ", len:" << len << " **********************" << std::endl;
+    }
+    std::cout << "len:" << len << std::endl;
     return true;
 }
 
@@ -76,6 +113,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         {// todo:add log
             return false;
         }
+        verify_data_.append((char*)data.get(), resp_size);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
         message_seq_++;
     }
@@ -102,6 +140,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         {// todo:add log
             return false;
         }
+        verify_data_.append((char*)data.get(), resp_size);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
         message_seq_++;
     }
@@ -127,6 +166,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         {// todo:add log
             return false;
         }
+        verify_data_.append((char*)data.get(), resp_size);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
         message_seq_++;
         server_hello_ = resp_msg;
@@ -212,13 +252,6 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext & msg, UdpSocket *sock, co
 
     recv_key_ = client_master_key + client_master_salt;
     send_key_ = server_master_key + server_master_salt;
-    
-    // printf("srtp key:");
-    // for (int pos = 0; pos < total_key_material_need; pos++) {
-    //     printf("%02x", (uint8_t)srtp_key_block[pos]);
-    // }
-    // printf("\r\n");
-    
     return true;
 }
 

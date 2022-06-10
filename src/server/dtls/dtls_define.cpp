@@ -6,6 +6,7 @@
 
 #include "dtls_define.h"
 #include "dtls_handshake.h"
+#include "change_cipher_spec.h"
 
 #include "./extension/dtls_use_srtp.h"
 #include "./extension/signature_algorithm.h"
@@ -202,6 +203,11 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     if (header.type == handshake)
     {
         msg = std::unique_ptr<DtlsMsg>(new HandShake);
+    }
+    else if (header.type == change_cipher_spec)
+    {
+        std::cout << "*********************************** change_cipher_spec ************************" << std::endl;
+        msg = std::unique_ptr<DtlsMsg>(new ChangeCipherSpec);
     }
 
     if (!msg)

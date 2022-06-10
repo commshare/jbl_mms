@@ -34,5 +34,8 @@ private:
     SecurityParameters security_params_;
     std::string recv_key_;
     std::string send_key_;
+
+
+    std::string verify_data_;
 };
 };
