@@ -60,6 +60,7 @@ namespace mms
     {
         uint32_t gmt_unix_time;
         uint8_t random_bytes[28];
+        uint8_t random_raw[32];
         int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
@@ -285,4 +286,45 @@ namespace mms
             extensions.insert(std::pair(ext_item->getType(), std::move(ext_item)));
         }
     };
+
+    typedef enum { server, client } ConnectionEnd;
+    typedef enum { tls_prf_sha256 } PRFAlgorithm;
+    typedef enum { null_b, rc4, des3, aes } BulkCipherAlgorithm;
+    typedef enum { stream, block, aead } CipherType;
+    typedef enum { null_m, hmac_md5, hmac_sha1, hmac_sha256, hmac_sha384, hmac_sha512} MACAlgorithm;
+
+    struct SecurityParameters {
+        ConnectionEnd          entity = server;
+        PRFAlgorithm           prf_algorithm = tls_prf_sha256;
+        BulkCipherAlgorithm    bulk_cipher_algorithm;
+        CipherType             cipher_type = block;
+        uint8_t                enc_key_length;
+        uint8_t                block_length;
+        uint8_t                fixed_iv_length;
+        uint8_t                record_iv_length;
+        MACAlgorithm           mac_algorithm;
+        uint8_t                mac_length;
+        uint8_t                mac_key_length;
+        CompressionMethod      compression_algorithm;
+        uint8_t                master_secret[48];
+        uint8_t                client_random[32];
+        uint8_t                server_random[32];
+    };
+
+//                       Key       IV    Block
+// Cipher        Type    Material  Size  Size
+// ------------  ------  --------  ----  -----
+// NULL          Stream      0       0    N/A
+// RC4_128       Stream     16       0    N/A
+// 3DES_EDE_CBC  Block      24       8      8
+// AES_128_CBC   Block      16      16     16
+// AES_256_CBC   Block      32      16     16
+
+
+// MAC       Algorithm    mac_length  mac_key_length
+// --------  -----------  ----------  --------------
+// NULL      N/A              0             0
+// MD5       HMAC-MD5        16            16
+// SHA       HMAC-SHA1       20            20
+// SHA256    HMAC-SHA256     32            32
 };

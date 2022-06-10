@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string>
 #include <string_view>
 namespace mms {
 class Utils {
@@ -11,5 +12,6 @@ public:
     static uint64_t rand64();
     static std::string randStr(size_t len);
     static uint32_t getCRC32(uint8_t* buf, size_t len);
+    static std::string calcHmacSHA256(std::string_view decodedKey, std::string_view msg);
 };
 };

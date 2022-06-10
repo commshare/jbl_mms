@@ -8,6 +8,7 @@
 #include "server/dtls/server_hello_done.h"
 #include "dtls_ctx.h"
 #include "dtls_cert.h"
+#include "server/dtls/tls_prf.h"
 
 using namespace mms;
 
@@ -125,6 +126,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext & recv_msg, UdpSocket *sock, con
         }
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
         message_seq_++;
+        server_hello_ = resp_msg;
     }
 
     return true;
@@ -156,6 +158,16 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext & msg, UdpSocket *sock, co
     }
 
     std::cout << "******************** processClientKeyExchange ok:" << n << " ********************" << std::endl;
+    // 生成master secret
+    HandShake * send_server_hello_msg = (HandShake *)server_hello_.value().msg.get();
+    ServerHello *server_hello = (ServerHello *)send_server_hello_msg->msg.get();
+    std::string seed;
+    seed.append((char*)client_hello->random.random_raw, 32);
+    seed.append((char*)server_hello->random.random_raw, 32);
+    master_secret_ = PRF(decoded_data, "master secret", seed);
+    memcpy(security_params_.master_secret, master_secret_.data(), 48);
+    memcpy(security_params_.client_random, client_hello->random.random_raw, 32);
+    memcpy(security_params_.server_random, server_hello->random.random_raw, 32);
     return true;
 }
 
@@ -163,4 +175,9 @@ int32_t DtlsCtx::decryptRSA(const std::string & enc_data, std::string & dec_data
 {
     int num = RSA_private_decrypt(RSA_size(DtlsCert::getInstance()->getRSA()), (const uint8_t*)enc_data.data(), (uint8_t*)dec_data.data(), DtlsCert::getInstance()->getRSA(), RSA_PKCS1_PADDING);
     return num;
+}
+
+bool DtlsCtx::calcMasterSecret()
+{
+    
 }

@@ -1,4 +1,11 @@
 #include "utils.h"
+#include <string.h>
+#include <openssl/sha.h>
+#include <openssl/hmac.h>
+
+#include <string_view>
+#include <array>
+
 #include <iostream>
 using namespace mms;
 std::vector<std::string_view> Utils::split(std::string_view strv, std::string_view delims)
@@ -132,4 +139,22 @@ uint32_t Utils::getCRC32(uint8_t* buf, size_t len)
     crc = crc ^ 0xffffffff;
 
     return crc;  
+}
+
+std::string Utils::calcHmacSHA256(std::string_view decodedKey, std::string_view msg)
+{
+    std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
+    unsigned int hashLen;
+
+    HMAC(
+        EVP_sha256(),
+        decodedKey.data(),
+        static_cast<int>(decodedKey.size()),
+        reinterpret_cast<unsigned char const*>(msg.data()),
+        static_cast<int>(msg.size()),
+        hash.data(),
+        &hashLen
+    );
+
+    return std::string{reinterpret_cast<char const*>(hash.data()), hashLen};
 }

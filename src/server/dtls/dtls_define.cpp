@@ -52,6 +52,7 @@ int32_t Random::decode(uint8_t *data, size_t len)
     }
     memcpy(random_bytes, data, 28);
     data += 28;
+    memcpy(random_raw, data_start, 32);
     return data - data_start;
 }
 
@@ -73,6 +74,7 @@ int32_t Random::encode(uint8_t *data, size_t len)
     }
     memcpy(data, random_bytes, 28);
     data += 28;
+    memcpy(random_raw, data_start, 32);
     return data - data_start;
 }
 
