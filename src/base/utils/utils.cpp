@@ -141,15 +141,15 @@ uint32_t Utils::getCRC32(uint8_t* buf, size_t len)
     return crc;  
 }
 
-std::string Utils::calcHmacSHA256(std::string_view decodedKey, std::string_view msg)
+std::string Utils::calcHmacSHA256(const std::string &key, const std::string & msg)
 {
     std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
     unsigned int hashLen;
 
     HMAC(
         EVP_sha256(),
-        decodedKey.data(),
-        static_cast<int>(decodedKey.size()),
+        key.data(),
+        static_cast<int>(key.size()),
         reinterpret_cast<unsigned char const*>(msg.data()),
         static_cast<int>(msg.size()),
         hash.data(),
