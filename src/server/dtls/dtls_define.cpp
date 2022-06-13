@@ -52,8 +52,8 @@ int32_t Random::decode(uint8_t *data, size_t len)
         return -2;
     }
     memcpy(random_bytes, data, 28);
-    data += 28;
     memcpy(random_raw, data_start, 32);
+    data += 28;
     return data - data_start;
 }
 
@@ -64,7 +64,6 @@ int32_t Random::encode(uint8_t *data, size_t len)
     {
         return -1;
     }
-
     *(uint32_t *)data = htonl(gmt_unix_time);
     data += 4;
     len -= 4;
@@ -74,8 +73,8 @@ int32_t Random::encode(uint8_t *data, size_t len)
         return -2;
     }
     memcpy(data, random_bytes, 28);
-    data += 28;
     memcpy(random_raw, data_start, 32);
+    data += 28;
     return data - data_start;
 }
 
@@ -206,7 +205,6 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     }
     else if (header.type == change_cipher_spec)
     {
-        std::cout << "*********************************** change_cipher_spec ************************" << std::endl;
         msg = std::unique_ptr<DtlsMsg>(new ChangeCipherSpec);
     }
 

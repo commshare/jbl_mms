@@ -14,7 +14,6 @@ int32_t ChangeCipherSpec::decode(uint8_t *data, size_t len)
         return -1;
     }
     type = *data;
-    std::cout << "********************* ChangeCipherSpec: type:" << (uint32_t)type << " *****************"  << std::endl;
     return 1;
 }
 

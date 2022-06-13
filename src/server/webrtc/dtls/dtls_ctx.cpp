@@ -39,7 +39,7 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
             // }
 
             // struct {
-            //     opaque IV[SecurityParameters.record_iv_length];
+            //     opaque IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
             //     //以下数据加密, 生成消息体
             //     block-ciphered struct {
             //         opaque content[];
@@ -63,9 +63,10 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
             // 执行aes128解密
             AES_KEY key;
             AES_set_decrypt_key((unsigned char *)client_write_key_.data(), 128, &key);
-            unsigned char *out = new unsigned char[data_len];
+            unsigned char *out = new unsigned char[data_len - 16];
+            std::cout << "data_len:" << data_len << std::endl;
             AES_cbc_encrypt(content, out, data_len - 16, &key, (unsigned char *)iv.data(), AES_DECRYPT);
-            for (int i = 0; i < data_len; i++)
+            for (int i = 0; i < data_len - 16; i++)
             {
                 printf("%02x ", out[i]);
             }
@@ -90,7 +91,6 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
         else if (dtls_msg.getType() == change_cipher_spec)
         {
             // verify_data_.append((char*)data, consumed);
-            std::cout << "************************** get change_cipher_spec *************************" << std::endl;
         }
         else
         {
@@ -113,7 +113,6 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
         len -= consumed;
         std::cout << "********************* consumed:" << consumed << ", len:" << len << " **********************" << std::endl;
     }
-    std::cout << "len:" << len << std::endl;
     return true;
 }
 
@@ -239,13 +238,59 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext &msg, UdpSocket *sock, con
     // 生成master secret
     HandShake *send_server_hello_msg = (HandShake *)server_hello_.value().msg.get();
     ServerHello *server_hello = (ServerHello *)send_server_hello_msg->msg.get();
-    std::string seed;
-    seed.append((char *)client_hello->random.random_raw, 32);
-    seed.append((char *)server_hello->random.random_raw, 32);
-    master_secret_ = PRF(pre_master_secret_raw, "master secret", seed, 48);
+    std::string master_key_seed;
+    master_key_seed.append((char *)client_hello->random.random_raw, 32);
+    master_key_seed.append((char *)server_hello->random.random_raw, 32);
+    master_secret_ = PRF(pre_master_secret_raw, "master secret", master_key_seed, 48);
     memcpy(security_params_.master_secret, master_secret_.data(), 48);
     memcpy(security_params_.client_random, client_hello->random.random_raw, 32);
     memcpy(security_params_.server_random, server_hello->random.random_raw, 32);
+    // @https://datatracker.ietf.org/doc/html/rfc5246#page-95
+    // 生成key block及key material
+    //    To generate the key material, compute
+
+    //   key_block = PRF(SecurityParameters.master_secret,
+    //                   "key expansion",
+    //                   SecurityParameters.server_random +
+    //                   SecurityParameters.client_random);
+    //                       Key      IV   Block
+    // Cipher        Type    Material  Size  Size
+    // ------------  ------  --------  ----  -----
+    // NULL          Stream      0       0    N/A
+    // RC4_128       Stream     16       0    N/A
+    // 3DES_EDE_CBC  Block      24       8      8
+    // AES_128_CBC   Block      16      16     16
+    // AES_256_CBC   Block      32      16     16
+
+    // MAC       Algorithm    mac_length  mac_key_length
+    // --------  -----------  ----------  --------------
+    // NULL      N/A              0             0
+    // MD5       HMAC-MD5        16            16
+    // SHA       HMAC-SHA1       20            20
+    // SHA256    HMAC-SHA256     32            32
+    const int32_t mac_key_size = 20;
+    const int32_t encrypt_key_size = 16;
+    const int32_t iv_size = 16;
+    
+    std::string key_material_seed;
+    key_material_seed.append((char *)server_hello->random.random_raw, 32);
+    key_material_seed.append((char *)client_hello->random.random_raw, 32);
+    int32_t key_block_size = 2 * (mac_key_size + encrypt_key_size + iv_size); // AES_128_CBC AND SHA
+    std::string key_block = PRF(master_secret_, "key expansion", key_material_seed, key_block_size);
+    int32_t off = 0;
+    client_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
+    off += mac_key_size;
+    server_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
+    off += mac_key_size;
+    client_write_key_.assign(key_block.data() + off, encrypt_key_size);
+    off += encrypt_key_size;
+    server_write_key_.assign(key_block.data() + off, encrypt_key_size);
+    off += encrypt_key_size;
+    client_write_IV_.assign(key_block.data() + off, iv_size);
+    off += iv_size;
+    server_write_IV_.assign(key_block.data() + off, iv_size);
+    off += iv_size;
+
     // 生成 srtp key material
     // @doc rfc5764 4.1.2.  SRTP Protection Profiles
     //     SRTP_AES128_CM_HMAC_SHA1_80
@@ -278,7 +323,7 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext &msg, UdpSocket *sock, con
     size_t srtp_cipher_salt_length = 14; // 112/8
     // total:(16+14)*2
     size_t total_key_material_need = (srtp_cipher_key_length + srtp_cipher_salt_length) * 2;
-    std::string srtp_key_block = PRF(master_secret_, "EXTRACTOR-dtls_srtp", seed, total_key_material_need);
+    std::string srtp_key_block = PRF(master_secret_, "EXTRACTOR-dtls_srtp", key_material_seed, total_key_material_need);
 
     size_t offset = 0;
     std::string client_master_key((char *)(srtp_key_block.data()), srtp_cipher_key_length);
@@ -291,51 +336,6 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext &msg, UdpSocket *sock, con
 
     recv_key_ = client_master_key + client_master_salt;
     send_key_ = server_master_key + server_master_salt;
-    // @https://datatracker.ietf.org/doc/html/rfc5246#page-95
-    // 生成key block及key material
-    //    To generate the key material, compute
-
-    //   key_block = PRF(SecurityParameters.master_secret,
-    //                   "key expansion",
-    //                   SecurityParameters.server_random +
-    //                   SecurityParameters.client_random);
-    //                       Key      IV   Block
-    // Cipher        Type    Material  Size  Size
-    // ------------  ------  --------  ----  -----
-    // NULL          Stream      0       0    N/A
-    // RC4_128       Stream     16       0    N/A
-    // 3DES_EDE_CBC  Block      24       8      8
-    // AES_128_CBC   Block      16      16     16
-    // AES_256_CBC   Block      32      16     16
-
-    // MAC       Algorithm    mac_length  mac_key_length
-    // --------  -----------  ----------  --------------
-    // NULL      N/A              0             0
-    // MD5       HMAC-MD5        16            16
-    // SHA       HMAC-SHA1       20            20
-    // SHA256    HMAC-SHA256     32            32
-    const int32_t mac_size = 20;
-    const int32_t key_size = 16;
-    const int32_t iv_size = 16;
-    
-    std::string seed1;
-    seed1.append((char *)server_hello->random.random_raw, 32);
-    seed1.append((char *)client_hello->random.random_raw, 32);
-    int32_t key_block_size = 2 * (mac_size + key_size + iv_size); // AES_128_CBC AND SHA
-    std::string key_block = PRF(master_secret_, "key expansion", seed1, key_block_size);
-    int32_t off = 0;
-    client_write_MAC_key_.assign(key_block.data() + off, mac_size);
-    off += mac_size;
-    server_write_MAC_key_.assign(key_block.data() + off, mac_size);
-    off += mac_size;
-    client_write_key_.assign(key_block.data() + off, key_size);
-    off += key_size;
-    server_write_key_.assign(key_block.data() + off, key_size);
-    off += key_size;
-    client_write_IV_.assign(key_block.data() + off, iv_size);
-    off += iv_size;
-    server_write_IV_.assign(key_block.data() + off, iv_size);
-
     return true;
 }
 
