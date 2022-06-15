@@ -44,5 +44,9 @@ private:
     std::string server_write_key_;
     std::string client_write_IV_;
     std::string server_write_IV_;
+
+    std::string final_client_write_key_;
+
+    std::string client_master_key_;
 };
 };
