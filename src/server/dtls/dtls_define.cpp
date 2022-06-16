@@ -479,3 +479,8 @@ int32_t DtlsExtensionHeader::encode(uint8_t *data, size_t len)
     len -= 4;
     return data - data_start;
 }
+
+// void CiperSuite::init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client)
+// {
+
+// }

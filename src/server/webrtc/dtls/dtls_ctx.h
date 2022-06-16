@@ -44,5 +44,7 @@ private:
     std::string server_write_key_;
     std::string client_write_IV_;
     std::string server_write_IV_;
+
+    std::unique_ptr<CiperSuite> ciper_suite_;
 };
 };
