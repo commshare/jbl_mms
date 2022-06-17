@@ -142,7 +142,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
 
         conn->set_message_handler(std::bind(&WebRtcSession::onMessage, webrtc_session.get(), this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
-        webrtc_session->setDtlsCert(default_dtls_cert_);
+        webrtc_session->setDtlsCert(default_dtls_cert_);//todo, find cert by domain
         webrtc_session->service();
     }
     catch (std::exception &e)

@@ -259,7 +259,7 @@ bool RtmpSession::parsePublishCmd(RtmpPublishMessage & pub_cmd) {
         stream_name_ = stream_name;
     }
 
-    session_name_ = domain_ + "/" + app_ + "/" + stream_name_;
+    setSessionName(domain_ + "/" + app_ + "/" + stream_name_);
     return true;
 }
 

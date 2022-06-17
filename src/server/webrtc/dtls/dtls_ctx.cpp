@@ -31,13 +31,6 @@ bool DtlsCtx::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, cons
         consumed = dtls_msg.decode(data, len);
         if (consumed < 0)
         {
-            // std::cout << "********************* return false here **********************" << std::endl;
-            // std::string finished_data = PRF(master_secret_, "client finished", Utils::sha256(verify_data_), 64);
-            // std::cout << "finished_data:" << std::endl;
-            // for(int i = 0; i < finished_data.size(); i++) {
-            //     printf("%02x", (uint8_t)finished_data[i]);
-            // }
-
             // struct {
             //     opaque IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
             //     //以下数据加密, 生成消息体

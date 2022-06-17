@@ -29,7 +29,6 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
 {
     if (msg->get_opcode() == websocketpp::frame::opcode::text)
     {
-        std::cout << "get text msg:" << msg->get_payload() << std::endl;
         Json::Value root;
         Json::Reader reader;
         if (!reader.parse(msg->get_payload(), root, false))
@@ -69,9 +68,10 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
                 std::cout << "no sdp info" << std::endl;
                 return;
             }
+            std::string domain = ws_conn_->getDomain();
             const std::string &app = root["app"].asString();
             const std::string &stream = root["stream"].asString();
-            setSessionName(app + "/" + stream);
+            setSessionName(domain + "/" + app + "/" + stream);
             if (!processOfferMsg(server, hdl, msg["sdp"].asString()))
             {
                 close();
@@ -92,7 +92,6 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     auto remote_ice_ufrag = remote_sdp_.getIceUfrag();
     if (!remote_ice_ufrag)
     {
-        std::cout << "remote ice ufrag is empty" << std::endl;
         return false;
     }
     remote_ice_ufrag_ = remote_ice_ufrag.value().getUfrag();
@@ -100,7 +99,6 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     auto remote_ice_pwd = remote_sdp_.getIcePwd();
     if (!remote_ice_pwd)
     {
-        std::cout << "remote ice pwd is empty" << std::endl;
         return false;
     }
     remote_ice_pwd_ = remote_ice_pwd.value().getPwd();
