@@ -35,7 +35,7 @@ bool WebRtcServer::initCerts()
 {
     std::string domain = "mms.cn";
     default_dtls_cert_ = std::make_shared<DtlsCert>();
-    if (!default_dtls_cert_->init(domain)) 
+    if (!default_dtls_cert_->init(domain))
     {
         return false;
     }
@@ -45,7 +45,8 @@ bool WebRtcServer::initCerts()
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield)
+                       {
         uint8_t *data = recv_data.get();
         UDP_MSG_TYPE t = detectMsgType(data, len);
         if (UDP_MSG_STUN == t) {
@@ -63,11 +64,10 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
             {
                 return;
             }
-        }
-    });
+        } });
 }
 
-bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
     std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
     // 校验完整性
@@ -95,14 +95,14 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
         endpoint_session_map_.insert(std::pair(remote_ep, session));
     }
 
-    if (!session) //todo add log
+    if (!session) // todo add log
     {
         return false;
     }
     return session->processStunPacket(stun_msg, data, len, sock, remote_ep, yield);
 }
 
-bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
     std::shared_ptr<WebRtcSession> session;
     {
@@ -115,7 +115,7 @@ bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock,
         session = it_session->second;
     }
 
-    if (!session) //todo add log
+    if (!session) // todo add log
     {
         return false;
     }
@@ -128,7 +128,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
     try
     {
         websocketpp::server<websocketpp::config::asio>::connection_ptr conn = get_con_from_hdl(hdl);
-        
+
         std::shared_ptr<WebSocketConn> ws_conn = std::make_shared<WebSocketConn>(worker_, conn);
         auto webrtc_session = ws_conn->createSession();
         {
@@ -191,17 +191,26 @@ void WebRtcServer::onWebsocketClose(websocketpp::connection_hdl hdl)
 // //             |      [64..79] -+--> forward to TURN Channel
 // //             |                |
 // //             |    [128..191] -+--> forward to RTP/RTCP
-UDP_MSG_TYPE WebRtcServer::detectMsgType(uint8_t * data, size_t len)
+UDP_MSG_TYPE WebRtcServer::detectMsgType(uint8_t *data, size_t len)
 {
-    if (data[0] >= 0 && data[0] <= 3) {
+    if (data[0] >= 0 && data[0] <= 3)
+    {
         return UDP_MSG_STUN;
-    } else if (data[0] >= 16 && data[0] <= 19) {
+    }
+    else if (data[0] >= 16 && data[0] <= 19)
+    {
         return UDP_MSG_ZRTP;
-    } else if (data[0] >= 20 && data[0] <= 63) {
+    }
+    else if (data[0] >= 20 && data[0] <= 63)
+    {
         return UDP_MSG_DTLS;
-    } else if (data[0] >= 64 && data[0] <= 79) {
+    }
+    else if (data[0] >= 64 && data[0] <= 79)
+    {
         return UDP_MSG_TURN;
-    } else if (data[0] >= 128 && data[0] <= 191) {
+    }
+    else if (data[0] >= 128 && data[0] <= 191)
+    {
         return UDP_MSG_RTP;
     }
     return UDP_MSG_UNKNOWN;
