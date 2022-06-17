@@ -6,9 +6,9 @@
 
 #include "dtls_cert.h"
 using namespace mms;
-DtlsCert DtlsCert::instance_;
-bool DtlsCert::init()
+bool DtlsCert::init(const std::string & domain)
 {
+    domain_ = domain;
     if (!createCert())
     {
         return false;
@@ -77,7 +77,6 @@ bool DtlsCert::createCert()
     int seq = std::rand() % 9999999;
     ASN1_INTEGER_set(X509_get_serialNumber(certificate_), 1); // serial number
     // 创建pkey
-    // std::unique_ptr<RSA, void (*)(RSA *)> rsa{RSA_new(), RSA_free};
     rsa_ = RSA_new();
     std::unique_ptr<BIGNUM, void (*)(BIGNUM *)> bn{BN_new(), BN_free};
     std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY *)> pkey{EVP_PKEY_new(), EVP_PKEY_free};
@@ -106,12 +105,9 @@ bool DtlsCert::createCert()
     // X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, company, -1, -1, 0);
     // X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, common_name, -1, -1, 0);
 
-    X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC, (const unsigned char *)"SG", -1, -1, 0); //country
+    X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC, (const unsigned char *)"China", -1, -1, 0); //country
     X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, (const unsigned char *)"SG", -1, -1, 0); //state
-    X509_NAME_add_entry_by_txt(name, "L",  MBSTRING_ASC, (const unsigned char *)"Singapore", -1, -1, 0); //locality
-    X509_NAME_add_entry_by_txt(name, "O",  MBSTRING_ASC, (const unsigned char *)"org", -1, -1, 0); //organisation
-    X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, (const unsigned char *)"unit", -1, -1, 0); //organisational unit
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)"name", -1, -1, 0); //common name
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, domain_.c_str(), -1, -1, 0); //common name
     X509_set_issuer_name(certificate_, name);
     // 添加ext
     /* Add various extensions: standard extensions */
@@ -119,9 +115,6 @@ bool DtlsCert::createCert()
 	add_ext(certificate_, NID_key_usage, "critical,keyCertSign,cRLSign");
 	add_ext(certificate_, NID_subject_key_identifier, "hash");
     add_ext(certificate_, NID_authority_key_identifier, "keyid:always");
-	/* Some Netscape specific extensions */
-	add_ext(certificate_, NID_netscape_cert_type, "server");
-	add_ext(certificate_, NID_netscape_comment, "example comment extension");
     // 生成签名
     ret = X509_sign(certificate_, pkey.get(), EVP_sha1()); // some hash type here
     if (ret == 0)
@@ -147,7 +140,6 @@ bool DtlsCert::createCert()
         }
     }
     finger_print_ = oss.str();
-    std::cout << "finger print is :" << finger_print_ << std::endl;
     // 写入der
     std::unique_ptr<BIO, void (*)(BIO *)> memDER{BIO_new(BIO_s_mem()), BIO_free_all};
     ret = i2d_X509_bio(memDER.get(), certificate_);
@@ -160,10 +152,5 @@ bool DtlsCert::createCert()
     long der_len = BIO_get_mem_data(memDER.get(), &der_ptr);
     der_.resize(der_len);
     memcpy(der_.data(), der_ptr, der_len);
-
-    if (check_certificate_valid(certificate_))
-    {
-        std::cout << "*************************** check_certificate_valid succeed ************************" << std::endl;
-    }
     return true;
 }

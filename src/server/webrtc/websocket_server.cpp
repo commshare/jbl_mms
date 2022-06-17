@@ -9,11 +9,6 @@ WebsocketServer::~WebsocketServer() {
 }
 
 bool WebsocketServer::start(uint16_t port) {
-    if (!DtlsCert::getInstance()->init()) 
-    {
-        return false;
-    }
-
     work_thread_ = std::make_shared<std::thread>([this, port]() {
         try {
             // Set logging settings

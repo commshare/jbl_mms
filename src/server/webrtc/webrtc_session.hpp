@@ -40,6 +40,7 @@ public:
     bool processStunBindingReq(StunMsg & stun_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     void onMessage(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg);
 
+    void setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
     bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);
@@ -57,6 +58,7 @@ private:
     std::string remote_ice_ufrag_;
     std::string remote_ice_pwd_;
 
+    std::shared_ptr<DtlsCert> dtls_cert_;
     DtlsCtx dtls_ctx_;
 };
 

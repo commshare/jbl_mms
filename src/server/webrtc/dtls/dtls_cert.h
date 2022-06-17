@@ -13,13 +13,7 @@ namespace mms
     public:
         DtlsCert() = default;
         ~DtlsCert();
-
-        static DtlsCert *getInstance()
-        {
-            return &instance_;
-        }
-
-        bool init();
+        bool init(const std::string & domain);
 
         const std::string &getFingerPrint() const
         {
@@ -34,12 +28,12 @@ namespace mms
             return rsa_;
         }
     private:
+        std::string domain_;
         X509 *certificate_ = nullptr;
         RSA *rsa_ = nullptr;
         EVP_PKEY *pkey_ = nullptr;
         std::string finger_print_;
         std::string der_;
-        static DtlsCert instance_;
     private:
         bool createCert();
     };

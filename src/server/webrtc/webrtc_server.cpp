@@ -11,7 +11,13 @@ using namespace mms;
 
 bool WebRtcServer::start()
 {
-    bool ret = WebsocketServer::start();
+    bool ret = initCerts();
+    if (!ret)
+    {
+        return false;
+    }
+
+    ret = WebsocketServer::start();
     if (!ret)
     {
         return false;
@@ -25,10 +31,20 @@ bool WebRtcServer::start()
     return true;
 }
 
+bool WebRtcServer::initCerts()
+{
+    std::string domain = "mms.cn";
+    default_dtls_cert_ = std::make_shared<DtlsCert>();
+    if (!default_dtls_cert_->init(domain)) 
+    {
+        return false;
+    }
+    return true;
+}
+
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    std::cout << "webrtc server recv len:" << len << std::endl;
     boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
         uint8_t *data = recv_data.get();
         UDP_MSG_TYPE t = detectMsgType(data, len);

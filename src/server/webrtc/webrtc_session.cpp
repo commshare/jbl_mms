@@ -339,6 +339,11 @@ bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock
     return true;
 }
 
+void WebRtcSession::setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert)
+{
+    dtls_cert_ = dtls_cert;
+}
+
 void WebRtcSession::service()
 {
 }

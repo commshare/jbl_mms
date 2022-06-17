@@ -7,6 +7,7 @@
 #include "websocket_server.hpp"
 
 #include "server/stun/protocol/stun_msg.h"
+#include "dtls/dtls_cert.h"
 namespace mms {
 class WebSocketConn;
 
@@ -43,11 +44,16 @@ private:
 private:
     UDP_MSG_TYPE detectMsgType(uint8_t * data, size_t len);
 private:
+    bool initCerts();
+private:
     ThreadWorker *worker_;
     std::mutex mtx_;
     std::unordered_map<websocketpp::server<websocketpp::config::asio>::connection_ptr, std::shared_ptr<WebSocketConn>> conn_map_;
     std::mutex session_map_mtx_;
     std::unordered_map<boost::asio::ip::udp::endpoint, std::shared_ptr<WebRtcSession>, hash_endpoint> endpoint_session_map_;
     std::unordered_map<std::string, std::shared_ptr<WebRtcSession>> ufrag_session_map_;
+
+    std::shared_ptr<DtlsCert> default_dtls_cert_;
+    std::unordered_map<std::string, DtlsCert> domain_dtls_certs_;//domain cert
 };
 };
