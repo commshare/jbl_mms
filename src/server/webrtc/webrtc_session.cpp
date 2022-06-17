@@ -72,6 +72,8 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
             const std::string &app = root["app"].asString();
             const std::string &stream = root["stream"].asString();
             setSessionName(domain + "/" + app + "/" + stream);
+
+            // MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
             if (!processOfferMsg(server, hdl, msg["sdp"].asString()))
             {
                 close();

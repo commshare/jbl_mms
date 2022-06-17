@@ -39,6 +39,16 @@ public:
     void dispatch(F &&f, ARGS &&...args) {
         io_context_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
     }
+
+    template<typename F, typename ...ARGS>
+    boost::asio::deadline_timer* delayInvoke(F && f, uint32_t msec, ARGS &&...args) {
+        boost::asio::deadline_timer *t = new boost::asio::deadline_timer(io_context_, boost::posix_time::milliseconds(msec));
+        auto cb = [f](const boost::system::error_code& ec, boost::asio::deadline_timer* t, ARGS... args) {
+            (f)(args...);
+        };
+        t->async_wait(std::bind(cb, boost::asio::placeholders::error, t, std::forward<ARGS>(args)...));
+        return t;
+    }
     
     void start() {
         if (running_) {
