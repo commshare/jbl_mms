@@ -107,7 +107,7 @@ bool DtlsCert::createCert()
 
     X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC, (const unsigned char *)"China", -1, -1, 0); //country
     X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, (const unsigned char *)"SG", -1, -1, 0); //state
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, domain_.c_str(), -1, -1, 0); //common name
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)domain_.c_str(), -1, -1, 0); //common name
     X509_set_issuer_name(certificate_, name);
     // 添加ext
     /* Add various extensions: standard extensions */

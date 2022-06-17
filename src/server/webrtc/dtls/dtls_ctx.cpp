@@ -173,7 +173,7 @@ bool DtlsCtx::processClientHello(DTLSCiphertext &recv_msg, UdpSocket *sock, cons
         resp_handshake->setType(certificate);
         auto *s = new ServerCertificate;
         std::unique_ptr<HandShakeMsg> resp_server_certificate = std::unique_ptr<HandShakeMsg>(s);
-        s->addCert(DtlsCert::getInstance()->getDer());
+        s->addCert(dtls_cert_->getDer());
         resp_handshake->setMsg(std::move(resp_server_certificate));
         resp_handshake->setMessageSeq(message_seq_);
         resp_msg.setMsg(std::move(resp_handshake));
@@ -347,9 +347,14 @@ bool DtlsCtx::processClientKeyExchange(DTLSCiphertext &msg, UdpSocket *sock, con
     return true;
 }
 
+void DtlsCtx::setDtlsCert(std::shared_ptr<DtlsCert> cert)
+{
+    dtls_cert_ = cert;
+}
+
 int32_t DtlsCtx::decryptRSA(const std::string &enc_data, std::string &dec_data)
 {
-    int num = RSA_private_decrypt(RSA_size(DtlsCert::getInstance()->getRSA()), (const uint8_t *)enc_data.data(), (uint8_t *)dec_data.data(), DtlsCert::getInstance()->getRSA(), RSA_PKCS1_PADDING);
+    int num = RSA_private_decrypt(RSA_size(dtls_cert_->getRSA()), (const uint8_t *)enc_data.data(), (uint8_t *)dec_data.data(), dtls_cert_->getRSA(), RSA_PKCS1_PADDING);
     return num;
 }
 

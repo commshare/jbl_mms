@@ -7,6 +7,7 @@
 #include "base/network/udp_socket.hpp"
 
 #include "server/dtls/dtls_define.h"
+#include "dtls_cert.h"
 #include "server/dtls/client_key_exchange.h"
 namespace mms {
 class DtlsCtx {
@@ -19,6 +20,7 @@ public:
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 public:
     bool init();
+    void setDtlsCert(std::shared_ptr<DtlsCert> cert);
 private:
     bool processClientHello(DTLSCiphertext & msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processClientKeyExchange(DTLSCiphertext & msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
@@ -35,7 +37,6 @@ private:
     std::string recv_key_;
     std::string send_key_;
 
-
     std::string verify_data_;
 
     std::string client_write_MAC_key_;
@@ -46,5 +47,6 @@ private:
     std::string server_write_IV_;
 
     std::unique_ptr<CiperSuite> ciper_suite_;
+    std::shared_ptr<DtlsCert> dtls_cert_;
 };
 };

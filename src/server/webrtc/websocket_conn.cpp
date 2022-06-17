@@ -3,27 +3,36 @@
 
 using namespace mms;
 
-WebSocketConn::WebSocketConn(ThreadWorker *worker, websocketpp::server<websocketpp::config::asio>::connection_ptr c) : ws_conn_(c), worker_(worker) {
-
+WebSocketConn::WebSocketConn(ThreadWorker *worker, websocketpp::server<websocketpp::config::asio>::connection_ptr c) : ws_conn_(c), worker_(worker)
+{
 }
 
-WebSocketConn::~WebSocketConn() {
-
+WebSocketConn::~WebSocketConn()
+{
 }
 
-std::shared_ptr<WebRtcSession> WebSocketConn::createSession() {
+std::shared_ptr<WebRtcSession> WebSocketConn::createSession()
+{
     session_ = std::make_shared<WebRtcSession>(worker_, this);
     return session_;
 }
 
-std::shared_ptr<WebRtcSession> WebSocketConn::getSession() {
+std::shared_ptr<WebRtcSession> WebSocketConn::getSession()
+{
     return session_;
 }
 
-void WebSocketConn::destroySession() {
+void WebSocketConn::destroySession()
+{
     session_.reset();
 }
 
-std::string WebSocketConn::getLocalIp() {
+std::string WebSocketConn::getLocalIp()
+{
     return ws_conn_->get_host();
+}
+
+std::string WebSocketConn::getDomain()
+{
+    return ws_conn_->get_uri()->get_host();
 }

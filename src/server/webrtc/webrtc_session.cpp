@@ -159,7 +159,7 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             audio_sdp.setRtcpMux(RtcpMux());
             audio_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             audio_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_audio"));
-            audio_sdp.setFingerPrint(FingerPrint("sha-1", DtlsCert::getInstance()->getFingerPrint()));
+            audio_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
             auto remote_audio_payload = media.searchPayload("opus");
             if (!remote_audio_payload.has_value())
             {
@@ -191,7 +191,7 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             video_sdp.setRtcpMux(RtcpMux());
             video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
-            video_sdp.setFingerPrint(FingerPrint("sha-1", DtlsCert::getInstance()->getFingerPrint()));
+            video_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
             auto remote_video_payload = media.searchPayload("H264");
             if (!remote_video_payload.has_value())
             {
@@ -342,6 +342,7 @@ bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock
 void WebRtcSession::setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert)
 {
     dtls_cert_ = dtls_cert;
+    dtls_ctx_.setDtlsCert(dtls_cert);
 }
 
 void WebRtcSession::service()

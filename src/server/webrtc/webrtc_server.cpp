@@ -128,6 +128,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
     try
     {
         websocketpp::server<websocketpp::config::asio>::connection_ptr conn = get_con_from_hdl(hdl);
+        
         std::shared_ptr<WebSocketConn> ws_conn = std::make_shared<WebSocketConn>(worker_, conn);
         auto webrtc_session = ws_conn->createSession();
         {
@@ -141,6 +142,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
 
         conn->set_message_handler(std::bind(&WebRtcSession::onMessage, webrtc_session.get(), this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
+        webrtc_session->setDtlsCert(default_dtls_cert_);
         webrtc_session->service();
     }
     catch (std::exception &e)
