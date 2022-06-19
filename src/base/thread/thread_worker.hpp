@@ -10,7 +10,11 @@
 #include <queue>
 #include <condition_variable>
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace mms {
+class ThreadWorker;
 class ThreadWorker {
 public:
     using Task = std::function<void()>;
@@ -40,14 +44,35 @@ public:
         io_context_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
     }
 
-    template<typename F, typename ...ARGS>
-    boost::asio::deadline_timer* delayInvoke(F && f, uint32_t msec, ARGS &&...args) {
-        boost::asio::deadline_timer *t = new boost::asio::deadline_timer(io_context_, boost::posix_time::milliseconds(msec));
-        auto cb = [f](const boost::system::error_code& ec, boost::asio::deadline_timer* t, ARGS... args) {
-            (f)(args...);
-        };
-        t->async_wait(std::bind(cb, boost::asio::placeholders::error, t, std::forward<ARGS>(args)...));
-        return t;
+    class Event {
+    public:
+        Event(ThreadWorker *worker, const std::function<void(Event *ev)> &f) : worker_(worker), f_(f), timer_(worker->getIOContext())
+        {
+        }
+
+        void invokeAfter(uint32_t ms) {
+            timer_.expires_from_now(boost::posix_time::milliseconds(ms));
+            timer_.async_wait([this](const boost::system::error_code & ec) {
+                f_(this);
+            });
+        }
+
+    private:
+        ThreadWorker *worker_;
+        std::function<void(Event *ev)> f_;
+        boost::asio::deadline_timer timer_;
+    };
+
+    Event* createEvent(const std::function<void(Event* ev)> &f)
+    {
+        Event* ev = new Event(this, f);
+        return ev;
+    }
+
+
+    void removeEvent(Event *ev) 
+    {
+        delete ev;
     }
     
     void start() {

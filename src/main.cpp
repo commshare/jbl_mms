@@ -68,9 +68,12 @@ int main(int argc, char *argv[])
 
     thread_pool_inst::get_mutable_instance().start(std::thread::hardware_concurrency());
 
-    thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER)->delayInvoke([]() {
-        
-    }, 10);
+    ThreadWorker::Event *ev = thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER)->createEvent([](ThreadWorker::Event *ev) {
+        std::cout << "call ev" << std::endl;
+        ev->invokeAfter(1000);
+    });
+
+    ev->invokeAfter(1000);
     
     RtmpServer rtmp_server(thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER));
     if (!rtmp_server.start())
