@@ -29,6 +29,18 @@ private:
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
 private:
+    enum DtlsState {
+        DtlsStateInit = 0,
+        DtlsStateRecvClientHello = 1,
+        DtlsStateSendServerCertificate = 2,
+        DtlsStateSendServerDone = 3,
+        DtlsStateSendServerHello = 4,
+        DtlsStateKeyExchangeDone = 5,
+        DtlsStateChangeCipher    = 6,
+        DtlsStateHandShakeFinished = 7,
+    };
+
+    DtlsState state_ = DtlsStateInit;
     std::shared_ptr<DTLSCiphertext> client_hello_;
     std::shared_ptr<DTLSCiphertext> server_hello_;
     PreMasterSecret pre_master_secret_;
