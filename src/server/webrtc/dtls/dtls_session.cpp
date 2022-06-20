@@ -17,6 +17,7 @@ using namespace mms;
 // tls1.2参考：https://tls12.ulfheim.net/
 bool DtlsSession::init()
 {
+    next_handler_ 
     return true;
 }
 
@@ -351,4 +352,45 @@ int32_t DtlsSession::decryptRSA(const std::string &enc_data, std::string &dec_da
 
 bool DtlsSession::calcMasterSecret()
 {
+}
+
+int32_t DtlsSession::expectClientHello(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    bool ret = true;
+    std::shared_ptr<DTLSCiphertext> dtls_msg = std::make_shared<DTLSCiphertext>();
+    int32_t consumed = dtls_msg->decode(data, len);
+    if (consumed < 0)
+    {
+        return consumed;
+    }
+
+    if (dtls_msg->getType() != handshake)
+    {
+        unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
+        return consumed;
+    }
+
+    HandShake *handshake = (HandShake *)dtls_msg->msg.get();
+    if (handshake->getType() != client_hello)
+    {
+        unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
+        return consumed;
+    }
+
+    ret = processClientHello(dtls_msg, sock, remote_ep, yield);
+    if (!ret)
+    {
+        return -1;
+    }
+    return consumed;
+}
+
+int32_t DtlsSession::expectClientKeyExchange(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+
+}
+
+int32_t DtlsSession::expectHandShakeFinished(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+
 }

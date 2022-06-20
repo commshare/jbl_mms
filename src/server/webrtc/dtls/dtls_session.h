@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <queue>
+#include <functional>
 
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -28,6 +29,10 @@ private:
     bool processClientKeyExchange(std::shared_ptr<DTLSCiphertext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
+private:
+    int32_t expectClientHello(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    int32_t expectClientKeyExchange(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    int32_t expectHandShakeFinished(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
     enum DtlsState {
         DtlsStateInit = 0,
@@ -64,8 +69,10 @@ private:
     std::shared_ptr<DtlsCert> dtls_cert_;
 
     std::map<uint64_t, std::shared_ptr<DTLSCiphertext>> unhandled_msgs_;
+    std::shared_ptr<DTLSCiphertext> last_msg_;
     std::queue<std::shared_ptr<DTLSCiphertext>> sended_msgs_;
     uint32_t last_message_req_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
+    std::function<int32_t(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
 };
 };
