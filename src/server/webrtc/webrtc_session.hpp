@@ -13,7 +13,7 @@
 #include "base/network/udp_socket.hpp"
 #include "server/stun/protocol/stun_msg.h"
 
-#include "dtls/dtls_ctx.h"
+#include "dtls/dtls_session.h"
 namespace mms {
 class WebsocketServer;
 class WebSocketConn;
@@ -59,7 +59,7 @@ private:
     std::string remote_ice_pwd_;
 
     std::shared_ptr<DtlsCert> dtls_cert_;
-    DtlsCtx dtls_ctx_;
+    DtlsSession dtls_session_;
 };
 
 };

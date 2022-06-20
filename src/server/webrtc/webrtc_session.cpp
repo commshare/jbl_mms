@@ -17,7 +17,7 @@ WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker
     std::cout << "create webrtcsession" << std::endl;
     local_ice_ufrag_ = Utils::randStr(4);
     local_ice_pwd_ = Utils::randStr(24);
-    dtls_ctx_.init();
+    dtls_session_.init();
 }
 
 WebRtcSession::~WebRtcSession()
@@ -330,7 +330,7 @@ bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, co
 
 bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
-    bool ret = dtls_ctx_.processDtlsPacket(data, len, sock, remote_ep, yield);
+    bool ret = dtls_session_.processDtlsPacket(data, len, sock, remote_ep, yield);
     if (!ret) {
         std::cout << "process dtls packet failed" << std::endl;
         return false;
@@ -342,7 +342,7 @@ bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock
 void WebRtcSession::setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert)
 {
     dtls_cert_ = dtls_cert;
-    dtls_ctx_.setDtlsCert(dtls_cert);
+    dtls_session_.setDtlsCert(dtls_cert);
 }
 
 void WebRtcSession::service()
