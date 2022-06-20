@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include <queue>
 
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -51,6 +52,7 @@ private:
     std::shared_ptr<DtlsCert> dtls_cert_;
 
     std::map<uint64_t, std::shared_ptr<DTLSCiphertext>> unhandled_msgs_;
+    std::queue<std::shared_ptr<DTLSCiphertext>> sended_msgs_;
     uint32_t last_message_req_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
 };

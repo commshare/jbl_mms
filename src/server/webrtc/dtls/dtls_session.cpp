@@ -23,8 +23,6 @@ bool DtlsSession::init()
 bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
     int32_t consumed = 0;
-
-    // std::vector<DTLSCiphertext> dtls_msgs;
     while (len > 0)
     {
         std::shared_ptr<DTLSCiphertext> dtls_msg = std::make_shared<DTLSCiphertext>();
