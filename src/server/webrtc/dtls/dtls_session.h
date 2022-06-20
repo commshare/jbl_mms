@@ -73,6 +73,8 @@ private:
     std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
     uint32_t last_message_req_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
+    bool ciper_state_changed_ = false;
+    uint16_t epoch_ = 0;
     std::function<int32_t(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
 };
 };
