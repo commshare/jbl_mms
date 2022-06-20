@@ -17,16 +17,108 @@ using namespace mms;
 // tls1.2参考：https://tls12.ulfheim.net/
 bool DtlsSession::init()
 {
-    next_handler_ 
+    //next_handler_ 
     return true;
 }
 
 bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
+    // int32_t consumed = 0;
+    // while (len > 0)
+    // {
+    //     std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
+    //     consumed = dtls_msg->decode(data, len);
+    //     if (consumed < 0)
+    //     {
+    //         // struct {
+    //         //     opaque IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
+    //         //     //以下数据加密, 生成消息体
+    //         //     block-ciphered struct {
+    //         //         opaque content[];
+    //         //         opaque MAC[20]; //本例使用HMAC-SHA1, 输出20字节
+    //         //         uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
+    //         //         uint8 padding_length;  //对齐字节的长度
+    //         //         //最终整个个结构体必须是16的倍数.
+    //         //     };
+    //         // } GenericBlockCipher;
+    //         // ————————————————
+    //         // 版权声明：本文为CSDN博主「wzj_whut」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+    //         // 原文链接：https://blog.csdn.net/wzj_whut/article/details/86626529
+    //         // 去掉头部13字节偏移
+    //         uint16_t data_len = len - 13;
+    //         uint8_t *encrypted_data = data + 13;
+    //         // 获取16字节iv
+    //         std::string iv;
+    //         iv.assign((char *)encrypted_data, 16);
+    //         // 获取加密内容
+    //         unsigned char *encrypted_content = (unsigned char *)encrypted_data + 16;
+    //         uint32_t encrypted_len = data_len - 16;
+    //         // 执行aes128解密
+    //         AES_KEY key;
+    //         int ret = AES_set_decrypt_key((unsigned char *)client_write_key_.data(), 128, &key);
+    //         if (0 != ret) 
+    //         {
+    //             return false;
+    //         }
+
+    //         unsigned char *out = new unsigned char[encrypted_len];
+    //         memset(out, 0, encrypted_len);
+    //         std::cout << "data_len:" << encrypted_len << std::endl;
+    //         AES_cbc_encrypt(encrypted_content, out, 16, &key, (unsigned char *)iv.data(), AES_DECRYPT);
+            
+    //         for (uint32_t i = 0; i < encrypted_len; i++)
+    //         {
+    //             printf("%02x ", out[i]);
+    //         }
+    //         printf("\r\n");
+    //         return false;
+    //     }
+
+    //     bool ret = true;
+    //     if (dtls_msg->getType() == handshake)
+    //     {
+    //         verify_data_.append((char *)data, consumed);
+    //         HandShake *handshake = (HandShake *)dtls_msg->msg.get();
+    //         if (handshake->getType() == client_hello)
+    //         {
+    //             ret = processClientHello(dtls_msg, sock, remote_ep, yield);
+    //         }
+    //         else if (handshake->getType() == client_key_exchange)
+    //         {
+    //             ret = processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
+    //         }
+    //     }
+    //     else if (dtls_msg->getType() == change_cipher_spec)
+    //     {
+    //         // verify_data_.append((char*)data, consumed);
+    //     }
+    //     else
+    //     {
+    //         std::string finished_data = PRF(master_secret_, "client finished", Utils::sha256(verify_data_), 64);
+    //         std::cout << "finished_data:" << std::endl;
+    //         for (int i = 0; i < finished_data.size(); i++)
+    //         {
+    //             printf("%02x", (uint8_t)finished_data[i]);
+    //         }
+    //         printf("\r\n");
+    //         return true;
+    //     }
+
+    //     if (!ret)
+    //     {
+    //         return false;
+    //     }
+
+    //     data += consumed;
+    //     len -= consumed;
+    //     std::cout << "********************* consumed:" << consumed << ", len:" << len << " **********************" << std::endl;
+    // }
+    // return true;
+
     int32_t consumed = 0;
     while (len > 0)
     {
-        std::shared_ptr<DTLSCiphertext> dtls_msg = std::make_shared<DTLSCiphertext>();
+        std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
         consumed = dtls_msg->decode(data, len);
         if (consumed < 0)
         {
@@ -116,14 +208,14 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
     return true;
 }
 
-bool DtlsSession::processClientHello(std::shared_ptr<DTLSCiphertext> recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
     client_hello_ = recv_msg;
 
     HandShake *recv_handshake_msg = (HandShake *)client_hello_->msg.get();
     ClientHello *client_hello = (ClientHello *)recv_handshake_msg->msg.get();
     { // send server hello
-        std::shared_ptr<DTLSCiphertext> resp_msg = std::make_shared<DTLSCiphertext>();
+        std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg->setSequenceNo(send_message_seq_);
@@ -156,7 +248,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSCiphertext> recv_msg, U
     }
 
     {
-        std::shared_ptr<DTLSCiphertext> resp_msg = std::make_shared<DTLSCiphertext>();
+        std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg->setSequenceNo(send_message_seq_);
@@ -183,7 +275,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSCiphertext> recv_msg, U
     }
 
     {
-        std::shared_ptr<DTLSCiphertext> resp_msg = std::make_shared<DTLSCiphertext>();
+        std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         resp_msg->setSequenceNo(send_message_seq_);
@@ -211,7 +303,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSCiphertext> recv_msg, U
     return true;
 }
 
-bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSCiphertext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
     HandShake *recv_handshake_msg = (HandShake *)msg->msg.get();
     ClientKeyExchange *client_key_exchange_msg = (ClientKeyExchange *)recv_handshake_msg->msg.get();
@@ -357,7 +449,7 @@ bool DtlsSession::calcMasterSecret()
 int32_t DtlsSession::expectClientHello(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     bool ret = true;
-    std::shared_ptr<DTLSCiphertext> dtls_msg = std::make_shared<DTLSCiphertext>();
+    std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
     int32_t consumed = dtls_msg->decode(data, len);
     if (consumed < 0)
     {

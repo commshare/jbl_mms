@@ -188,7 +188,7 @@ int32_t DtlsHeader::encode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
+int32_t DTLSPlaintext::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     int32_t c = header.decode(data, len);
@@ -224,7 +224,7 @@ int32_t DTLSCiphertext::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-int32_t DTLSCiphertext::encode(uint8_t *data, size_t len)
+int32_t DTLSPlaintext::encode(uint8_t *data, size_t len)
 {
     if (!msg)
     {

@@ -166,18 +166,18 @@ namespace mms
         uint32_t size();
     };
 
-    struct DTLSCiphertext
+    struct DTLSPlaintext
     {
         DtlsHeader header;
         std::unique_ptr<DtlsMsg> msg;
-        DTLSCiphertext() = default;
-        DTLSCiphertext(DTLSCiphertext &other)
+        DTLSPlaintext() = default;
+        DTLSPlaintext(DTLSPlaintext &other)
         {
             header = other.header;
             msg = std::move(other.msg);
         }
 
-        DTLSCiphertext &operator=(DTLSCiphertext &other)
+        DTLSPlaintext &operator=(DTLSPlaintext &other)
         {
             header = other.header;
             msg = std::move(other.msg);

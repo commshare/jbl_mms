@@ -25,8 +25,8 @@ public:
     void setDtlsCert(std::shared_ptr<DtlsCert> cert);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
-    bool processClientHello(std::shared_ptr<DTLSCiphertext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    bool processClientKeyExchange(std::shared_ptr<DTLSCiphertext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processClientHello(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
 private:
@@ -46,8 +46,8 @@ private:
     };
 
     DtlsState state_ = DtlsStateInit;
-    std::shared_ptr<DTLSCiphertext> client_hello_;
-    std::shared_ptr<DTLSCiphertext> server_hello_;
+    std::shared_ptr<DTLSPlaintext> client_hello_;
+    std::shared_ptr<DTLSPlaintext> server_hello_;
     PreMasterSecret pre_master_secret_;
     std::string master_secret_;
     uint32_t send_message_seq_ = 0;
@@ -68,9 +68,9 @@ private:
     std::unique_ptr<CiperSuite> ciper_suite_;
     std::shared_ptr<DtlsCert> dtls_cert_;
 
-    std::map<uint64_t, std::shared_ptr<DTLSCiphertext>> unhandled_msgs_;
-    std::shared_ptr<DTLSCiphertext> last_msg_;
-    std::queue<std::shared_ptr<DTLSCiphertext>> sended_msgs_;
+    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>> unhandled_msgs_;
+    std::shared_ptr<DTLSPlaintext> last_msg_;
+    std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
     uint32_t last_message_req_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
     std::function<int32_t(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
