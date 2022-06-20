@@ -28,8 +28,8 @@ SOFTWARE.
 #include <memory>
 
 namespace mms {
-#pragma packed(1)
 #define FLV_IDENTIFIER  "FLV"
+#pragma pack(1)
 struct FlvHeader {
     uint8_t signature[3];
     uint8_t version = 0x01;
@@ -417,5 +417,7 @@ struct FlvTag {
 struct FlvBody {
     uint32_t prev_tag_size;
 };
+
+#pragma pack()
 
 };

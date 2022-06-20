@@ -44,17 +44,38 @@ public:
         io_context_.dispatch(std::bind(f, std::forward<ARGS>(args)...));
     }
 
+    // 使用方法
+    // ThreadWorker::Event *ev = thread_pool_inst::get_mutable_instance().getWorker(RAND_WORKER)->createEvent([](ThreadWorker::Event *ev) {
+    //     std::cout << "call ev" << std::endl;
+    //     ev->invokeAfter(1000);
+    //     ev->getWorker()->removeEvent(ev);
+    // });
+
+    // ev->invokeAfter(1000);
     class Event {
     public:
         Event(ThreadWorker *worker, const std::function<void(Event *ev)> &f) : worker_(worker), f_(f), timer_(worker->getIOContext())
         {
         }
 
-        void invokeAfter(uint32_t ms) {
+        ~Event() 
+        {
+            timer_.cancel();
+        }
+
+        void invokeAfter(uint32_t ms) 
+        {
             timer_.expires_from_now(boost::posix_time::milliseconds(ms));
             timer_.async_wait([this](const boost::system::error_code & ec) {
-                f_(this);
+                if (ec != boost::asio::error::operation_aborted) {
+                    f_(this);
+                }
             });
+        }
+
+        ThreadWorker *getWorker() 
+        {
+            return worker_;
         }
 
     private:

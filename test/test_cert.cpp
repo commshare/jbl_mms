@@ -1,4 +1,3 @@
-#pragma once
 #include <string>
 #include <memory>
 #include <stdint.h>
@@ -67,7 +66,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
             unsigned char md[EVP_MAX_MD_SIZE];
             unsigned int n;
             X509_digest(cert.get(), digest, md, &n);
-            for (int pos = 0; pos < n; pos++) {
+            for (size_t pos = 0; pos < n; pos++) {
                 if (pos != n - 1) {
                     printf("%02x:", md[pos]);
                 } else {
@@ -84,7 +83,7 @@ bool generateX509(const std::string &certFileName, const std::string &keyFileNam
     return result;
 }
 
-int main(char argc, char *argv[])
+int main(int argc, char *argv[])
 {
     SSL_load_error_strings();
     SSL_library_init();

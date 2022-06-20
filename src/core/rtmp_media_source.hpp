@@ -119,7 +119,7 @@ public:
         return true;
     }
 
-    std::vector<std::shared_ptr<RtmpMessage>> getPkts(uint64_t &last_pkt_index, uint32_t max_count) {
+    std::vector<std::shared_ptr<RtmpMessage>> getPkts(int64_t &last_pkt_index, uint32_t max_count) {
         std::vector<std::shared_ptr<RtmpMessage>> pkts;
         if (last_pkt_index == -1) {
             pkts.emplace_back(metadata_->msg());
@@ -145,7 +145,7 @@ public:
                     }
                 }
 
-                uint64_t start_idx = *it;
+                int64_t start_idx = *it;
                 uint32_t pkt_count = 0;
                 while(start_idx <= latest_frame_index_ && pkt_count < max_count) {
                     auto t = av_pkts_.getPkt(start_idx);
@@ -158,7 +158,7 @@ public:
                 last_pkt_index = start_idx;
             }
         } else {
-            uint64_t start_idx = last_pkt_index;
+            int64_t start_idx = last_pkt_index;
             uint32_t pkt_count = 0;
             // std::cout << "***************** last_pkt_index1:" << last_pkt_index << " latest_frame_index_：" << latest_frame_index_ << " *****************" << std::endl;
             while(start_idx <= latest_frame_index_ && pkt_count < max_count) {
@@ -199,7 +199,7 @@ protected:
     std::shared_ptr<RtmpMessage> video_header_;
     std::shared_ptr<RtmpMessage> audio_header_;
     boost::circular_buffer<uint64_t> keyframe_indexes_;
-    uint64_t latest_frame_index_ = 0;
+    int64_t latest_frame_index_ = 0;
 protected:
     bool has_video_; 
     bool video_ready_ = false;

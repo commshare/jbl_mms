@@ -58,7 +58,7 @@ public:
     void close() {
     }
 protected:
-    uint64_t last_send_pkt_index_ = -1;
+    int64_t last_send_pkt_index_ = -1;
     bool has_video_; 
     bool has_audio_;
     bool stream_ready_;

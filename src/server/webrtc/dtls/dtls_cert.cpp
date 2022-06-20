@@ -19,16 +19,17 @@ bool DtlsCert::init(const std::string & domain)
 
 DtlsCert::~DtlsCert()
 {
+    // once you've successfully called EVP_PKEY_assign_RSA() you must not call RSA_free() on the underlying key or a double-free may result.
+    // if (rsa_)
+    // {
+    //     RSA_free(rsa_);
+    //     rsa_ = nullptr;
+    // }
+
     if (certificate_)
     {
         X509_free(certificate_);
         certificate_ = nullptr;
-    }
-
-    if (rsa_)
-    {
-        RSA_free(rsa_);
-        rsa_ = nullptr;
     }
 }
 
@@ -75,7 +76,7 @@ bool DtlsCert::createCert()
     // 生成随机序号
     std::srand(time(nullptr));
     int seq = std::rand() % 9999999;
-    ASN1_INTEGER_set(X509_get_serialNumber(certificate_), 1); // serial number
+    ASN1_INTEGER_set(X509_get_serialNumber(certificate_), seq); // serial number
     // 创建pkey
     rsa_ = RSA_new();
     std::unique_ptr<BIGNUM, void (*)(BIGNUM *)> bn{BN_new(), BN_free};
@@ -111,10 +112,10 @@ bool DtlsCert::createCert()
     X509_set_issuer_name(certificate_, name);
     // 添加ext
     /* Add various extensions: standard extensions */
-	add_ext(certificate_, NID_basic_constraints, "critical,CA:TRUE");
-	add_ext(certificate_, NID_key_usage, "critical,keyCertSign,cRLSign");
-	add_ext(certificate_, NID_subject_key_identifier, "hash");
-    add_ext(certificate_, NID_authority_key_identifier, "keyid:always");
+	add_ext(certificate_, NID_basic_constraints, (char*)("critical,CA:TRUE"));
+	add_ext(certificate_, NID_key_usage, (char*)("critical,keyCertSign,cRLSign"));
+	add_ext(certificate_, NID_subject_key_identifier, (char*)("hash"));
+    add_ext(certificate_, NID_authority_key_identifier, (char*)("keyid:always"));
     // 生成签名
     ret = X509_sign(certificate_, pkey.get(), EVP_sha1()); // some hash type here
     if (ret == 0)
@@ -123,7 +124,6 @@ bool DtlsCert::createCert()
     }
     // 生成finger print
     std::unique_ptr<BIO, void (*)(BIO *)> memIO(BIO_new(BIO_s_mem()), BIO_free_all);
-    auto digest = EVP_get_digestbyname("sha1");
     unsigned char md[EVP_MAX_MD_SIZE];
     unsigned int n;
     X509_digest(certificate_, EVP_sha1(), md, &n);
@@ -147,7 +147,7 @@ bool DtlsCert::createCert()
     {
         return false;
     }
-    BIO_flush(memDER.get());
+
     char *der_ptr = NULL;
     long der_len = BIO_get_mem_data(memDER.get(), &der_ptr);
     der_.resize(der_len);

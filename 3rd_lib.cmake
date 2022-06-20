@@ -8,6 +8,7 @@ ExternalProject_Add(libboost-1.75.0
     BUILD_COMMAND ./b2 cxxflags="--std=c++11" --with-system --with-thread --with-date_time --with-regex --with-serialization --with-program_options --with-context --with-coroutine install
     INSTALL_COMMAND ""
 )
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 ExternalProject_Add(libjemalloc
     EXCLUDE_FROM_ALL 1
