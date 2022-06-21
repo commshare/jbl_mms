@@ -71,6 +71,7 @@ namespace mms
         void genRandom();
     };
 
+    #define DTLS_HEADER_SIZE 13
     struct DtlsHeader
     {
         ContentType type;             /* same as TLSPlaintext.type */
@@ -82,8 +83,7 @@ namespace mms
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
         {
-            uint32_t s = 13; // 1 + 2 + 2 + 6 + 2
-            return s;
+            return DTLS_HEADER_SIZE;
         }
     };
 
@@ -166,6 +166,22 @@ namespace mms
         uint32_t size();
     };
 
+    struct GenericBlockCipher : public DtlsMsg
+    {
+        std::string IV;//uint8_t IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
+        //以下数据加密, 生成消息体
+        struct BlockCipered 
+        {
+            std::string content;//uint8_t content[];
+            std::string MAC;    //uint8_t[20]; //本例使用HMAC-SHA1, 输出20字节
+            std::string padding;
+            uint8_t padding_length;
+            // uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
+            // uint8 padding_length;  //对齐字节的长度，最终整个个结构体必须是16的倍数.
+        };
+        struct BlockCipered block_cipered;
+    };
+    
     struct DTLSPlaintext
     {
         DtlsHeader header;
@@ -215,7 +231,7 @@ namespace mms
         }
 
 
-        int32_t decode(uint8_t *data, size_t len);
+        int32_t decode(uint8_t *data, size_t len, bool cipered = false);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
         {

@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <queue>
+#include <list>
 #include <functional>
 
 #include <boost/asio/ip/udp.hpp>
@@ -30,22 +31,11 @@ private:
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
 private:
-    int32_t expectClientHello(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    int32_t expectClientKeyExchange(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    int32_t expectHandShakeFinished(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool expectClientHello(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool expectClientKeyExchange(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool expectChangeCipherSpec(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool expectHandShakeFinished(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
-    enum DtlsState {
-        DtlsStateInit = 0,
-        DtlsStateRecvClientHello = 1,
-        DtlsStateSendServerCertificate = 2,
-        DtlsStateSendServerDone = 3,
-        DtlsStateSendServerHello = 4,
-        DtlsStateKeyExchangeDone = 5,
-        DtlsStateChangeCipher    = 6,
-        DtlsStateHandShakeFinished = 7,
-    };
-
-    DtlsState state_ = DtlsStateInit;
     std::shared_ptr<DTLSPlaintext> client_hello_;
     std::shared_ptr<DTLSPlaintext> server_hello_;
     PreMasterSecret pre_master_secret_;
@@ -69,12 +59,13 @@ private:
     std::shared_ptr<DtlsCert> dtls_cert_;
 
     std::map<uint64_t, std::shared_ptr<DTLSPlaintext>> unhandled_msgs_;
-    std::shared_ptr<DTLSPlaintext> last_msg_;
+    std::list<std::shared_ptr<DTLSPlaintext>> handshake_msgs_;
     std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
-    uint32_t last_message_req_ = 0;
+    std::string handshake_data_;
+    uint32_t expect_msg_req_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
     bool ciper_state_changed_ = false;
     uint16_t epoch_ = 0;
-    std::function<int32_t(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
+    std::function<bool(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
 };
 };
