@@ -28,13 +28,15 @@ public:
 private:
     bool processClientHello(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processHandShakeFinished(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
 private:
-    bool expectClientHello(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    bool expectClientKeyExchange(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    bool expectChangeCipherSpec(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    bool expectHandShakeFinished(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    std::shared_ptr<DTLSPlaintext> requireClientHello();
+    std::shared_ptr<DTLSPlaintext> requireClientKeyExchange();
+    std::shared_ptr<DTLSPlaintext> requireChangeCipherSpec();
+    std::shared_ptr<DTLSPlaintext> requireHandShakeFinished();
 private:
     std::shared_ptr<DTLSPlaintext> client_hello_;
     std::shared_ptr<DTLSPlaintext> server_hello_;
@@ -62,10 +64,20 @@ private:
     std::list<std::shared_ptr<DTLSPlaintext>> handshake_msgs_;
     std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
     std::string handshake_data_;
-    uint32_t expect_msg_req_ = 0;
+    //    DTLS implementations maintain (at least notionally) a
+    //    next_receive_seq counter.  This counter is initially set to zero.
+    //    When a message is received, if its sequence number matches
+    //    next_receive_seq, next_receive_seq is incremented and the message is
+    //    processed.  If the sequence number is less than next_receive_seq, the
+    //    message MUST be discarded.  If the sequence number is greater than
+    //    next_receive_seq, the implementation SHOULD queue the message but MAY
+    //    discard it.  (This is a simple space/bandwidth tradeoff).
+    uint32_t next_receive_seq_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
     bool ciper_state_changed_ = false;
     uint16_t epoch_ = 0;
-    std::function<bool(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_handler_;
+    std::shared_ptr<DTLSCiphertext> client_finished_;
+    std::function<std::shared_ptr<DTLSPlaintext>()> next_msg_require_handler_;
+    std::function<bool(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_msg_handler_;
 };
 };

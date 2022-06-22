@@ -166,7 +166,7 @@ namespace mms
         uint32_t size();
     };
 
-    struct GenericBlockCipher : public DtlsMsg
+    struct GenericBlockCipher
     {
         std::string IV;//uint8_t IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
         //以下数据加密, 生成消息体
@@ -180,6 +180,26 @@ namespace mms
             // uint8 padding_length;  //对齐字节的长度，最终整个个结构体必须是16的倍数.
         };
         struct BlockCipered block_cipered;
+        int32_t decode(uint8_t *data, size_t len) 
+        {
+            return 0;
+        }
+
+        int32_t encode(uint8_t *data, size_t len)
+        {
+            return 0;
+        }
+
+        uint32_t size()
+        {
+            return 0;
+        }
+    };
+
+    struct DTLSCiphertext
+    {
+        DtlsHeader header;
+        GenericBlockCipher block_cipered;
     };
     
     struct DTLSPlaintext

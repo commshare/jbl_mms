@@ -17,145 +17,31 @@ using namespace mms;
 // tls1.2参考：https://tls12.ulfheim.net/
 bool DtlsSession::init()
 {
-    next_handler_ = std::bind(&DtlsSession::expectClientHello, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    next_msg_require_handler_ = std::bind(&DtlsSession::requireClientHello, this);
+    next_msg_handler_ = std::bind(&DtlsSession::processClientHello, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
+}
+
+void DtlsSession::setDtlsCert(std::shared_ptr<DtlsCert> cert)
+{
+    dtls_cert_ = cert;
+}
+
+int32_t DtlsSession::decryptRSA(const std::string &enc_data, std::string &dec_data)
+{
+    int num = RSA_private_decrypt(RSA_size(dtls_cert_->getRSA()), (const uint8_t *)enc_data.data(), (uint8_t *)dec_data.data(), dtls_cert_->getRSA(), RSA_PKCS1_PADDING);
+    return num;
+}
+
+bool DtlsSession::calcMasterSecret()
+{
+    return false;
 }
 
 bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
-    // int32_t consumed = 0;
-    // while (len > 0)
-    // {
-    //     if (!ciper_state_changed_)
-    //     {
-    //         std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
-    //         consumed = dtls_msg->decode(data, len);
-    //         if (consumed < 0)
-    //         {
-    //             return false;
-    //         }
-    //         // 记录收到的handshake message
-    //         if (dtls_msg->getType() == handshake)
-    //         {
-    //             handshake_data_.append((char*)data + dtls_msg->header.size(), consumed - dtls_msg->header.size());
-    //         }
-
-    //         data += consumed;
-    //         len -= consumed;
-    //         // 如果不是期望的req，则乱序了，收到的包放到缓冲区
-    //         if (dtls_msg->getSequenceNo() != expect_msg_req_)
-    //         {
-    //             unhandled_msgs_.insert(dtls_msg->getSequenceNo(), dtls_msg);
-    //             continue;
-    //         }
-    //         // 否则处理
-    //         bool ret = true;
-    //         if (dtls_msg->getType() == handshake)
-    //         {
-    //             HandShake *handshake = (HandShake *)dtls_msg->msg.get();
-    //             if (handshake->getType() == client_hello)
-    //             {
-    //                 ret = processClientHello(dtls_msg, sock, remote_ep, yield);
-    //             }
-    //             else if (handshake->getType() == client_key_exchange)
-    //             {
-    //                 ret = processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
-    //             }
-    //         }
-    //         // 增加期望序号
-    //         expect_msg_req_++;
-    //     }
-    //     else
-    //     {
-
-    //     }
-
-    //     std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
-    //     consumed = dtls_msg->decode(data, len);
-    //     if (consumed < 0)
-    //     {
-    //         // struct {
-    //         //     opaque IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
-    //         //     //以下数据加密, 生成消息体
-    //         //     block-ciphered struct {
-    //         //         opaque content[];
-    //         //         opaque MAC[20]; //本例使用HMAC-SHA1, 输出20字节
-    //         //         uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
-    //         //         uint8 padding_length;  //对齐字节的长度
-    //         //         //最终整个个结构体必须是16的倍数.
-    //         //     };
-    //         // } GenericBlockCipher;
-    //         uint16_t data_len = len - 13;
-    //         uint8_t *encrypted_data = data + 13;
-    //         // 获取16字节iv
-    //         std::string iv;
-    //         iv.assign((char *)encrypted_data, 16);
-    //         // 获取加密内容
-    //         unsigned char *encrypted_content = (unsigned char *)encrypted_data + 16;
-    //         uint32_t encrypted_len = data_len - 16;
-    //         // 执行aes128解密
-    //         AES_KEY key;
-    //         int ret = AES_set_decrypt_key((unsigned char *)client_write_key_.data(), 128, &key);
-    //         if (0 != ret) 
-    //         {
-    //             return false;
-    //         }
-
-    //         unsigned char *out = new unsigned char[encrypted_len];
-    //         memset(out, 0, encrypted_len);
-    //         std::cout << "data_len:" << encrypted_len << std::endl;
-    //         AES_cbc_encrypt(encrypted_content, out, 16, &key, (unsigned char *)iv.data(), AES_DECRYPT);
-            
-    //         for (uint32_t i = 0; i < encrypted_len; i++)
-    //         {
-    //             printf("%02x ", out[i]);
-    //         }
-    //         printf("\r\n");
-    //         return false;
-    //     }
-
-    //     bool ret = true;
-    //     if (dtls_msg->getType() == handshake)
-    //     {
-    //         verify_data_.append((char *)data, consumed);
-    //         HandShake *handshake = (HandShake *)dtls_msg->msg.get();
-    //         if (handshake->getType() == client_hello)
-    //         {
-    //             ret = processClientHello(dtls_msg, sock, remote_ep, yield);
-    //         }
-    //         else if (handshake->getType() == client_key_exchange)
-    //         {
-    //             ret = processClientKeyExchange(dtls_msg, sock, remote_ep, yield);
-    //         }
-    //     }
-    //     else if (dtls_msg->getType() == change_cipher_spec)
-    //     {
-    //         // verify_data_.append((char*)data, consumed);
-    //     }
-    //     else
-    //     {
-    //         std::string finished_data = PRF(master_secret_, "client finished", Utils::sha256(verify_data_), 64);
-    //         std::cout << "finished_data:" << std::endl;
-    //         for (int i = 0; i < finished_data.size(); i++)
-    //         {
-    //             printf("%02x", (uint8_t)finished_data[i]);
-    //         }
-    //         printf("\r\n");
-    //         return true;
-    //     }
-
-    //     if (!ret)
-    //     {
-    //         return false;
-    //     }
-
-    //     data += consumed;
-    //     len -= consumed;
-    //     std::cout << "********************* consumed:" << consumed << ", len:" << len << " **********************" << std::endl;
-    // }
-    // return true;
-
     int32_t consumed = 0;
+    std::shared_ptr<DTLSPlaintext> dtls_msg;
     while (len > 0)
     {
         if (ciper_state_changed_) 
@@ -171,7 +57,7 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
         }
         else
         {
-            std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
+            dtls_msg = std::make_shared<DTLSPlaintext>();
             consumed = dtls_msg->decode(data, len);
             if (consumed < 0)
             {
@@ -183,23 +69,63 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
                 handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
             }
             
-            if (dtls_msg->getSequenceNo() == expect_msg_req_)
-            {
-
-            }
-            
-            unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
             data += consumed;
             len -= consumed;
+
+            if (dtls_msg->getSequenceNo() < next_receive_seq_)
+            {//discard
+                continue;
+            }
+            else if (dtls_msg->getSequenceNo() ==  next_receive_seq_)
+            {//process
+                next_receive_seq_++;
+                if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
+                {
+                    return false;
+                }
+            }
+            else
+            {//queue
+                unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
+            }
         }
     }
     // 处理消息
     bool process_next = true;
     do {
-        process_next = next_handler_(sock, remote_ep, yield);
+        dtls_msg = next_msg_require_handler_();
+        if (!dtls_msg) 
+        {
+            break;
+        }
+        process_next = next_msg_handler_(dtls_msg, sock, remote_ep, yield);
     } while (process_next);
     
     return true;
+}
+
+std::shared_ptr<DTLSPlaintext> DtlsSession::requireClientHello()
+{
+    std::shared_ptr<DTLSPlaintext> dtls_msg;
+    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
+    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
+    {
+        if (it->second->getType() != handshake)
+        {
+            continue;
+        }
+
+        HandShake *handshake = (HandShake *)it->second->msg.get();
+        if (handshake->getType() != client_hello)
+        {
+            continue;
+        }
+
+        dtls_msg = it->second;
+        unhandled_msgs_.erase(it);
+        return dtls_msg;
+    }
+    return nullptr;
 }
 
 bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
@@ -294,7 +220,33 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         send_message_seq_++;
     }
 
+    next_msg_require_handler_ = std::bind(&DtlsSession::requireClientKeyExchange, this);
+    next_msg_handler_ = std::bind(&DtlsSession::processClientKeyExchange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
+}
+
+std::shared_ptr<DTLSPlaintext> DtlsSession::requireClientKeyExchange()
+{
+    std::shared_ptr<DTLSPlaintext> dtls_msg;
+    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
+    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
+    {
+        if (it->second->getType() != handshake)
+        {
+            continue;
+        }
+
+        HandShake *handshake = (HandShake *)it->second->msg.get();
+        if (handshake->getType() != client_key_exchange)
+        {
+            continue;
+        }
+
+        dtls_msg = it->second;
+        unhandled_msgs_.erase(it);
+        return dtls_msg;
+    }
+    return nullptr;
 }
 
 bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
@@ -422,229 +374,14 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
 
     recv_key_ = client_master_key + client_master_salt;
     send_key_ = server_master_key + server_master_salt;
+
+    next_msg_require_handler_ = std::bind(&DtlsSession::requireChangeCipherSpec, this);
+    next_msg_handler_ = std::bind(&DtlsSession::processChangeCipherSpec, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
 }
 
-void DtlsSession::setDtlsCert(std::shared_ptr<DtlsCert> cert)
+std::shared_ptr<DTLSPlaintext> DtlsSession::requireChangeCipherSpec()
 {
-    dtls_cert_ = cert;
-}
-
-int32_t DtlsSession::decryptRSA(const std::string &enc_data, std::string &dec_data)
-{
-    int num = RSA_private_decrypt(RSA_size(dtls_cert_->getRSA()), (const uint8_t *)enc_data.data(), (uint8_t *)dec_data.data(), dtls_cert_->getRSA(), RSA_PKCS1_PADDING);
-    return num;
-}
-
-bool DtlsSession::calcMasterSecret()
-{
-}
-
-bool DtlsSession::expectClientHello(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
-{
-    std::shared_ptr<DTLSPlaintext> dtls_msg;
-    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
-    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
-    {
-        if (it->second->getType() != handshake)
-        {
-            continue;
-        }
-
-        HandShake *handshake = (HandShake *)it->second->msg.get();
-        if (handshake->getType() != client_hello)
-        {
-            continue;
-        }
-
-        dtls_msg = it->second;
-        break;
-    }
-
-    if (!dtls_msg)
-    {
-        return false;
-    }
-
-    unhandled_msgs_.erase(it);        
-    bool ret = processClientHello(dtls_msg, sock, remote_ep, yield);
-    if (!ret)
-    {
-        std::cout << "processClientHello failed." << std::endl;
-    }
-    else
-    {
-        next_handler_ = std::bind(&DtlsSession::expectClientKeyExchange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    }
-    
-    return true;
-}
-
-bool DtlsSession::expectClientKeyExchange(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
-{
-    std::cout << " *************************** expectClientKeyExchange ***********************" << std::endl;
-    std::shared_ptr<DTLSPlaintext> dtls_msg;
-    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
-    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
-    {
-        if (it->second->getType() != handshake)
-        {
-            continue;
-        }
-
-        HandShake *handshake = (HandShake *)it->second->msg.get();
-        if (handshake->getType() != client_key_exchange)
-        {
-            continue;
-        }
-
-        dtls_msg = it->second;
-        std::cout << "*********************** find client_key_exchange ***********************" << std::endl;
-        break;
-    }
-    std::cout << " *************************** expectClientKeyExchange 11111 ***********************" << std::endl;
-    if (!dtls_msg)
-    {
-        std::cout << " *************************** expectClientKeyExchange err ***********************" << std::endl;
-        return false;
-    }
-
-    unhandled_msgs_.erase(it);
-    HandShake *recv_handshake_msg = (HandShake *)dtls_msg->msg.get();
-    ClientKeyExchange *client_key_exchange_msg = (ClientKeyExchange *)recv_handshake_msg->msg.get();
-    std::string decoded_data;
-    decoded_data.resize(1024);
-    int n = decryptRSA(client_key_exchange_msg->enc_pre_master_secret.pre_master_secret, decoded_data);
-    if (n < 0)
-    {
-        std::cout << " *************************** expectClientKeyExchange err 111 ***********************" << std::endl;
-        return true;
-    }
-
-    std::string pre_master_secret_raw;
-    pre_master_secret_raw.assign(decoded_data.data(), n);
-    int consumed = pre_master_secret_.decode((uint8_t *)pre_master_secret_raw.data(), n);
-    if (consumed < 0)
-    {
-        std::cout << " *************************** expectClientKeyExchange err 222 ***********************" << std::endl;
-        return true;
-    }
-    HandShake *recv_client_hello_msg = (HandShake *)client_hello_->msg.get();
-    ClientHello *client_hello = (ClientHello *)recv_client_hello_msg->msg.get();
-    if (client_hello->client_version != pre_master_secret_.client_version)
-    {
-        std::cout << " *************************** expectClientKeyExchange err 333 ***********************" << std::endl;
-        return true;
-    }
-    // 生成master secret
-    HandShake *send_server_hello_msg = (HandShake *)server_hello_->msg.get();
-    ServerHello *server_hello = (ServerHello *)send_server_hello_msg->msg.get();
-    std::string master_key_seed;
-    master_key_seed.append((char *)client_hello->random.random_raw, 32);
-    master_key_seed.append((char *)server_hello->random.random_raw, 32);
-    master_secret_ = PRF(pre_master_secret_raw, "master secret", master_key_seed, 48);
-    memcpy(security_params_.master_secret, master_secret_.data(), 48);
-    memcpy(security_params_.client_random, client_hello->random.random_raw, 32);
-    memcpy(security_params_.server_random, server_hello->random.random_raw, 32);
-    // @https://datatracker.ietf.org/doc/html/rfc5246#page-95
-    // 生成key block及key material
-    //   To generate the key material, compute
-    //   key_block = PRF(SecurityParameters.master_secret,
-    //                   "key expansion",
-    //                   SecurityParameters.server_random +
-    //                   SecurityParameters.client_random);
-    //                       Key      IV   Block
-    // Cipher        Type    Material  Size  Size
-    // ------------  ------  --------  ----  -----
-    // NULL          Stream      0       0    N/A
-    // RC4_128       Stream     16       0    N/A
-    // 3DES_EDE_CBC  Block      24       8      8
-    // AES_128_CBC   Block      16      16     16
-    // AES_256_CBC   Block      32      16     16
-
-    // MAC       Algorithm    mac_length  mac_key_length
-    // --------  -----------  ----------  --------------
-    // NULL      N/A              0             0
-    // MD5       HMAC-MD5        16            16
-    // SHA       HMAC-SHA1       20            20
-    // SHA256    HMAC-SHA256     32            32
-    const int32_t mac_key_size = 20;
-    const int32_t encrypt_key_size = 16;
-    const int32_t iv_size = 16;
-    
-    std::string key_material_seed;
-    key_material_seed.append((char *)server_hello->random.random_raw, 32);
-    key_material_seed.append((char *)client_hello->random.random_raw, 32);
-    int32_t key_block_size = 2 * (mac_key_size + encrypt_key_size + iv_size); // AES_128_CBC AND SHA
-    std::string key_block = PRF(master_secret_, "key expansion", key_material_seed, key_block_size);
-    int32_t off = 0;
-    client_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
-    off += mac_key_size;
-    server_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
-    off += mac_key_size;
-    client_write_key_.assign(key_block.data() + off, encrypt_key_size);
-    off += encrypt_key_size;
-    server_write_key_.assign(key_block.data() + off, encrypt_key_size);
-    off += encrypt_key_size;
-    client_write_IV_.assign(key_block.data() + off, iv_size);
-    off += iv_size;
-    server_write_IV_.assign(key_block.data() + off, iv_size);
-    off += iv_size;
-
-    // 生成 srtp key material
-    // @doc rfc5764 4.1.2.  SRTP Protection Profiles
-    //     SRTP_AES128_CM_HMAC_SHA1_80
-    //          cipher: AES_128_CM
-    //          cipher_key_length: 128
-    //          cipher_salt_length: 112
-    //          maximum_lifetime: 2^31
-    //          auth_function: HMAC-SHA1
-    //          auth_key_length: 160
-    //          auth_tag_length: 80
-    //    SRTP_AES128_CM_HMAC_SHA1_32
-    //          cipher: AES_128_CM
-    //          cipher_key_length: 128
-    //          cipher_salt_length: 112
-    //          maximum_lifetime: 2^31
-    //          auth_function: HMAC-SHA1
-    //          auth_key_length: 160
-    //          auth_tag_length: 32
-    //          RTCP auth_tag_length: 80
-    //    SRTP_NULL_HMAC_SHA1_80
-    //          cipher: NULL
-    //          cipher_key_length: 0
-    //          cipher_salt_length: 0
-    //          maximum_lifetime: 2^31
-    //          auth_function: HMAC-SHA1
-    //          auth_key_length: 160
-    //          auth_tag_length: 80
-    // 生成srtp key
-    size_t srtp_cipher_key_length = 16;  // 128/8
-    size_t srtp_cipher_salt_length = 14; // 112/8
-    // total:(16+14)*2
-    size_t total_key_material_need = (srtp_cipher_key_length + srtp_cipher_salt_length) * 2;
-    std::string srtp_key_block = PRF(master_secret_, "EXTRACTOR-dtls_srtp", key_material_seed, total_key_material_need);
-
-    size_t offset = 0;
-    std::string client_master_key(srtp_key_block.data(), srtp_cipher_key_length);
-    offset += srtp_cipher_key_length;
-    std::string server_master_key((char *)(srtp_key_block.data() + offset), srtp_cipher_key_length);
-    offset += srtp_cipher_key_length;
-    std::string client_master_salt((char *)(srtp_key_block.data() + offset), srtp_cipher_salt_length);
-    offset += srtp_cipher_salt_length;
-    std::string server_master_salt((char *)(srtp_key_block.data() + offset), srtp_cipher_salt_length);
-
-    recv_key_ = client_master_key + client_master_salt;
-    send_key_ = server_master_key + server_master_salt;
-
-    next_handler_ = std::bind(&DtlsSession::expectChangeCipherSpec, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    std::cout << "*********************************** expectClientKeyExchange succ *************************" << std::endl;
-    return true;
-}
-
-bool DtlsSession::expectChangeCipherSpec(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
-{
-    std::cout << "********************************** expectChangeCipherSpec *****************************" << std::endl;
     std::shared_ptr<DTLSPlaintext> dtls_msg;
     std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
     for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
@@ -655,20 +392,29 @@ bool DtlsSession::expectChangeCipherSpec(UdpSocket *sock, const boost::asio::ip:
         }
 
         dtls_msg = it->second;
-        break;
+        unhandled_msgs_.erase(it);
+        return dtls_msg;
     }
+    
+    return nullptr;
+}
 
-    if (!dtls_msg)
-    {
-        return false;
-    }
-    unhandled_msgs_.erase(it);
+bool DtlsSession::processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
     ciper_state_changed_ = true;
-    next_handler_ = std::bind(&DtlsSession::expectHandShakeFinished, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    next_msg_require_handler_ = std::bind(&DtlsSession::requireHandShakeFinished, this);
+    next_msg_handler_ = std::bind(&DtlsSession::processHandShakeFinished, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
 }
 
-bool DtlsSession::expectHandShakeFinished(UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+std::shared_ptr<DTLSPlaintext> DtlsSession::requireHandShakeFinished()
 {
-
+    std::cout << "*********************** requireHandShakeFinished **********************" << std::endl;
+    return nullptr;
 }
+
+bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    return true;
+}
+
