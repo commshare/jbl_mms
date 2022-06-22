@@ -166,23 +166,34 @@ namespace mms
         uint32_t size();
     };
 
-    struct GenericBlockCipher
+    struct GenericBlockCipher : public DtlsMsg
     {
         std::string IV;//uint8_t IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
+        std::string cipered_data;
         //以下数据加密, 生成消息体
         struct BlockCipered 
         {
             std::string content;//uint8_t content[];
             std::string MAC;    //uint8_t[20]; //本例使用HMAC-SHA1, 输出20字节
             std::string padding;
-            uint8_t padding_length;
             // uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
             // uint8 padding_length;  //对齐字节的长度，最终整个个结构体必须是16的倍数.
         };
         struct BlockCipered block_cipered;
         int32_t decode(uint8_t *data, size_t len) 
         {
-            return 0;
+            uint8_t *data_start = data;
+            if (len < 16)
+            {
+                return -1;
+            }
+            IV.assign((char *)data, 16);
+            data += 16;
+            len -= 16;
+            cipered_data.assign(data, len);
+            data += len;
+            len -= len;
+            return data - data_start;
         }
 
         int32_t encode(uint8_t *data, size_t len)
@@ -194,12 +205,6 @@ namespace mms
         {
             return 0;
         }
-    };
-
-    struct DTLSCiphertext
-    {
-        DtlsHeader header;
-        GenericBlockCipher block_cipered;
     };
     
     struct DTLSPlaintext
@@ -251,7 +256,7 @@ namespace mms
         }
 
 
-        int32_t decode(uint8_t *data, size_t len, bool cipered = false);
+        int32_t decode(uint8_t *data, size_t len);
         int32_t encode(uint8_t *data, size_t len);
         uint32_t size()
         {

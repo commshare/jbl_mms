@@ -188,7 +188,7 @@ int32_t DtlsHeader::encode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-int32_t DTLSPlaintext::decode(uint8_t *data, size_t len, bool ciphered)
+int32_t DTLSPlaintext::decode(uint8_t *data, size_t len)
 {
     uint8_t *data_start = data;
     int32_t c = header.decode(data, len);
@@ -199,7 +199,7 @@ int32_t DTLSPlaintext::decode(uint8_t *data, size_t len, bool ciphered)
     data += c;
     len -= c;
 
-    if (!ciphered)
+    if (header.epoch == 0)
     {
         if (header.type == handshake)
         {
@@ -212,6 +212,7 @@ int32_t DTLSPlaintext::decode(uint8_t *data, size_t len, bool ciphered)
     }
     else
     {
+        msg = std::unique_ptr<DtlsMsg>(new GenericBlockCipher);
         std::cout << "decode ciper text" << std::endl;
     }
     

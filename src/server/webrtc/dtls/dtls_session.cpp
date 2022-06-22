@@ -44,50 +44,36 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
     std::shared_ptr<DTLSPlaintext> dtls_msg;
     while (len > 0)
     {
-        if (ciper_state_changed_) 
+        dtls_msg = std::make_shared<DTLSPlaintext>();
+        consumed = dtls_msg->decode(data, len);
+        if (consumed < 0)
         {
-            // std::shared_ptr<DTLSPlaintext> dtls_msg = std::make_shared<DTLSPlaintext>();
-            // consumed = dtls_msg->decode(data, len, true);
-            // if (consumed < 0)
-            // {
-            //     return false;
-            // }
-            // client finished 消息
-            break;
+            return false;
         }
-        else
+
+        if (dtls_msg->getType() == handshake)
         {
-            dtls_msg = std::make_shared<DTLSPlaintext>();
-            consumed = dtls_msg->decode(data, len);
-            if (consumed < 0)
+            handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
+        }
+        
+        data += consumed;
+        len -= consumed;
+
+        if (dtls_msg->getSequenceNo() < next_receive_seq_)
+        {//discard
+            continue;
+        }
+        else if (dtls_msg->getSequenceNo() ==  next_receive_seq_)
+        {//process
+            next_receive_seq_++;
+            if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
             {
                 return false;
             }
-
-            if (dtls_msg->getType() == handshake)
-            {
-                handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
-            }
-            
-            data += consumed;
-            len -= consumed;
-
-            if (dtls_msg->getSequenceNo() < next_receive_seq_)
-            {//discard
-                continue;
-            }
-            else if (dtls_msg->getSequenceNo() ==  next_receive_seq_)
-            {//process
-                next_receive_seq_++;
-                if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
-                {
-                    return false;
-                }
-            }
-            else
-            {//queue
-                unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
-            }
+        }
+        else
+        {//queue
+            unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
         }
     }
     // 处理消息

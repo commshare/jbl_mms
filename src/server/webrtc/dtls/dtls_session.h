@@ -76,7 +76,7 @@ private:
     ThreadWorker::Event *retrans_event_ = nullptr;
     bool ciper_state_changed_ = false;
     uint16_t epoch_ = 0;
-    std::shared_ptr<DTLSCiphertext> client_finished_;
+    std::shared_ptr<DTLSPlaintext> client_finished_;
     std::function<std::shared_ptr<DTLSPlaintext>()> next_msg_require_handler_;
     std::function<bool(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_msg_handler_;
 };
