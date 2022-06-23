@@ -14,5 +14,6 @@ public:
     static uint32_t getCRC32(uint8_t* buf, size_t len);
     static std::string calcHmacSHA256(const std::string &key, const std::string & msg);
     static std::string sha256(const std::string & msg);
+    static std::string sha1(const std::string & msg);
 };
 };

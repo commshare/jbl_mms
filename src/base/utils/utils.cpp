@@ -175,3 +175,20 @@ std::string Utils::sha256(const std::string & str)
     }
     return NewString;
 }
+
+std::string Utils::sha1(const std::string & str)
+{
+    char buf[2];
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    SHA_CTX sha1;
+    SHA1_Init(&sha1);
+    SHA1_Update(&sha1, str.c_str(), str.size());
+    SHA1_Final(hash, &sha1);
+    std::string NewString = "";
+    for(int i = 0; i < SHA_DIGEST_LENGTH; i++)
+    {
+        sprintf(buf,"%02x",hash[i]);
+        NewString = NewString + buf;
+    }
+    return NewString;
+}

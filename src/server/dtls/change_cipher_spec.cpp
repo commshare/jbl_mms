@@ -5,6 +5,10 @@ using namespace mms;
 
 int32_t ChangeCipherSpec::encode(uint8_t *data, size_t len)
 {//todo
+    if (len < 1) {
+        return -1;
+    }
+    *data = type;
     return 1;
 }
 

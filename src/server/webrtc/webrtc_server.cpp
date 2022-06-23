@@ -45,11 +45,10 @@ bool WebRtcServer::initCerts()
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield)
-                       {
+    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
         uint8_t *data = recv_data.get();
-        UDP_MSG_TYPE t = detectMsgType(data, len);
-        if (UDP_MSG_STUN == t) {
+        UDP_MSG_TYPE msg_type = detectMsgType(data, len);
+        if (UDP_MSG_STUN == msg_type) {
             StunMsg stun_msg;
             int32_t ret = stun_msg.decode(data, len);
             if (0 == ret) 
@@ -59,12 +58,13 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
                     return;
                 }
             }
-        } else if (UDP_MSG_DTLS == t) {
+        } else if (UDP_MSG_DTLS == msg_type) {
             if (!processDtlsPacket(data, len, sock, remote_ep, yield))
             {
                 return;
             }
-        } });
+        }
+    });
 }
 
 bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)

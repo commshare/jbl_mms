@@ -170,16 +170,6 @@ namespace mms
     {
         std::string IV;//uint8_t IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
         std::string cipered_data;
-        //以下数据加密, 生成消息体
-        struct BlockCipered 
-        {
-            std::string content;//uint8_t content[];
-            std::string MAC;    //uint8_t[20]; //本例使用HMAC-SHA1, 输出20字节
-            std::string padding;
-            // uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
-            // uint8 padding_length;  //对齐字节的长度，最终整个个结构体必须是16的倍数.
-        };
-        struct BlockCipered block_cipered;
         int32_t decode(uint8_t *data, size_t len) 
         {
             uint8_t *data_start = data;
@@ -190,10 +180,15 @@ namespace mms
             IV.assign((char *)data, 16);
             data += 16;
             len -= 16;
-            cipered_data.assign(data, len);
+            cipered_data.assign((char*)data, len);
             data += len;
             len -= len;
             return data - data_start;
+        }
+
+        const std::string & getCiperedData()
+        {
+            return cipered_data;
         }
 
         int32_t encode(uint8_t *data, size_t len)
@@ -243,6 +238,16 @@ namespace mms
         void setMsg(std::unique_ptr<DtlsMsg> val)
         {
             msg = std::move(val);
+        }
+
+        uint16_t getEpoch() const 
+        {
+            return header.epoch;
+        }
+
+        void setEpoch(uint16_t val)
+        {
+            header.epoch = val;
         }
 
         void setSequenceNo(uint32_t val)
@@ -386,8 +391,8 @@ namespace mms
         uint8_t mac_key_length;
         CompressionMethod compression_algorithm;
         uint8_t master_secret[48];
-        uint8_t client_random[32];
-        uint8_t server_random[32];
+        std::string client_random;//32bytes
+        std::string server_random;//32bytes
     };
 
     //                       Key       IV    Block
@@ -426,6 +431,8 @@ namespace mms
         CipherSuiteKeyExchangeAlgorithm key_exchange_algorithm;
         
         bool initialized = false;
+        bool is_client = false;
+
         std::string client_write_MAC_key;
         std::string server_write_MAC_key;
         std::string client_write_key;
@@ -433,9 +440,35 @@ namespace mms
         std::string client_write_IV;
         std::string server_write_IV;
 
-        // virtual void init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client);
+        virtual void init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client) = 0;
 
-        // virtual int32_t decrypt(const std::string & in, std::string & out);
-        // virtual int32_t encrypt(const std::string & in, std::string & out);
+        virtual int32_t decrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
+        virtual int32_t encrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
+    };
+
+    struct RSA_AES128_SHA1_Cipher : public CiperSuite
+    {
+        //以下数据加密, 生成消息体
+        struct BlockCipered 
+        {
+            std::string content;//uint8_t content[];
+            std::string MAC;    //uint8_t[20]; //本例使用HMAC-SHA1, 输出20字节
+            std::string padding;
+            // uint8 padding[GenericBlockCipher.padding_length]; //用于对齐16字节. 填充的内容为padding_length
+            // uint8 padding_length;  //对齐字节的长度，最终整个个结构体必须是16的倍数.
+            int32_t decode(uint8_t *data, size_t len)
+            {
+                uint8_t padding_length = data[len - 1];
+                uint8_t *data_end = data - (padding_length + 1);
+                MAC.assign((char*)data_end - 20, 20);
+                size_t content_len = len - 20 - padding_length - 1;
+                content.assign((char*)data, content_len);
+                return len;
+            }
+        };
+        RSA_AES128_SHA1_Cipher();
+        void init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool client);
+        int32_t decrypt(const std::string & iv, const std::string & in, std::string & out);
+        int32_t encrypt(const std::string & iv, const std::string & in, std::string & out);
     };
 };

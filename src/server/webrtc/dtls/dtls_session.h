@@ -30,6 +30,7 @@ private:
     bool processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processHandShakeFinished(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processDone(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
 private:
@@ -48,15 +49,6 @@ private:
     std::string recv_key_;
     std::string send_key_;
 
-    std::string verify_data_;
-
-    std::string client_write_MAC_key_;
-    std::string server_write_MAC_key_;
-    std::string client_write_key_;
-    std::string server_write_key_;
-    std::string client_write_IV_;
-    std::string server_write_IV_;
-
     std::unique_ptr<CiperSuite> ciper_suite_;
     std::shared_ptr<DtlsCert> dtls_cert_;
 
@@ -72,11 +64,11 @@ private:
     //    message MUST be discarded.  If the sequence number is greater than
     //    next_receive_seq, the implementation SHOULD queue the message but MAY
     //    discard it.  (This is a simple space/bandwidth tradeoff).
-    uint32_t next_receive_seq_ = 0;
+    std::unordered_map<uint16_t, uint32_t> epoch_receive_seq_map_;
+    std::unordered_map<uint16_t, uint32_t> epoch_send_seq_map_;
+    // uint32_t next_receive_seq_ = 0;
     ThreadWorker::Event *retrans_event_ = nullptr;
     bool ciper_state_changed_ = false;
-    uint16_t epoch_ = 0;
-    std::shared_ptr<DTLSPlaintext> client_finished_;
     std::function<std::shared_ptr<DTLSPlaintext>()> next_msg_require_handler_;
     std::function<bool(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_msg_handler_;
 };

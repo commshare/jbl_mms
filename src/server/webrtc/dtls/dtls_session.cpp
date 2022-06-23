@@ -7,6 +7,8 @@
 
 #include "server/dtls/server_certificate.h"
 #include "server/dtls/server_hello_done.h"
+#include "server/dtls/change_cipher_spec.h"
+
 #include "dtls_session.h"
 #include "dtls_cert.h"
 #include "server/dtls/tls_prf.h"
@@ -51,21 +53,22 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
             return false;
         }
 
-        if (dtls_msg->getType() == handshake)
+        if (dtls_msg->getType() == handshake && dtls_msg->getEpoch() == 0)
         {
+            std::cout << "********************** append handshake *******************" << std::endl;
             handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
         }
         
         data += consumed;
         len -= consumed;
+        uint64_t next_receive_seq = epoch_receive_seq_map_[dtls_msg->getEpoch()];
 
-        if (dtls_msg->getSequenceNo() < next_receive_seq_)
+        if (dtls_msg->getSequenceNo() < next_receive_seq)
         {//discard
             continue;
         }
-        else if (dtls_msg->getSequenceNo() ==  next_receive_seq_)
+        else if (dtls_msg->getSequenceNo() ==  next_receive_seq)
         {//process
-            next_receive_seq_++;
             if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
             {
                 return false;
@@ -86,7 +89,6 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
         }
         process_next = next_msg_handler_(dtls_msg, sock, remote_ep, yield);
     } while (process_next);
-    
     return true;
 }
 
@@ -118,13 +120,13 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
 {
     client_hello_ = recv_msg;
 
-    HandShake *recv_handshake_msg = (HandShake *)client_hello_->msg.get();
-    ClientHello *client_hello = (ClientHello *)recv_handshake_msg->msg.get();
+    // HandShake *recv_handshake_msg = (HandShake *)client_hello_->msg.get();
+    // ClientHello *client_hello = (ClientHello *)recv_handshake_msg->msg.get();
     { // send server hello
         std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
-        resp_msg->setSequenceNo(send_message_seq_);
+        resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         auto *s = new ServerHello;
@@ -134,10 +136,13 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         s->addExtension(std::move(use_srtp_ext));
         s->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         s->genRandom();
+        //todo 遍历client hello中的suites，按优先级选择
         s->setCipherSuite(TLS_RSA_WITH_AES_128_CBC_SHA);
+        ciper_suite_ = std::unique_ptr<CiperSuite>(new RSA_AES128_SHA1_Cipher);
+
         resp_handshake->setType(server_hello);
         resp_handshake->setMsg(std::move(resp_server_hello));
-        resp_handshake->setMessageSeq(send_message_seq_);
+        resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
         resp_msg->setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg->size();
 
@@ -147,9 +152,9 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         { // todo:add log
             return false;
         }
-        verify_data_.append((char *)data.get(), resp_size);
+        handshake_data_.append((char*)data.get() + DTLS_HEADER_SIZE, resp_size - DTLS_HEADER_SIZE);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
-        send_message_seq_++;
+        epoch_send_seq_map_[0]++;
         server_hello_ = resp_msg;
     }
 
@@ -157,7 +162,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
-        resp_msg->setSequenceNo(send_message_seq_);
+        resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         resp_handshake->setType(certificate);
@@ -165,7 +170,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         std::unique_ptr<HandShakeMsg> resp_server_certificate = std::unique_ptr<HandShakeMsg>(s);
         s->addCert(dtls_cert_->getDer());
         resp_handshake->setMsg(std::move(resp_server_certificate));
-        resp_handshake->setMessageSeq(send_message_seq_);
+        resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
         resp_msg->setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg->size();
 
@@ -175,23 +180,23 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         { // todo:add log
             return false;
         }
-        verify_data_.append((char *)data.get(), resp_size);
+        handshake_data_.append((char*)data.get() + DTLS_HEADER_SIZE, resp_size - DTLS_HEADER_SIZE);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
-        send_message_seq_++;
+        epoch_send_seq_map_[0]++;
     }
 
     {
         std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(handshake);
         resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
-        resp_msg->setSequenceNo(send_message_seq_);
+        resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         resp_handshake->setType(server_hello_done);
         auto *s = new ServerHelloDone;
         std::unique_ptr<HandShakeMsg> resp_server_hello_done = std::unique_ptr<HandShakeMsg>(s);
         resp_handshake->setMsg(std::move(resp_server_hello_done));
-        resp_handshake->setMessageSeq(send_message_seq_);
+        resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
         resp_msg->setMsg(std::move(resp_handshake));
         auto resp_size = resp_msg->size();
 
@@ -201,11 +206,11 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         { // todo:add log
             return false;
         }
-        verify_data_.append((char *)data.get(), resp_size);
+        handshake_data_.append((char*)data.get() + DTLS_HEADER_SIZE, resp_size - DTLS_HEADER_SIZE);
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
-        send_message_seq_++;
+        epoch_send_seq_map_[0]++;
     }
-
+    epoch_receive_seq_map_[recv_msg->getEpoch()] = recv_msg->getSequenceNo() + 1;
     next_msg_require_handler_ = std::bind(&DtlsSession::requireClientKeyExchange, this);
     next_msg_handler_ = std::bind(&DtlsSession::processClientKeyExchange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
@@ -260,6 +265,7 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     {
         return false;
     }
+
     // 生成master secret
     HandShake *send_server_hello_msg = (HandShake *)server_hello_->msg.get();
     ServerHello *server_hello = (ServerHello *)send_server_hello_msg->msg.get();
@@ -268,8 +274,8 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     master_key_seed.append((char *)server_hello->random.random_raw, 32);
     master_secret_ = PRF(pre_master_secret_raw, "master secret", master_key_seed, 48);
     memcpy(security_params_.master_secret, master_secret_.data(), 48);
-    memcpy(security_params_.client_random, client_hello->random.random_raw, 32);
-    memcpy(security_params_.server_random, server_hello->random.random_raw, 32);
+    security_params_.client_random.assign((char*)client_hello->random.random_raw, 32);
+    security_params_.server_random.assign((char*)server_hello->random.random_raw, 32);
     // @https://datatracker.ietf.org/doc/html/rfc5246#page-95
     // 生成key block及key material
     //   To generate the key material, compute
@@ -292,29 +298,7 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     // MD5       HMAC-MD5        16            16
     // SHA       HMAC-SHA1       20            20
     // SHA256    HMAC-SHA256     32            32
-    const int32_t mac_key_size = 20;
-    const int32_t encrypt_key_size = 16;
-    const int32_t iv_size = 16;
-    
-    std::string key_material_seed;
-    key_material_seed.append((char *)server_hello->random.random_raw, 32);
-    key_material_seed.append((char *)client_hello->random.random_raw, 32);
-    int32_t key_block_size = 2 * (mac_key_size + encrypt_key_size + iv_size); // AES_128_CBC AND SHA
-    std::string key_block = PRF(master_secret_, "key expansion", key_material_seed, key_block_size);
-    int32_t off = 0;
-    client_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
-    off += mac_key_size;
-    server_write_MAC_key_.assign(key_block.data() + off, mac_key_size);
-    off += mac_key_size;
-    client_write_key_.assign(key_block.data() + off, encrypt_key_size);
-    off += encrypt_key_size;
-    server_write_key_.assign(key_block.data() + off, encrypt_key_size);
-    off += encrypt_key_size;
-    client_write_IV_.assign(key_block.data() + off, iv_size);
-    off += iv_size;
-    server_write_IV_.assign(key_block.data() + off, iv_size);
-    off += iv_size;
-
+    ciper_suite_->init(master_secret_, security_params_.client_random, security_params_.server_random, false);
     // 生成 srtp key material
     // @doc rfc5764 4.1.2.  SRTP Protection Profiles
     //     SRTP_AES128_CM_HMAC_SHA1_80
@@ -343,12 +327,15 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     //          auth_key_length: 160
     //          auth_tag_length: 80
     // 生成srtp key
+    std::string key_material_seed;
+    key_material_seed.append((char *)server_hello->random.random_raw, 32);
+    key_material_seed.append((char *)client_hello->random.random_raw, 32);
+    
     size_t srtp_cipher_key_length = 16;  // 128/8
     size_t srtp_cipher_salt_length = 14; // 112/8
     // total:(16+14)*2
     size_t total_key_material_need = (srtp_cipher_key_length + srtp_cipher_salt_length) * 2;
     std::string srtp_key_block = PRF(master_secret_, "EXTRACTOR-dtls_srtp", key_material_seed, total_key_material_need);
-
     size_t offset = 0;
     std::string client_master_key(srtp_key_block.data(), srtp_cipher_key_length);
     offset += srtp_cipher_key_length;
@@ -361,6 +348,7 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     recv_key_ = client_master_key + client_master_salt;
     send_key_ = server_master_key + server_master_salt;
 
+    epoch_receive_seq_map_[msg->getEpoch()] = msg->getSequenceNo() + 1;
     next_msg_require_handler_ = std::bind(&DtlsSession::requireChangeCipherSpec, this);
     next_msg_handler_ = std::bind(&DtlsSession::processChangeCipherSpec, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
@@ -388,6 +376,7 @@ std::shared_ptr<DTLSPlaintext> DtlsSession::requireChangeCipherSpec()
 bool DtlsSession::processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     ciper_state_changed_ = true;
+    epoch_receive_seq_map_[msg->getEpoch()] = msg->getSequenceNo() + 1;
     next_msg_require_handler_ = std::bind(&DtlsSession::requireHandShakeFinished, this);
     next_msg_handler_ = std::bind(&DtlsSession::processHandShakeFinished, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
@@ -395,11 +384,74 @@ bool DtlsSession::processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, Ud
 
 std::shared_ptr<DTLSPlaintext> DtlsSession::requireHandShakeFinished()
 {
-    std::cout << "*********************** requireHandShakeFinished **********************" << std::endl;
+    std::shared_ptr<DTLSPlaintext> dtls_msg;
+    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
+    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
+    {
+        if (it->second->getType() != handshake)
+        {
+            continue;
+        }
+
+        if (it->second->getEpoch() != 1)
+        {
+            continue;
+        }
+        dtls_msg = it->second;
+        unhandled_msgs_.erase(it);
+        return dtls_msg;
+    }
     return nullptr;
 }
 
-bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSPlaintext> dtls_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    GenericBlockCipher* block_ciper = (GenericBlockCipher*)dtls_msg->msg.get();
+    const std::string & iv = block_ciper->IV;
+    std::string out;
+    ciper_suite_->decrypt(iv, block_ciper->getCiperedData(), out);
+    for (size_t i = 0; i < out.size(); i++) {
+        printf("%02x ", (uint8_t)out[i]);
+    }
+    printf("\r\n");
+
+    RSA_AES128_SHA1_Cipher::BlockCipered block_ciphered;
+    block_ciphered.decode((uint8_t*)out.data(), out.size());
+    std::string verify_data = PRF(master_secret_, "client finished", Utils::sha256(handshake_data_), 12);
+    for (size_t i = 0; i < verify_data.size(); i++) {
+        printf("%02x ", (uint8_t)verify_data[i]);
+    }
+    // 发送change ciper spec
+    { // send change ciper spec
+        std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
+        resp_msg->setType(change_cipher_spec);
+        resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+        resp_msg->setEpoch(0);
+        resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
+        
+        std::unique_ptr<ChangeCipherSpec> resp_change_cipher_spec = std::unique_ptr<ChangeCipherSpec>(new ChangeCipherSpec);
+        resp_msg->setMsg(std::move(resp_change_cipher_spec));
+        auto resp_size = resp_msg->size();
+
+        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+        int32_t consumed = resp_msg->encode(data.get(), resp_size);
+        if (consumed < 0)
+        { // todo:add log
+            return false;
+        }
+        epoch_send_seq_map_[0]++;
+        sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+    }
+
+    {//发送server finished 
+
+    }
+    // 已经收到finished消息了，不需要再处理后续消息
+    next_msg_handler_ = std::bind(&DtlsSession::processDone, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    return true;
+}
+
+bool DtlsSession::processDone(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     return true;
 }

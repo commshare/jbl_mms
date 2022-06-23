@@ -2,6 +2,7 @@
 #include <string.h>
 #include <iostream>
 
+#include "openssl/aes.h"
 #include "base/utils/utils.h"
 
 #include "dtls_define.h"
@@ -10,6 +11,9 @@
 
 #include "./extension/dtls_use_srtp.h"
 #include "./extension/signature_algorithm.h"
+
+#include "tls_prf.h"
+
 using namespace mms;
 
 int32_t DtlsProtocolVersion::decode(uint8_t *data, size_t len)
@@ -489,7 +493,89 @@ int32_t DtlsExtensionHeader::encode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
-// void CiperSuite::init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client)
-// {
+RSA_AES128_SHA1_Cipher::RSA_AES128_SHA1_Cipher() 
+{
+    ciper_id = TLS_RSA_WITH_AES_128_CBC_SHA;
+    ciper_type = block;
+    mac_length = 20;
+    mac_key_length = 20;
+    record_iv_length = 16;
+    enc_key_length = 16;
+    key_exchange_algorithm = CipherSuiteKeyExchangeAlgorithm_RSA;
+    initialized = false;
+}
 
-// }
+void RSA_AES128_SHA1_Cipher::init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool client)
+{
+    is_client = client;
+    std::string key_material_seed;
+    key_material_seed.append((char *)server_random.data(), 32);
+    key_material_seed.append((char *)client_random.data(), 32);
+    int32_t key_block_size = 2 * (mac_key_length + enc_key_length + record_iv_length); // AES_128_CBC AND SHA
+    std::string key_block = PRF(master_secret, "key expansion", key_material_seed, key_block_size);
+    int32_t off = 0;
+    client_write_MAC_key.assign(key_block.data() + off, mac_key_length);
+    off += mac_key_length;
+    server_write_MAC_key.assign(key_block.data() + off, mac_key_length);
+    off += mac_key_length;
+    client_write_key.assign(key_block.data() + off, enc_key_length);
+    off += enc_key_length;
+    server_write_key.assign(key_block.data() + off, enc_key_length);
+    off += enc_key_length;
+    client_write_IV.assign(key_block.data() + off, record_iv_length);
+    off += record_iv_length;
+    server_write_IV.assign(key_block.data() + off, record_iv_length);
+    off += record_iv_length;
+}
+
+int32_t RSA_AES128_SHA1_Cipher::decrypt(const std::string & iv, const std::string & in, std::string & out)
+{
+    int ret;
+    AES_KEY key;
+    if (is_client)
+    {
+        ret = AES_set_decrypt_key((unsigned char *)server_write_key.data(), 128, &key);
+        if (0 != ret) 
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        ret = AES_set_decrypt_key((unsigned char *)client_write_key.data(), 128, &key);
+        if (0 != ret) 
+        {
+            return -1;
+        }
+    }
+
+    out.resize(in.size());
+    AES_cbc_encrypt((unsigned char*)in.data(), (unsigned char*)out.data(), in.size(), &key, (unsigned char *)iv.data(), AES_DECRYPT);
+    return 0;
+}
+
+int32_t RSA_AES128_SHA1_Cipher::encrypt(const std::string & iv, const std::string & in, std::string & out)
+{
+    int ret;
+    AES_KEY key;
+    if (is_client)
+    {
+        ret = AES_set_decrypt_key((unsigned char *)client_write_key.data(), 128, &key);
+        if (0 != ret) 
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        ret = AES_set_decrypt_key((unsigned char *)server_write_key.data(), 128, &key);
+        if (0 != ret) 
+        {
+            return -1;
+        }
+    }
+
+    out.resize(in.size());
+    AES_cbc_encrypt((unsigned char*)in.data(), (unsigned char*)out.data(), in.size(), &key, (unsigned char *)iv.data(), AES_ENCRYPT);
+    return 0;
+}

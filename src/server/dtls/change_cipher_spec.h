@@ -43,7 +43,7 @@
 #include "dtls_define.h"
 namespace mms {
 struct ChangeCipherSpec : public DtlsMsg {
-    uint8_t type;
+    uint8_t type = 0x01;
     int32_t decode(uint8_t *data, size_t len);
     int32_t encode(uint8_t *data, size_t len);
     uint32_t size();

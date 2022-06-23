@@ -28,5 +28,10 @@ namespace mms
             s += extension.size();
             return s;
         }
+
+        CipherSuites & getCiperSuites()
+        {
+            return cipher_suites;
+        }
     };
 };
