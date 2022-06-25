@@ -505,6 +505,28 @@ RSA_AES128_SHA1_Cipher::RSA_AES128_SHA1_Cipher()
     initialized = false;
 }
 
+// @https://datatracker.ietf.org/doc/html/rfc5246#page-95
+// 生成key block及key material
+//   To generate the key material, compute
+//   key_block = PRF(SecurityParameters.master_secret,
+//                   "key expansion",
+//                   SecurityParameters.server_random +
+//                   SecurityParameters.client_random);
+//                       Key      IV   Block
+// Cipher        Type    Material  Size  Size
+// ------------  ------  --------  ----  -----
+// NULL          Stream      0       0    N/A
+// RC4_128       Stream     16       0    N/A
+// 3DES_EDE_CBC  Block      24       8      8
+// AES_128_CBC   Block      16      16     16
+// AES_256_CBC   Block      32      16     16
+
+// MAC       Algorithm    mac_length  mac_key_length
+// --------  -----------  ----------  --------------
+// NULL      N/A              0             0
+// MD5       HMAC-MD5        16            16
+// SHA       HMAC-SHA1       20            20
+// SHA256    HMAC-SHA256     32            32
 void RSA_AES128_SHA1_Cipher::init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool client)
 {
     is_client = client;

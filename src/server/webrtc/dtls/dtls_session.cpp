@@ -276,28 +276,7 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     memcpy(security_params_.master_secret, master_secret_.data(), 48);
     security_params_.client_random.assign((char*)client_hello->random.random_raw, 32);
     security_params_.server_random.assign((char*)server_hello->random.random_raw, 32);
-    // @https://datatracker.ietf.org/doc/html/rfc5246#page-95
-    // 生成key block及key material
-    //   To generate the key material, compute
-    //   key_block = PRF(SecurityParameters.master_secret,
-    //                   "key expansion",
-    //                   SecurityParameters.server_random +
-    //                   SecurityParameters.client_random);
-    //                       Key      IV   Block
-    // Cipher        Type    Material  Size  Size
-    // ------------  ------  --------  ----  -----
-    // NULL          Stream      0       0    N/A
-    // RC4_128       Stream     16       0    N/A
-    // 3DES_EDE_CBC  Block      24       8      8
-    // AES_128_CBC   Block      16      16     16
-    // AES_256_CBC   Block      32      16     16
 
-    // MAC       Algorithm    mac_length  mac_key_length
-    // --------  -----------  ----------  --------------
-    // NULL      N/A              0             0
-    // MD5       HMAC-MD5        16            16
-    // SHA       HMAC-SHA1       20            20
-    // SHA256    HMAC-SHA256     32            32
     ciper_suite_->init(master_secret_, security_params_.client_random, security_params_.server_random, false);
     // 生成 srtp key material
     // @doc rfc5764 4.1.2.  SRTP Protection Profiles
