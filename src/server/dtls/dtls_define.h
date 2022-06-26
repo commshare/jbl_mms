@@ -72,11 +72,14 @@ namespace mms
     };
 
     #define DTLS_HEADER_SIZE 13
+    #define DTLS_VERSION_OFFSET 0x01
+    #define DTLS_EPOCH_OFFSET  0x03
+    #define DTLS_LENGTH_OFFSET  0x0b
     struct DtlsHeader
     {
         ContentType type;             /* same as TLSPlaintext.type */
         DtlsProtocolVersion version;  /* same as TLSPlaintext.version */
-        uint16_t epoch;               // New field
+        uint16_t epoch;               // New field(16bit)
         uint64_t sequence_number = 1; // New field(48bit)
         uint16_t length;
         int32_t decode(uint8_t *data, size_t len);
@@ -206,6 +209,7 @@ namespace mms
     {
         DtlsHeader header;
         std::unique_ptr<DtlsMsg> msg;
+        std::string raw_data;
         DTLSPlaintext() = default;
         DTLSPlaintext(DTLSPlaintext &other)
         {
@@ -220,6 +224,11 @@ namespace mms
             return *this;
         }
 
+        DtlsHeader& getHeader()
+        {
+            return header;
+        }
+        
         ContentType getType() const
         {
             return header.type;
@@ -258,6 +267,11 @@ namespace mms
         uint64_t getSequenceNo()
         {
             return header.sequence_number;
+        }
+
+        std::string & getRawData()
+        {
+            return raw_data;
         }
 
 

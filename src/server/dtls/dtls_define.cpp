@@ -233,7 +233,7 @@ int32_t DTLSPlaintext::decode(uint8_t *data, size_t len)
     }
     data += c;
     len -= c;
-
+    raw_data.assign((char*)data_start, data - data_start);
     return data - data_start;
 }
 
@@ -573,6 +573,7 @@ int32_t RSA_AES128_SHA1_Cipher::decrypt(const std::string & iv, const std::strin
 
     out.resize(in.size());
     AES_cbc_encrypt((unsigned char*)in.data(), (unsigned char*)out.data(), in.size(), &key, (unsigned char *)iv.data(), AES_DECRYPT);
+    
     return 0;
 }
 

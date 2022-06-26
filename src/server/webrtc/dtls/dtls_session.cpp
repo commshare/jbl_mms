@@ -400,6 +400,25 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSPlaintext> dtls_m
     for (size_t i = 0; i < verify_data.size(); i++) {
         printf("%02x ", (uint8_t)verify_data[i]);
     }
+
+    std::string mac_data;
+    mac_data.append((char*)dtls_msg->getRawData().data() + DTLS_EPOCH_OFFSET, 8);//epoch and seq
+    mac_data.append((char*)dtls_msg->getRawData().data(), 1);//type
+    mac_data.append((char*)dtls_msg->getRawData().data() + DTLS_VERSION_OFFSET, 2);//version
+    uint16_t length = 24;
+    uint16_t nlen = htons(length);
+    mac_data.append((char*)&nlen, 2);//length
+    // mac_data.append((char*)block_ciper->IV.data(), block_ciper->IV.size());
+    mac_data.append(out.data(), DTLS_HANDSHAKE_HEADER_SIZE + 12);
+    // mac_data.append((char*)&dtls_msg->getEpoch(), 2);
+    // mac_data.append((char*)&dtls_msg->getSequenceNo(), 6);
+    // mac_data.append((char*)&dtls_msg->getType(), 1);
+    // mac_data.append((char*)&dtls_msg->getVersion(), 2);
+    std::string mac = Utils::calcHmacSHA1(ciper_suite_->client_write_MAC_key, mac_data);
+    printf("\r\nmac:\r\n");
+    for (size_t i = 0; i < mac.size(); i++) {
+        printf("%02x ", (uint8_t)mac[i]);
+    }
     // 发送change ciper spec
     { // send change ciper spec
         std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();

@@ -159,6 +159,24 @@ std::string Utils::calcHmacSHA256(const std::string &key, const std::string & ms
     return std::string{reinterpret_cast<char const*>(hash.data()), hashLen};
 }
 
+std::string Utils::calcHmacSHA1(const std::string &key, const std::string & msg)
+{
+    std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
+    unsigned int hashLen;
+
+    HMAC(
+        EVP_sha1(),
+        key.data(),
+        static_cast<int>(key.size()),
+        reinterpret_cast<unsigned char const*>(msg.data()),
+        static_cast<int>(msg.size()),
+        hash.data(),
+        &hashLen
+    );
+
+    return std::string{reinterpret_cast<char const*>(hash.data()), hashLen};
+}
+
 std::string Utils::sha256(const std::string & str)
 {
     std::string hash;
