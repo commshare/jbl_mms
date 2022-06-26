@@ -46,49 +46,67 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
     std::shared_ptr<DTLSPlaintext> dtls_msg;
     while (len > 0)
     {
-        dtls_msg = std::make_shared<DTLSPlaintext>();
-        consumed = dtls_msg->decode(data, len);
-        if (consumed < 0)
+        uint16_t epoch = ntohs(*(uint16_t *)(data + DTLS_EPOCH_OFFSET));
+        if (epoch == 0)
         {
-            return false;
-        }
-
-        if (dtls_msg->getType() == handshake && dtls_msg->getEpoch() == 0)
-        {
-            std::cout << "********************** append handshake *******************" << std::endl;
-            handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
-        }
-        
-        data += consumed;
-        len -= consumed;
-        uint64_t next_receive_seq = epoch_receive_seq_map_[dtls_msg->getEpoch()];
-
-        if (dtls_msg->getSequenceNo() < next_receive_seq)
-        {//discard
-            continue;
-        }
-        else if (dtls_msg->getSequenceNo() ==  next_receive_seq)
-        {//process
-            if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
+            dtls_msg = std::make_shared<DTLSPlaintext>();
+            consumed = dtls_msg->decode(data, len);
+            if (consumed < 0)
             {
                 return false;
             }
+
+            if (dtls_msg->getType() == handshake && dtls_msg->getEpoch() == 0)
+            {
+                handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
+            }
+            
+            data += consumed;
+            len -= consumed;
+            uint64_t next_receive_seq = epoch_receive_seq_map_[dtls_msg->getEpoch()];
+
+            if (dtls_msg->getSequenceNo() < next_receive_seq)
+            {//discard
+                continue;
+            }
+            else if (dtls_msg->getSequenceNo() ==  next_receive_seq)
+            {//process
+                if (!next_msg_handler_(dtls_msg, sock, remote_ep, yield))
+                {
+                    return false;
+                }
+            }
+            else
+            {//queue
+                unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
+            }
         }
         else
-        {//queue
-            unhandled_msgs_.insert(std::pair(dtls_msg->getSequenceNo(), dtls_msg));
+        {
+            recv_finished_msg_ = std::make_shared<DTLSCiperText>();
         }
     }
+
     // 处理消息
-    bool process_next = true;
-    do {
-        dtls_msg = next_msg_require_handler_();
-        if (!dtls_msg) 
-        {
-            break;
-        }
-        process_next = next_msg_handler_(dtls_msg, sock, remote_ep, yield);
-    } while (process_next);
+    if (!ciper_state_changed_) 
+    {
+        bool process_next = true;
+        do {
+            dtls_msg = next_msg_require_handler_();
+            if (!dtls_msg) 
+            {
+                break;
+            }
+            process_next = next_msg_handler_(dtls_msg, sock, remote_ep, yield);
+        } while (process_next);
+    }
+
+    if (recv_finished_msg_)
+    {//处理最后收到的finished消息
+        
+        recv_finished_msg_.reset();
+    }
+    
     return true;
 }
 
@@ -408,12 +426,7 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSPlaintext> dtls_m
     uint16_t length = 24;
     uint16_t nlen = htons(length);
     mac_data.append((char*)&nlen, 2);//length
-    // mac_data.append((char*)block_ciper->IV.data(), block_ciper->IV.size());
     mac_data.append(out.data(), DTLS_HANDSHAKE_HEADER_SIZE + 12);
-    // mac_data.append((char*)&dtls_msg->getEpoch(), 2);
-    // mac_data.append((char*)&dtls_msg->getSequenceNo(), 6);
-    // mac_data.append((char*)&dtls_msg->getType(), 1);
-    // mac_data.append((char*)&dtls_msg->getVersion(), 2);
     std::string mac = Utils::calcHmacSHA1(ciper_suite_->client_write_MAC_key, mac_data);
     printf("\r\nmac:\r\n");
     for (size_t i = 0; i < mac.size(); i++) {

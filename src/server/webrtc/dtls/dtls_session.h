@@ -56,6 +56,7 @@ private:
     std::list<std::shared_ptr<DTLSPlaintext>> handshake_msgs_;
     std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
     std::string handshake_data_;
+    std::shared_ptr<DTLSCiperText> recv_finished_msg_;
     //    DTLS implementations maintain (at least notionally) a
     //    next_receive_seq counter.  This counter is initially set to zero.
     //    When a message is received, if its sequence number matches

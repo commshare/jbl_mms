@@ -189,6 +189,23 @@ namespace mms
             return data - data_start;
         }
 
+        int32_t decode(uint8_t *data, size_t len, CiperSuite *ciper_suite) 
+        {
+            uint8_t *dtls_data_start = data - DTLS_HEADER_SIZE;
+            uint8_t *data_start = data;
+            if (len < 16)
+            {
+                return -1;
+            }
+            IV.assign((char *)data, 16);
+            data += 16;
+            len -= 16;
+            cipered_data.assign((char*)data, len);
+            data += len;
+            len -= len;
+            return data - data_start;
+        }
+
         const std::string & getCiperedData()
         {
             return cipered_data;
@@ -204,7 +221,32 @@ namespace mms
             return 0;
         }
     };
-    
+
+    struct DTLSCiperText
+    {
+        DtlsHeader header;
+        GenericBlockCipher block_ciper;
+        int32_t decode(uint8_t *data, size_t len, CipherSuite *ciper_suite) 
+        {
+            uint8_t *data_start = data;
+            int32_t consumed = header.decode(data, len);
+            if (consumed < 0)
+            {
+                return -1;
+            }
+
+            consumed = block_ciper.decode(data, len, ciper_suite);
+
+            
+            return data - data_start;
+        }
+
+        int32_t encode(uint8_t *data, size_t len)
+        {
+            return 0;
+        }
+    };
+
     struct DTLSPlaintext
     {
         DtlsHeader header;
