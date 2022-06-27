@@ -5,6 +5,7 @@
 #include "client_hello.h"
 #include "server_hello.h"
 #include "client_key_exchange.h"
+#include "finished.h"
 
 #include "dtls_handshake.h"
 using namespace mms;
@@ -72,6 +73,10 @@ int32_t HandShake::decode(uint8_t *data, size_t len)
     else if (msg_type == client_key_exchange)
     {
         msg = std::unique_ptr<HandShakeMsg>(new ClientKeyExchange);
+    }
+    else if (msg_type == finished)
+    {
+        msg = std::unique_ptr<HandShakeMsg>(new DtlsFinished);
     }
 
     if (!msg)

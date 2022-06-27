@@ -214,11 +214,11 @@ int32_t DTLSPlaintext::decode(uint8_t *data, size_t len)
             msg = std::unique_ptr<DtlsMsg>(new ChangeCipherSpec);
         }
     }
-    else
-    {
-        msg = std::unique_ptr<DtlsMsg>(new GenericBlockCipher);
-        std::cout << "decode ciper text" << std::endl;
-    }
+    // else
+    // {
+    //     msg = std::unique_ptr<DtlsMsg>(new GenericBlockCipher);
+    //     std::cout << "decode ciper text" << std::endl;
+    // }
     
 
     if (!msg)
@@ -502,6 +502,7 @@ RSA_AES128_SHA1_Cipher::RSA_AES128_SHA1_Cipher()
     record_iv_length = 16;
     enc_key_length = 16;
     key_exchange_algorithm = CipherSuiteKeyExchangeAlgorithm_RSA;
+    block_size = 16;
     initialized = false;
 }
 

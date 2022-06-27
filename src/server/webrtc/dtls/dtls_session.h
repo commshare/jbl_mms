@@ -29,7 +29,8 @@ private:
     bool processClientHello(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    bool processHandShakeFinished(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processHandShakeFinished(std::shared_ptr<DTLSCiperText> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    
     bool processDone(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
     bool calcMasterSecret();
@@ -37,7 +38,7 @@ private:
     std::shared_ptr<DTLSPlaintext> requireClientHello();
     std::shared_ptr<DTLSPlaintext> requireClientKeyExchange();
     std::shared_ptr<DTLSPlaintext> requireChangeCipherSpec();
-    std::shared_ptr<DTLSPlaintext> requireHandShakeFinished();
+    std::shared_ptr<DTLSPlaintext> requireDone();
 private:
     std::shared_ptr<DTLSPlaintext> client_hello_;
     std::shared_ptr<DTLSPlaintext> server_hello_;
@@ -49,12 +50,13 @@ private:
     std::string recv_key_;
     std::string send_key_;
 
-    std::unique_ptr<CiperSuite> ciper_suite_;
+    std::unique_ptr<DtlsCiperSuite> ciper_suite_;
     std::shared_ptr<DtlsCert> dtls_cert_;
 
     std::map<uint64_t, std::shared_ptr<DTLSPlaintext>> unhandled_msgs_;
     std::list<std::shared_ptr<DTLSPlaintext>> handshake_msgs_;
     std::queue<std::shared_ptr<DTLSPlaintext>> sended_msgs_;
+    std::unordered_map<HandshakeType, bool> recv_handshake_map_;
     std::string handshake_data_;
     std::shared_ptr<DTLSCiperText> recv_finished_msg_;
     //    DTLS implementations maintain (at least notionally) a

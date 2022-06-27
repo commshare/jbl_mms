@@ -30,7 +30,6 @@ namespace mms
         virtual uint32_t size() = 0;
     };
 
-    #define DTLS_HANDSHAKE_HEADER_SIZE 12
     struct HandShake : public DtlsMsg
     {
         HandshakeType msg_type;       /* handshake type */

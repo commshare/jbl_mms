@@ -1,9 +1,13 @@
 #pragma once
+#include <arpa/inet.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <iostream>
+
+#include "base/utils/utils.h"
 
 namespace mms
 {
@@ -15,11 +19,71 @@ namespace mms
         application_data = 23
     };
 
-#define DTLS_MAJOR_VERSION1 0xfe
+    #define DTLS_MAJOR_VERSION1 0xfe
 
-#define DTLS_MINOR_VERSION0 0xff
-#define DTLS_MINOR_VERSION2 0xfd
-#define DTLS_MINOR_VERSION1 0xfe
+    #define DTLS_MINOR_VERSION0 0xff
+    #define DTLS_MINOR_VERSION2 0xfd
+    #define DTLS_MINOR_VERSION1 0xfe
+
+
+    typedef enum
+    {
+        stream,
+        block,
+        aead
+    } CipherType;
+    //                       Key       IV    Block
+    // Cipher        Type    Material  Size  Size
+    // ------------  ------  --------  ----  -----
+    // NULL          Stream      0       0    N/A
+    // RC4_128       Stream     16       0    N/A
+    // 3DES_EDE_CBC  Block      24       8      8
+    // AES_128_CBC   Block      16      16     16
+    // AES_256_CBC   Block      32      16     16
+
+    // MAC       Algorithm    mac_length  mac_key_length
+    // --------  -----------  ----------  --------------
+    // NULL      N/A              0             0
+    // MD5       HMAC-MD5        16            16
+    // SHA       HMAC-SHA1       20            20
+    // SHA256    HMAC-SHA256     32            32
+
+    enum CipherSuiteKeyExchangeAlgorithm {
+        CipherSuiteKeyExchangeAlgorithm_RSA, 
+        CipherSuiteKeyExchangeAlgorithm_DHE_RSA,
+        CipherSuiteKeyExchangeAlgorithm_DH_RSA, 
+        CipherSuiteKeyExchangeAlgorithm_RSA_PSK, 
+        CipherSuiteKeyExchangeAlgorithm_ECDH_RSA, 
+        CipherSuiteKeyExchangeAlgorithm_ECDHE_RSA
+    };
+
+    struct DtlsCiperSuite;
+    struct DtlsCiperSuite
+    {
+        uint16_t ciper_id;
+        CipherType ciper_type;
+        uint8_t mac_length;
+        uint8_t mac_key_length;
+        uint8_t record_iv_length;
+        uint8_t enc_key_length;
+        uint16_t block_size;
+        CipherSuiteKeyExchangeAlgorithm key_exchange_algorithm;
+        
+        bool initialized = false;
+        bool is_client = false;
+
+        std::string client_write_MAC_key;
+        std::string server_write_MAC_key;
+        std::string client_write_key;
+        std::string server_write_key;
+        std::string client_write_IV;
+        std::string server_write_IV;
+
+        virtual void init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client) = 0;
+
+        virtual int32_t decrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
+        virtual int32_t encrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
+    };
 
     struct DtlsProtocolVersion
     {
@@ -71,6 +135,7 @@ namespace mms
         void genRandom();
     };
 
+    #define DTLS_HANDSHAKE_HEADER_SIZE 12
     #define DTLS_HEADER_SIZE 13
     #define DTLS_VERSION_OFFSET 0x01
     #define DTLS_EPOCH_OFFSET  0x03
@@ -169,27 +234,21 @@ namespace mms
         uint32_t size();
     };
 
-    struct GenericBlockCipher : public DtlsMsg
+    struct GenericBlockCipher
     {
-        std::string IV;//uint8_t IV[SecurityParameters.record_iv_length];//record_iv_length equal to block_size
-        std::string cipered_data;
-        int32_t decode(uint8_t *data, size_t len) 
-        {
-            uint8_t *data_start = data;
-            if (len < 16)
+        std::string IV;
+        struct BlockCipered {
+            std::string content;
+            std::string MAC;
+            std::string padding;
+            uint8_t     padding_length;
+            uint32_t size(DtlsCiperSuite *ciper_suite)
             {
-                return -1;
+                return 0;
             }
-            IV.assign((char *)data, 16);
-            data += 16;
-            len -= 16;
-            cipered_data.assign((char*)data, len);
-            data += len;
-            len -= len;
-            return data - data_start;
-        }
-
-        int32_t decode(uint8_t *data, size_t len, CiperSuite *ciper_suite) 
+        };
+        BlockCipered block_cipered;
+        int32_t decode(DtlsHeader & header, uint8_t *data, size_t len, DtlsCiperSuite *ciper_suite) 
         {
             uint8_t *dtls_data_start = data - DTLS_HEADER_SIZE;
             uint8_t *data_start = data;
@@ -200,48 +259,45 @@ namespace mms
             IV.assign((char *)data, 16);
             data += 16;
             len -= 16;
-            cipered_data.assign((char*)data, len);
-            data += len;
-            len -= len;
-            return data - data_start;
-        }
+            std::string out;
+            ciper_suite->decrypt(IV, std::string((char*)data, header.length - 16), out);
+            int32_t pos = out.size() - 1;
+            block_cipered.padding_length = (uint8_t)out[pos];
+            block_cipered.padding.assign(out.data() + pos - block_cipered.padding_length, block_cipered.padding_length);
+            pos -= block_cipered.padding_length;
+            block_cipered.MAC.assign(out.data() + pos - ciper_suite->mac_key_length, ciper_suite->mac_key_length);
+            pos -= ciper_suite->mac_key_length;
+            block_cipered.content.assign(out.data(), pos);
+            data += header.length - 16;
 
-        const std::string & getCiperedData()
-        {
-            return cipered_data;
-        }
-
-        int32_t encode(uint8_t *data, size_t len)
-        {
-            return 0;
-        }
-
-        uint32_t size()
-        {
-            return 0;
-        }
-    };
-
-    struct DTLSCiperText
-    {
-        DtlsHeader header;
-        GenericBlockCipher block_ciper;
-        int32_t decode(uint8_t *data, size_t len, CipherSuite *ciper_suite) 
-        {
-            uint8_t *data_start = data;
-            int32_t consumed = header.decode(data, len);
-            if (consumed < 0)
+            std::string mac_data;
+            mac_data.append((char*)dtls_data_start + DTLS_EPOCH_OFFSET, 8);//epoch and seq
+            mac_data.append((char*)dtls_data_start, 1);//type
+            mac_data.append((char*)dtls_data_start + DTLS_VERSION_OFFSET, 2);//version
+            uint16_t length = block_cipered.content.size();
+            uint16_t nlen = htons(length);
+            mac_data.append((char*)&nlen, 2);//length
+            mac_data.append(out.data(), length);
+            std::string mac = Utils::calcHmacSHA1(ciper_suite->client_write_MAC_key, mac_data);
+            if (mac != block_cipered.MAC)
             {
-                return -1;
+                return -2;
             }
 
-            consumed = block_ciper.decode(data, len, ciper_suite);
-
-            
             return data - data_start;
         }
 
+        BlockCipered & getBlockCipered()
+        {
+            return block_cipered;
+        }
+
         int32_t encode(uint8_t *data, size_t len)
+        {
+            return 0;
+        }
+
+        uint32_t size(DtlsCiperSuite *ciper_suite)
         {
             return 0;
         }
@@ -325,6 +381,92 @@ namespace mms
         }
     };
 
+
+    struct DTLSCiperText
+    {
+        DtlsHeader header;
+        GenericBlockCipher block_ciper;
+        int32_t decode(uint8_t *data, size_t len, DtlsCiperSuite *ciper_suite) 
+        {
+            uint8_t *data_start = data;
+            int32_t consumed = header.decode(data, len);
+            if (consumed < 0)
+            {
+                return -1;
+            }
+            data += consumed;
+            len -= consumed;
+
+            consumed = block_ciper.decode(header, data, len, ciper_suite);
+            if (consumed < 0)
+            {
+                return -2;
+            }
+            data += consumed;
+            len -= consumed;
+            
+            return data - data_start;
+        }
+
+        void setType(ContentType v)
+        {
+            header.type = v;
+        }
+
+        void setDtlsProtocolVersion(const DtlsProtocolVersion &v)
+        {
+            header.version = v;
+        }
+
+        uint16_t getEpoch() const 
+        {
+            return header.epoch;
+        }
+
+        void setEpoch(uint16_t val)
+        {
+            header.epoch = val;
+        }
+
+        void setSequenceNo(uint32_t val)
+        {
+            header.sequence_number = val;
+        }
+
+        uint64_t getSequenceNo()
+        {
+            return header.sequence_number;
+        }
+
+        GenericBlockCipher & getBlockCiper()
+        {
+            return block_ciper;
+        }
+
+        int32_t encode(DTLSPlaintext & plain_text, DtlsCiperSuite *ciper_suite, std::string & out)
+        {
+            header = plain_text.header;
+            block_ciper.IV = Utils::randStr(ciper_suite->record_iv_length);
+            
+            int32_t content_size = plain_text.msg->size();
+            block_ciper.block_cipered.content.resize(content_size);
+            plain_text.msg->encode((uint8_t*)block_ciper.block_cipered.content.data(), content_size);
+
+            return 0;
+        }
+
+        uint32_t size(DTLSPlaintext & plain_text, DtlsCiperSuite *ciper_suite)
+        {
+            int32_t header_size = header.size();
+            int32_t content_size = plain_text.msg->size();
+            int32_t iv_size = ciper_suite->record_iv_length;
+            int32_t mac_size = ciper_suite->mac_key_length;
+            uint32_t cipered_content_size = ((content_size + iv_size + mac_size)/ciper_suite->block_size + 1)*ciper_suite->block_size;
+            return header_size + cipered_content_size;
+        }
+    };
+
+    
     // @doc https://datatracker.ietf.org/doc/html/rfc5246#page-44
     //    The presence of extensions can be detected by
     //    determining whether there are bytes following the compression_methods
@@ -417,13 +559,6 @@ namespace mms
 
     typedef enum
     {
-        stream,
-        block,
-        aead
-    } CipherType;
-
-    typedef enum
-    {
         null_m,
         hmac_md5,
         hmac_sha1,
@@ -451,58 +586,7 @@ namespace mms
         std::string server_random;//32bytes
     };
 
-    //                       Key       IV    Block
-    // Cipher        Type    Material  Size  Size
-    // ------------  ------  --------  ----  -----
-    // NULL          Stream      0       0    N/A
-    // RC4_128       Stream     16       0    N/A
-    // 3DES_EDE_CBC  Block      24       8      8
-    // AES_128_CBC   Block      16      16     16
-    // AES_256_CBC   Block      32      16     16
-
-    // MAC       Algorithm    mac_length  mac_key_length
-    // --------  -----------  ----------  --------------
-    // NULL      N/A              0             0
-    // MD5       HMAC-MD5        16            16
-    // SHA       HMAC-SHA1       20            20
-    // SHA256    HMAC-SHA256     32            32
-
-    enum CipherSuiteKeyExchangeAlgorithm {
-        CipherSuiteKeyExchangeAlgorithm_RSA, 
-        CipherSuiteKeyExchangeAlgorithm_DHE_RSA,
-        CipherSuiteKeyExchangeAlgorithm_DH_RSA, 
-        CipherSuiteKeyExchangeAlgorithm_RSA_PSK, 
-        CipherSuiteKeyExchangeAlgorithm_ECDH_RSA, 
-        CipherSuiteKeyExchangeAlgorithm_ECDHE_RSA
-    };
-
-    struct CiperSuite
-    {
-        uint16_t ciper_id;
-        CipherType ciper_type;
-        uint8_t mac_length;
-        uint8_t mac_key_length;
-        uint8_t record_iv_length;
-        uint8_t enc_key_length;
-        CipherSuiteKeyExchangeAlgorithm key_exchange_algorithm;
-        
-        bool initialized = false;
-        bool is_client = false;
-
-        std::string client_write_MAC_key;
-        std::string server_write_MAC_key;
-        std::string client_write_key;
-        std::string server_write_key;
-        std::string client_write_IV;
-        std::string server_write_IV;
-
-        virtual void init(const std::string & master_secret, const std::string & client_random, const std::string & server_random, bool is_client) = 0;
-
-        virtual int32_t decrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
-        virtual int32_t encrypt(const std::string & iv, const std::string & in, std::string & out) = 0;
-    };
-
-    struct RSA_AES128_SHA1_Cipher : public CiperSuite
+    struct RSA_AES128_SHA1_Cipher : public DtlsCiperSuite
     {
         //以下数据加密, 生成消息体
         struct BlockCipered 
