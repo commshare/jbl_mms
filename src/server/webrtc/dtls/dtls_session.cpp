@@ -408,14 +408,11 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
     // 发送change ciper spec
     HandShake handshake_msg;
     std::string & content = dtls_msg->getBlockCiper().getBlockCipered().content;
-    std::cout << "content.size():" << content.size() << std::endl;
     handshake_msg.decode((uint8_t*)content.data(), content.size());
-
     DtlsFinished *dtls_finished = (DtlsFinished*)handshake_msg.msg.get();
-
     std::string verify_data = PRF(master_secret_, "client finished", Utils::sha256(handshake_data_), 12);
-    if (verify_data != dtls_finished->getVerifyData()) {
-        std::cout << "verify data not equal" << std::endl;
+    if (verify_data != dtls_finished->getVerifyData()) 
+    {
         return false;
     } 
 
@@ -440,31 +437,49 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
     }
 
+    handshake_data_.append((char*)dtls_msg->raw_data.data(), dtls_msg->raw_data.size());
+    std::string server_verify_data = PRF(master_secret_, "server finished", Utils::sha256(handshake_data_), 12);
+
     {//发送server finished 
-        DTLSPlaintext resp_msg;
-        resp_msg.setType(handshake);
-        resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
-        resp_msg.setEpoch(1);
-        resp_msg.setSequenceNo(epoch_send_seq_map_[1]);
-
-        std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
-        resp_handshake->setType(finished);
-        auto *s = new DtlsFinished;
-        std::unique_ptr<HandShakeMsg> resp_finished = std::unique_ptr<HandShakeMsg>(s);
-        resp_handshake->setMsg(std::move(resp_finished));
-        resp_handshake->setMessageSeq(epoch_send_seq_map_[1]);
-        resp_msg.setMsg(std::move(resp_handshake));
-        auto resp_size = resp_msg.size();
-
         DTLSCiperText ciper_resp_msg;
-        std::string out;
-        int32_t consumed = ciper_resp_msg.encode(resp_msg, ciper_suite_.get(), out);
+        ciper_resp_msg.setType(handshake);
+        ciper_resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+        ciper_resp_msg.setEpoch(1);
+        ciper_resp_msg.setSequenceNo(epoch_send_seq_map_[1]);
+        
+
+        
+        auto *finished_msg = new DtlsFinished;
+        finished_msg->verify_data = server_verify_data;
+
+        HandShake finished_handshake_msg;
+        finished_handshake_msg.setType(finished);
+        finished_handshake_msg.setMessageSeq(epoch_send_seq_map_[1]);
+        finished_handshake_msg.setMsg(std::unique_ptr<HandShakeMsg>(finished_msg));
+        std::string content;
+        content.resize(finished_handshake_msg.size());
+        finished_handshake_msg.encode((uint8_t*)content.data(), content.size());
+        ciper_resp_msg.setContent(content);
+        printf("content:\r\n");
+        for (size_t i = 0; i < content.size(); i++) {
+            printf("%02x ", (uint8_t)content[i]);
+        }
+        printf("\r\n");
+        auto resp_size = ciper_resp_msg.size(ciper_suite_.get());
+        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+        std::cout << "*********************** send server finished, size:" << resp_size << " ***********************" << std::endl;
+        int32_t consumed = ciper_resp_msg.encode(data.get(), resp_size, ciper_suite_.get());
         if (consumed < 0)
         {
             return false;
         }
+        for(size_t i = 0; i < resp_size; i++) {
+            printf("%02x ", uint8_t(data.get()[i]));
+        }
+        printf("\r\n");
 
         epoch_send_seq_map_[1]++;
+        sock->sendTo(std::move(data), resp_size, remote_ep, yield);
     }
     // 已经收到finished消息了，不需要再处理后续消息
     next_msg_handler_ = std::bind(&DtlsSession::processDone, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);

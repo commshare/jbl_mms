@@ -6,6 +6,7 @@
 #include <memory>
 #include <unordered_map>
 #include <iostream>
+#include <string.h>
 
 #include "base/utils/utils.h"
 
@@ -244,7 +245,7 @@ namespace mms
             uint8_t     padding_length;
             uint32_t size(DtlsCiperSuite *ciper_suite)
             {
-                return 0;
+                return (((content.size() + ciper_suite->mac_length)/ciper_suite->block_size)+1)*ciper_suite->block_size;
             }
         };
         BlockCipered block_cipered;
@@ -299,7 +300,7 @@ namespace mms
 
         uint32_t size(DtlsCiperSuite *ciper_suite)
         {
-            return 0;
+            return ciper_suite->record_iv_length + block_cipered.size(ciper_suite);
         }
     };
 
@@ -386,6 +387,7 @@ namespace mms
     {
         DtlsHeader header;
         GenericBlockCipher block_ciper;
+        std::string raw_data;
         int32_t decode(uint8_t *data, size_t len, DtlsCiperSuite *ciper_suite) 
         {
             uint8_t *data_start = data;
@@ -405,12 +407,18 @@ namespace mms
             data += consumed;
             len -= consumed;
             
+            raw_data.assign((char*)data_start, data - data_start);
             return data - data_start;
         }
 
         void setType(ContentType v)
         {
             header.type = v;
+        }
+
+        void setContent(const std::string & val)
+        {
+            block_ciper.block_cipered.content = val;
         }
 
         void setDtlsProtocolVersion(const DtlsProtocolVersion &v)
@@ -443,26 +451,69 @@ namespace mms
             return block_ciper;
         }
 
-        int32_t encode(DTLSPlaintext & plain_text, DtlsCiperSuite *ciper_suite, std::string & out)
+        int32_t encode(uint8_t *data, size_t len, DtlsCiperSuite *ciper_suite)
         {
-            header = plain_text.header;
+            uint8_t *data_start = data;
+            size_t cipered_size = block_ciper.size(ciper_suite);
+            header.length = cipered_size;
+            int32_t consumed = header.encode(data, len);
+            if (consumed < 0)
+            {
+                return -1;
+            }
+            data += consumed;
+            len -= consumed;
+            // 计算mac
+            std::string mac_data;
+            mac_data.append((char*)data_start + DTLS_EPOCH_OFFSET, 8);//epoch and seq
+            mac_data.append((char*)data_start, 1);//type
+            mac_data.append((char*)data_start + DTLS_VERSION_OFFSET, 2);//version
+            uint16_t length = block_ciper.block_cipered.content.size();
+            uint16_t nlen = htons(length);
+            mac_data.append((char*)&nlen, 2);//length
+            mac_data.append((char*)block_ciper.block_cipered.content.data(), length);
+            block_ciper.block_cipered.MAC = Utils::calcHmacSHA1(ciper_suite->server_write_MAC_key, mac_data);
+            // 添加padding
+            uint32_t align_size = 
+            block_ciper.block_cipered.padding_length = block_ciper.size(ciper_suite) - 
+                                            ciper_suite->record_iv_length - block_ciper.block_cipered.content.size() - 
+                                            block_ciper.block_cipered.MAC.size() - 1;
+            std::cout << "padding_length:" << (uint32_t)block_ciper.block_cipered.padding_length << std::endl;
+            // 计算加密
+            std::string pre_enc_data;
+            pre_enc_data.resize(cipered_size - ciper_suite->record_iv_length);
+            std::cout << "pre_enc_data.size:" << pre_enc_data.size() << std::endl;
+            size_t pos = cipered_size - ciper_suite->record_iv_length - 1;
+            pos -= block_ciper.block_cipered.padding_length;
+            memset(pre_enc_data.data() + pos, block_ciper.block_cipered.padding_length, block_ciper.block_cipered.padding_length + 1);
+            pos -= block_ciper.block_cipered.MAC.size();
+            memcpy(pre_enc_data.data() + pos, block_ciper.block_cipered.MAC.data(), block_ciper.block_cipered.MAC.size());
+            pos -= block_ciper.block_cipered.content.size();
+            memcpy(pre_enc_data.data() + pos, block_ciper.block_cipered.content.data(), block_ciper.block_cipered.content.size());
+            printf("pre_enc_data.data():\r\n");
+            for(size_t i = 0; i < pre_enc_data.size(); i++) {
+                printf("%02x ", (uint8_t)pre_enc_data.data()[i]);
+            }
+            printf("\r\n");
+            // 生成IV
             block_ciper.IV = Utils::randStr(ciper_suite->record_iv_length);
-            
-            int32_t content_size = plain_text.msg->size();
-            block_ciper.block_cipered.content.resize(content_size);
-            plain_text.msg->encode((uint8_t*)block_ciper.block_cipered.content.data(), content_size);
-
-            return 0;
+            // 加密
+            std::string out;
+            ciper_suite->encrypt(block_ciper.IV, pre_enc_data, out);
+            printf("encrypted data, size:%d:\r\n", out.size());
+            for (size_t i = 0; i < out.size(); i++) {
+                printf("%02x ", (uint8_t)out.data()[i]);
+            }
+            printf("\r\n\r\n");
+            memcpy(data, block_ciper.IV.data(), block_ciper.IV.size());
+            memcpy(data + block_ciper.IV.size(), (char*)out.data(), out.size());
+            data += cipered_size;
+            return data - data_start;
         }
 
-        uint32_t size(DTLSPlaintext & plain_text, DtlsCiperSuite *ciper_suite)
+        uint32_t size(DtlsCiperSuite *ciper_suite)
         {
-            int32_t header_size = header.size();
-            int32_t content_size = plain_text.msg->size();
-            int32_t iv_size = ciper_suite->record_iv_length;
-            int32_t mac_size = ciper_suite->mac_key_length;
-            uint32_t cipered_content_size = ((content_size + iv_size + mac_size)/ciper_suite->block_size + 1)*ciper_suite->block_size;
-            return header_size + cipered_content_size;
+            return header.size() + block_ciper.size(ciper_suite);
         }
     };
 
