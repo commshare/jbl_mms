@@ -584,7 +584,7 @@ int32_t RSA_AES128_SHA1_Cipher::encrypt(const std::string & iv, const std::strin
     AES_KEY key;
     if (is_client)
     {
-        ret = AES_set_decrypt_key((unsigned char *)client_write_key.data(), 128, &key);
+        ret = AES_set_encrypt_key((unsigned char *)client_write_key.data(), 128, &key);
         if (0 != ret) 
         {
             return -1;
@@ -592,14 +592,42 @@ int32_t RSA_AES128_SHA1_Cipher::encrypt(const std::string & iv, const std::strin
     }
     else
     {
-        ret = AES_set_decrypt_key((unsigned char *)server_write_key.data(), 128, &key);
+        ret = AES_set_encrypt_key((unsigned char *)server_write_key.data(), 128, &key);
         if (0 != ret) 
         {
             return -1;
         }
     }
 
+    printf("iv1111:\r\n");
+    for (size_t i = 0; i < iv.size(); i++)
+    {
+        printf("%02x ", (uint8_t)iv[i]);
+    }
+    printf("\r\n");
+
+    printf("enc in:\r\n");
+    for (size_t i = 0; i < in.size(); i++)
+    {
+        printf("%02x ", (uint8_t)in[i]);
+    }
+    printf("\r\n");
+    std::string iv_tmp = iv;
     out.resize(in.size());
-    AES_cbc_encrypt((unsigned char*)in.data(), (unsigned char*)out.data(), in.size(), &key, (unsigned char *)iv.data(), AES_ENCRYPT);
+    AES_cbc_encrypt((unsigned char*)in.data(), (unsigned char*)out.data(), in.size(), &key, (unsigned char *)iv_tmp.data(), AES_ENCRYPT);
+
+    printf("enc out:\r\n");
+    for (size_t i = 0; i < out.size(); i++)
+    {
+        printf("%02x ", (uint8_t)out[i]);
+    }
+    printf("\r\n");
+
+    printf("iv2222:\r\n");
+    for (size_t i = 0; i < iv.size(); i++)
+    {
+        printf("%02x ", (uint8_t)iv[i]);
+    }
+    printf("\r\n");
     return 0;
 }

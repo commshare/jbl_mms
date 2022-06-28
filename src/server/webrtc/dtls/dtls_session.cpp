@@ -120,11 +120,11 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
                 return false;
             }
 
-            if (!recv_handshake_map_[finished])
-            {
-                handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
-                recv_handshake_map_[finished] = true;
-            }
+            // if (!recv_handshake_map_[finished])
+            // {
+            //     handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
+            //     recv_handshake_map_[finished] = true;
+            // }
         }
     }
     
@@ -415,7 +415,7 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
     {
         return false;
     } 
-
+    // dtls抓包：https://www.cloudshark.org/captures/7d2ae4cfe155
     { // send change ciper spec
         std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
         resp_msg->setType(change_cipher_spec);
@@ -426,7 +426,7 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         std::unique_ptr<ChangeCipherSpec> resp_change_cipher_spec = std::unique_ptr<ChangeCipherSpec>(new ChangeCipherSpec);
         resp_msg->setMsg(std::move(resp_change_cipher_spec));
         auto resp_size = resp_msg->size();
-
+        std::cout << "==================== change ciper spec size:" << resp_size << " =====================" << std::endl;
         std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
         int32_t consumed = resp_msg->encode(data.get(), resp_size);
         if (consumed < 0)
@@ -437,7 +437,13 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
     }
 
-    handshake_data_.append((char*)dtls_msg->raw_data.data(), dtls_msg->raw_data.size());
+    printf("************************ content ***********************\r\n");
+    for (size_t i = 0; i < content.size(); i++)
+    {
+        printf("%02x ", (uint8_t)content[i]);
+    }
+    printf("\r\n*******************************************************\r\n");
+    handshake_data_.append((char*)content.data(), content.size());
     std::string server_verify_data = PRF(master_secret_, "server finished", Utils::sha256(handshake_data_), 12);
 
     {//发送server finished 
@@ -446,19 +452,18 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         ciper_resp_msg.setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
         ciper_resp_msg.setEpoch(1);
         ciper_resp_msg.setSequenceNo(epoch_send_seq_map_[1]);
-        
-
-        
+        // 构造内容
         auto *finished_msg = new DtlsFinished;
         finished_msg->verify_data = server_verify_data;
 
         HandShake finished_handshake_msg;
         finished_handshake_msg.setType(finished);
-        finished_handshake_msg.setMessageSeq(epoch_send_seq_map_[1]);
+        finished_handshake_msg.setMessageSeq(4);
         finished_handshake_msg.setMsg(std::unique_ptr<HandShakeMsg>(finished_msg));
         std::string content;
         content.resize(finished_handshake_msg.size());
         finished_handshake_msg.encode((uint8_t*)content.data(), content.size());
+
         ciper_resp_msg.setContent(content);
         printf("content:\r\n");
         for (size_t i = 0; i < content.size(); i++) {
@@ -473,8 +478,12 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         {
             return false;
         }
-        for(size_t i = 0; i < resp_size; i++) {
-            printf("%02x ", uint8_t(data.get()[i]));
+        for(size_t i = 1; i <= resp_size; i++) {
+            printf("%02x ", uint8_t(data.get()[i-1]));
+            if (i % 16 == 0)
+            {
+                printf("\r\n");
+            }
         }
         printf("\r\n");
 

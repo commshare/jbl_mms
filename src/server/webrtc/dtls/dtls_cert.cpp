@@ -152,5 +152,8 @@ bool DtlsCert::createCert()
     long der_len = BIO_get_mem_data(memDER.get(), &der_ptr);
     der_.resize(der_len);
     memcpy(der_.data(), der_ptr, der_len);
+    // key 写入文件，调试用
+    std::unique_ptr<BIO, void (*)(BIO *)> keyFile{BIO_new_file("./mms.rsa", "wb"), BIO_free_all};
+    PEM_write_bio_PrivateKey(keyFile.get(), pkey.get(), nullptr, nullptr, 0, nullptr, nullptr);
     return true;
 }

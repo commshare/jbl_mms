@@ -263,6 +263,12 @@ namespace mms
             std::string out;
             ciper_suite->decrypt(IV, std::string((char*)data, header.length - 16), out);
             int32_t pos = out.size() - 1;
+            printf("decode out:\r\n");
+            for (size_t i = 0; i < out.size(); i++)
+            {
+                printf("%02x ", (uint8_t)out[i]);
+            }
+            printf("\r\n");
             block_cipered.padding_length = (uint8_t)out[pos];
             block_cipered.padding.assign(out.data() + pos - block_cipered.padding_length, block_cipered.padding_length);
             pos -= block_cipered.padding_length;
@@ -471,40 +477,55 @@ namespace mms
             uint16_t length = block_ciper.block_cipered.content.size();
             uint16_t nlen = htons(length);
             mac_data.append((char*)&nlen, 2);//length
+            std::cout << "******************* ciper content size:" << length << " ***********************" << std::endl;
             mac_data.append((char*)block_ciper.block_cipered.content.data(), length);
             block_ciper.block_cipered.MAC = Utils::calcHmacSHA1(ciper_suite->server_write_MAC_key, mac_data);
             // 添加padding
-            uint32_t align_size = 
-            block_ciper.block_cipered.padding_length = block_ciper.size(ciper_suite) - 
+            // uint32_t align_size = 
+            block_ciper.block_cipered.padding_length = cipered_size - 
                                             ciper_suite->record_iv_length - block_ciper.block_cipered.content.size() - 
-                                            block_ciper.block_cipered.MAC.size() - 1;
+                                            block_ciper.block_cipered.MAC.size();
             std::cout << "padding_length:" << (uint32_t)block_ciper.block_cipered.padding_length << std::endl;
             // 计算加密
             std::string pre_enc_data;
             pre_enc_data.resize(cipered_size - ciper_suite->record_iv_length);
             std::cout << "pre_enc_data.size:" << pre_enc_data.size() << std::endl;
-            size_t pos = cipered_size - ciper_suite->record_iv_length - 1;
-            pos -= block_ciper.block_cipered.padding_length;
-            memset(pre_enc_data.data() + pos, block_ciper.block_cipered.padding_length, block_ciper.block_cipered.padding_length + 1);
+            size_t pos = pre_enc_data.size() - 1;
+            pos -= block_ciper.block_cipered.padding_length - 1;
+            memset(pre_enc_data.data() + pos, block_ciper.block_cipered.padding_length - 1, block_ciper.block_cipered.padding_length);
             pos -= block_ciper.block_cipered.MAC.size();
             memcpy(pre_enc_data.data() + pos, block_ciper.block_cipered.MAC.data(), block_ciper.block_cipered.MAC.size());
             pos -= block_ciper.block_cipered.content.size();
             memcpy(pre_enc_data.data() + pos, block_ciper.block_cipered.content.data(), block_ciper.block_cipered.content.size());
             printf("pre_enc_data.data():\r\n");
             for(size_t i = 0; i < pre_enc_data.size(); i++) {
-                printf("%02x ", (uint8_t)pre_enc_data.data()[i]);
+                printf("%02x ", (uint8_t)pre_enc_data[i]);
             }
             printf("\r\n");
             // 生成IV
             block_ciper.IV = Utils::randStr(ciper_suite->record_iv_length);
+            // printf("iv before=\r\n");
+            // for (size_t i = 0; i < block_ciper.IV.size(); i++)
+            // {
+            //     printf("%02x ", (uint8_t)block_ciper.IV[i]);
+            // }
             // 加密
             std::string out;
             ciper_suite->encrypt(block_ciper.IV, pre_enc_data, out);
             printf("encrypted data, size:%d:\r\n", out.size());
             for (size_t i = 0; i < out.size(); i++) {
-                printf("%02x ", (uint8_t)out.data()[i]);
+                printf("%02x ", (uint8_t)out[i]);
             }
             printf("\r\n\r\n");
+            printf("iv=\r\n");
+            for (size_t i = 0; i < block_ciper.IV.size(); i++)
+            {
+                printf("%02x ", (uint8_t)block_ciper.IV[i]);
+            }
+            printf("\r\n");
+            printf("\r\n");
+            printf("\r\n");
+
             memcpy(data, block_ciper.IV.data(), block_ciper.IV.size());
             memcpy(data + block_ciper.IV.size(), (char*)out.data(), out.size());
             data += cipered_size;
