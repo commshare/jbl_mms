@@ -27,6 +27,7 @@ public:
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
     bool processClientHello(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processClientHelloWithCookie(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processChangeCipherSpec(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processHandShakeFinished(std::shared_ptr<DTLSCiperText> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
@@ -36,6 +37,7 @@ private:
     bool calcMasterSecret();
 private:
     std::shared_ptr<DTLSPlaintext> requireClientHello();
+    std::shared_ptr<DTLSPlaintext> requireClientHelloWithCookie();
     std::shared_ptr<DTLSPlaintext> requireClientKeyExchange();
     std::shared_ptr<DTLSPlaintext> requireChangeCipherSpec();
     std::shared_ptr<DTLSPlaintext> requireDone();

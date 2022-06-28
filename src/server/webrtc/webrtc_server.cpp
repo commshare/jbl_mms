@@ -63,6 +63,8 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
             {
                 return;
             }
+        } else if (UDP_MSG_RTP == msg_type) {
+            std::cout << "recv srtp len:" << len << std::endl;
         }
     });
 }

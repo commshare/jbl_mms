@@ -9,6 +9,7 @@
 #include "server/dtls/server_hello_done.h"
 #include "server/dtls/change_cipher_spec.h"
 #include "server/dtls/finished.h"
+#include "server/dtls/hello_verify_request.h"
 
 #include "dtls_session.h"
 #include "dtls_cert.h"
@@ -65,8 +66,20 @@ bool DtlsSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, 
                 
                 if (!recv_handshake_map_[typ])
                 {
-                    handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
-                    recv_handshake_map_[typ] = true;
+                    if (h->getType() == client_hello)
+                    {
+                        ClientHello *client_hello = (ClientHello*)h->msg.get();
+                        if (client_hello->cookie.size() > 0)
+                        {
+                            handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
+                            recv_handshake_map_[typ] = true;
+                        }
+                    }
+                    else
+                    {
+                        handshake_data_.append((char*)data + DTLS_HEADER_SIZE, consumed - DTLS_HEADER_SIZE);
+                        recv_handshake_map_[typ] = true;
+                    }
                 }
             }
 
@@ -168,6 +181,125 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
         resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
 
         std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
+        auto *s = new HelloVerifyRequest;
+        
+        std::unique_ptr<HandShakeMsg> resp_verify_request = std::unique_ptr<HandShakeMsg>(s);
+        s->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+        s->genCookie();
+
+        resp_handshake->setType(hello_verify_request);
+        resp_handshake->setMsg(std::move(resp_verify_request));
+        resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
+        resp_msg->setMsg(std::move(resp_handshake));
+        auto resp_size = resp_msg->size();
+
+        std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+        int32_t consumed = resp_msg->encode(data.get(), resp_size);
+        if (consumed < 0)
+        { // todo:add log
+            return false;
+        }
+        sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+        epoch_send_seq_map_[0]++;
+    }
+
+    // {
+    //     std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
+    //     resp_msg->setType(handshake);
+    //     resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+    //     resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
+
+    //     std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
+    //     resp_handshake->setType(certificate);
+    //     auto *s = new ServerCertificate;
+    //     std::unique_ptr<HandShakeMsg> resp_server_certificate = std::unique_ptr<HandShakeMsg>(s);
+    //     s->addCert(dtls_cert_->getDer());
+    //     resp_handshake->setMsg(std::move(resp_server_certificate));
+    //     resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
+    //     resp_msg->setMsg(std::move(resp_handshake));
+    //     auto resp_size = resp_msg->size();
+
+    //     std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+    //     int32_t consumed = resp_msg->encode(data.get(), resp_size);
+    //     if (consumed < 0)
+    //     { // todo:add log
+    //         return false;
+    //     }
+    //     handshake_data_.append((char*)data.get() + DTLS_HEADER_SIZE, resp_size - DTLS_HEADER_SIZE);
+    //     sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+    //     epoch_send_seq_map_[0]++;
+    //     std::cout << "append handshake data" << std::endl;
+    // }
+
+    // {
+    //     std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
+    //     resp_msg->setType(handshake);
+    //     resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+    //     resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
+
+    //     std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
+    //     resp_handshake->setType(server_hello_done);
+    //     auto *s = new ServerHelloDone;
+    //     std::unique_ptr<HandShakeMsg> resp_server_hello_done = std::unique_ptr<HandShakeMsg>(s);
+    //     resp_handshake->setMsg(std::move(resp_server_hello_done));
+    //     resp_handshake->setMessageSeq(epoch_send_seq_map_[0]);
+    //     resp_msg->setMsg(std::move(resp_handshake));
+    //     auto resp_size = resp_msg->size();
+
+    //     std::unique_ptr<uint8_t[]> data = std::unique_ptr<uint8_t[]>(new uint8_t[resp_size]);
+    //     int32_t consumed = resp_msg->encode(data.get(), resp_size);
+    //     if (consumed < 0)
+    //     { // todo:add log
+    //         return false;
+    //     }
+    //     handshake_data_.append((char*)data.get() + DTLS_HEADER_SIZE, resp_size - DTLS_HEADER_SIZE);
+    //     sock->sendTo(std::move(data), resp_size, remote_ep, yield);
+    //     epoch_send_seq_map_[0]++;
+    //     std::cout << "append handshake data" << std::endl;
+    // }
+    epoch_receive_seq_map_[recv_msg->getEpoch()] = recv_msg->getSequenceNo() + 1;
+    next_msg_require_handler_ = std::bind(&DtlsSession::requireClientHelloWithCookie, this);
+    next_msg_handler_ = std::bind(&DtlsSession::processClientHelloWithCookie, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    return true;
+}
+
+std::shared_ptr<DTLSPlaintext> DtlsSession::requireClientHelloWithCookie()
+{
+    std::shared_ptr<DTLSPlaintext> dtls_msg;
+    std::map<uint64_t, std::shared_ptr<DTLSPlaintext>>::iterator it;
+    for (it = unhandled_msgs_.begin(); it != unhandled_msgs_.end(); it++)
+    {
+        if (it->second->getType() != handshake)
+        {
+            continue;
+        }
+
+        HandShake *handshake = (HandShake *)it->second->msg.get();
+        if (handshake->getType() != client_hello)
+        {
+            continue;
+        }
+
+        dtls_msg = it->second;
+        unhandled_msgs_.erase(it);
+        return dtls_msg;
+    }
+    return nullptr;
+}
+
+bool DtlsSession::processClientHelloWithCookie(std::shared_ptr<DTLSPlaintext> recv_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+{
+    client_hello_ = recv_msg;
+
+    // HandShake *recv_handshake_msg = (HandShake *)client_hello_->msg.get();
+    // ClientHello *client_hello = (ClientHello *)recv_handshake_msg->msg.get();
+    { // send server hello
+        std::shared_ptr<DTLSPlaintext> resp_msg = std::make_shared<DTLSPlaintext>();
+        resp_msg->setType(handshake);
+        resp_msg->setDtlsProtocolVersion(DtlsProtocolVersion(DTLS_MAJOR_VERSION1, DTLS_MINOR_VERSION2));
+        resp_msg->setSequenceNo(epoch_send_seq_map_[0]);
+
+        std::unique_ptr<HandShake> resp_handshake = std::unique_ptr<HandShake>(new HandShake);
         auto *s = new ServerHello;
         std::unique_ptr<HandShakeMsg> resp_server_hello = std::unique_ptr<HandShakeMsg>(s);
         std::unique_ptr<UseSRtpExt> use_srtp_ext = std::unique_ptr<UseSRtpExt>(new UseSRtpExt);
@@ -257,6 +389,7 @@ bool DtlsSession::processClientHello(std::shared_ptr<DTLSPlaintext> recv_msg, Ud
     next_msg_handler_ = std::bind(&DtlsSession::processClientKeyExchange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
 }
+
 
 std::shared_ptr<DTLSPlaintext> DtlsSession::requireClientKeyExchange()
 {
