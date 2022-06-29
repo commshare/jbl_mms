@@ -54,8 +54,8 @@ int32_t RtpHeader::decode(uint8_t *data, size_t len)
     }
 
     uint8_t tmpv2 = *data;
-    marker = (tmpv2 >> 0) & 0x01;
-    pt = (tmpv2 >> 1) & 0x7F;
+    marker = (tmpv2 >> 7) & 0x01;
+    pt = (tmpv2) & 0x7F;
     data++;
     len--;
     //seqnum
