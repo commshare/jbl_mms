@@ -22,6 +22,7 @@
 #include "protocol/sdp/dtls/setup.h"
 #include "protocol/sdp/dtls/fingerprint.h"
 #include "protocol/sdp/session-level/candidate.h"
+#include "protocol/sdp/session-level/ssrc_group.h"
 
 #include "payload.h"
 // Media description, if present
@@ -278,14 +279,14 @@ namespace mms
             rtcp_mux_ = rtcp_mux;
         }
 
-        const Ssrc &getSsrc() const
+        const std::unordered_map<uint32_t, Ssrc> &getSsrcs() const
         {
-            return ssrc_;
+            return ssrcs_;
         }
 
-        void setSsrc(const Ssrc &ssrc)
+        void addSsrc(const Ssrc &ssrc)
         {
-            ssrc_ = ssrc;
+            ssrcs_.insert(std::pair(ssrc.getId(), ssrc));;
         }
 
         void addPayload(const Payload &p)
@@ -426,6 +427,7 @@ namespace mms
         MidAttr mid;
         std::vector<std::string> bandwidth_information;
         std::optional<std::string> encryption_key;
-        Ssrc ssrc_;
+        std::optional<SsrcGroup> ssrc_group_;
+        std::unordered_map<uint32_t, Ssrc> ssrcs_;
     };
 };

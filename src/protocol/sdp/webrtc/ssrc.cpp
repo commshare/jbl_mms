@@ -37,6 +37,23 @@ bool Ssrc::parse(const std::string & line) {
     return true;
 }
 
+uint32_t Ssrc::parseIdOnly(const std::string & line) {
+    std::string::size_type end_pos = line.rfind("\r");
+    if (end_pos == std::string::npos) {
+        end_pos = line.size() - 1;
+    }
+    
+    std::string valid_string = line.substr(prefix.size(), end_pos - prefix.size());
+    std::vector<std::string> vs;
+    vs = Utils::split(valid_string, " ");
+    if (vs.size() < 2) {
+        return false;
+    }
+
+    uint32_t id = std::atoi(vs[0].c_str());
+    return id;
+}
+
 std::string Ssrc::toString() const {
     std::ostringstream oss;
     oss << prefix << id_ << " cname:" << cname_ << std::endl;

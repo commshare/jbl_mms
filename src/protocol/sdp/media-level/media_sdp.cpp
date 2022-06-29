@@ -152,7 +152,9 @@ bool MediaSdp::parseAttr(const std::string &line)
     }
     else if (boost::starts_with(line, Ssrc::prefix))
     {
-        if (!ssrc_.parse(line))
+        uint32_t id = Ssrc::parseIdOnly(line);
+        Ssrc & ssrc = ssrcs_[id];
+        if (!ssrc.parse(line))
         {
             return false;
         }
@@ -163,6 +165,15 @@ bool MediaSdp::parseAttr(const std::string &line)
         {
             return false;
         }
+    }
+    else if (boost::starts_with(line, SsrcGroup::prefix))
+    {
+        SsrcGroup ssrc_group;
+        if (!ssrc_group.parse(line))
+        {
+            return false;
+        }
+        ssrc_group_ = ssrc_group;
     }
     return true;
 }
@@ -225,7 +236,16 @@ std::string MediaSdp::toString() const
     oss << setup_.toString();
     oss << mid.toString();
     oss << fingerprint_.toString();
-    oss << ssrc_.toString();
+
+    if (ssrc_group_.has_value())
+    {
+        oss << ssrc_group_.value().toString();
+    }
+
+    for (auto & p : ssrcs_)
+    {
+        oss << p.second.toString();
+    }
 
     return oss.str();
 }

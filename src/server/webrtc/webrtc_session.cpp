@@ -108,7 +108,7 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     }
     remote_ice_pwd_ = remote_ice_pwd.value().getPwd();
 
-    if (0 != createLocalSdp(server, hdl))
+    if (0 != createLocalSdp())
     {
         return false;
     }
@@ -120,7 +120,7 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     return true;
 }
 
-int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::asio> *server, websocketpp::connection_hdl hdl)
+int32_t WebRtcSession::createLocalSdp()
 {
     local_sdp_.setVersion(0);
     local_sdp_.setOrigin({"-", Utils::rand64(), 1, "IN", "IP4", "127.0.0.1"}); // o=- rand64 1 IN IP4 127.0.0.1
@@ -166,7 +166,10 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             audio_sdp.setMidAttr(media.getMidAttr());
             audio_sdp.setRtcpMux(RtcpMux());
             audio_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
-            audio_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_audio"));
+            for (auto & p : media.getSsrcs()) {
+                audio_sdp.addSsrc(Ssrc(p.second.getId(), session_name_, session_name_, session_name_ + "_audio"));
+            }
+            
             audio_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
             auto remote_audio_payload = media.searchPayload("opus");
             if (!remote_audio_payload.has_value())
@@ -198,7 +201,11 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             video_sdp.setMidAttr(media.getMidAttr());
             video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             video_sdp.setRtcpMux(RtcpMux());
-            video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
+            // std::cout << "========================== video ssrc:" << media.getSsrc().getId() << " ============================" << std::endl;
+            for (auto & p : media.getSsrcs()) {
+                video_sdp.addSsrc(Ssrc(p.second.getId(), session_name_, session_name_, session_name_ + "_video"));
+            }
+            // video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
             video_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
             auto remote_video_payload = media.searchPayload("H264");
             if (!remote_video_payload.has_value())

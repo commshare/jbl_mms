@@ -19,6 +19,7 @@ public:
         label_ = label;
     }
 
+    static uint32_t parseIdOnly(const std::string & line);
     bool parse(const std::string & line);
 
     uint32_t getId() const {

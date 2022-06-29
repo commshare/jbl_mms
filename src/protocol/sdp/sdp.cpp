@@ -160,10 +160,6 @@ int32_t Sdp::parse(const std::string &sdp)
             curr_media_sdp = msdp;
             continue;
         }
-        else if (boost::starts_with(lines[i], SsrcGroup::prefix))
-        {
-            break;
-        }
 
         bool ret = false;
         if (curr_media_sdp.has_value())
