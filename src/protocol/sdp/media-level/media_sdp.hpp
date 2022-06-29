@@ -289,6 +289,16 @@ namespace mms
             ssrcs_.insert(std::pair(ssrc.getId(), ssrc));;
         }
 
+        void setSsrcGroup(const SsrcGroup & val)
+        {
+            ssrc_group_ = val;
+        }
+
+        std::optional<SsrcGroup> getSsrcGroup() const
+        {
+            return ssrc_group_;
+        }
+
         void addPayload(const Payload &p)
         {
             payloads_.insert({p.getPt(), p});

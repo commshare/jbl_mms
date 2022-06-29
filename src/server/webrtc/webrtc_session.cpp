@@ -166,6 +166,11 @@ int32_t WebRtcSession::createLocalSdp()
             audio_sdp.setMidAttr(media.getMidAttr());
             audio_sdp.setRtcpMux(RtcpMux());
             audio_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
+            if (media.getSsrcGroup()) 
+            {
+                audio_sdp.setSsrcGroup(media.getSsrcGroup().value());
+            }
+
             for (auto & p : media.getSsrcs()) {
                 audio_sdp.addSsrc(Ssrc(p.second.getId(), session_name_, session_name_, session_name_ + "_audio"));
             }
@@ -201,11 +206,15 @@ int32_t WebRtcSession::createLocalSdp()
             video_sdp.setMidAttr(media.getMidAttr());
             video_sdp.addCandidate(Candidate("fund_common", 1, "UDP", 2130706431, ws_conn_->getLocalIp(), Config::getInstance().getWebrtcUdpPort(), Candidate::CAND_TYPE_HOST, "", 0, {{"generation", "0"}}));
             video_sdp.setRtcpMux(RtcpMux());
-            // std::cout << "========================== video ssrc:" << media.getSsrc().getId() << " ============================" << std::endl;
+            if (media.getSsrcGroup()) 
+            {
+                video_sdp.setSsrcGroup(media.getSsrcGroup().value());
+            }
+
             for (auto & p : media.getSsrcs()) {
                 video_sdp.addSsrc(Ssrc(p.second.getId(), session_name_, session_name_, session_name_ + "_video"));
             }
-            // video_sdp.setSsrc(Ssrc(media.getSsrc().getId(), session_name_, session_name_, session_name_ + "_video"));
+
             video_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
             auto remote_video_payload = media.searchPayload("H264");
             if (!remote_video_payload.has_value())
@@ -385,7 +394,7 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
         out_len = srtp_session_.unprotectSRTP(data, len);
         RtpPacket rtp_pkt;
         int32_t consumed = rtp_pkt.decode(data, out_len);
-        std::cout << "pt:" << (uint32_t)rtp_pkt.header_.pt << ", ssrc:" << rtp_pkt.header_.ssrc << std::endl;
+        std::cout << "pt:" << (uint32_t)rtp_pkt.header_.pt << ", ssrc:" << rtp_pkt.header_.ssrc << ", seq:" << rtp_pkt.header_.seqnum << std::endl;
     }
     return true;
 }
