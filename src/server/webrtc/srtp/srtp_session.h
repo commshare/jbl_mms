@@ -11,8 +11,18 @@ namespace mms
         bool init(SRTPProtectionProfile policy, const std::string &recv_key, const std::string &send_key);
         int32_t unprotectSRTP(uint8_t *data, size_t len);
         int32_t unprotectSRTCP(uint8_t *data, size_t len);
+        int32_t getSRTPOverhead() const 
+        {
+            return srtp_policy_.rtp.auth_tag_len;
+        }
+
+        int32_t getSRTCPOverhead() const
+        {
+            return srtp_policy_.rtcp.auth_tag_len;
+        }
     private:
         srtp_t send_ctx_ = nullptr;
         srtp_t recv_ctx_ = nullptr;
+        srtp_policy_t srtp_policy_;
     };
 };
