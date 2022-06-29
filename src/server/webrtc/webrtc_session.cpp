@@ -11,7 +11,7 @@
 #include "server/stun/protocol/stun_mapped_address_attr.h"
 #include "dtls/dtls_cert.h"
 
-#include "protocol/rtp/rtp_header.h"
+#include "protocol/rtp/rtp_packet.h"
 
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn)
@@ -334,7 +334,7 @@ bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, co
 
     if (!sock->sendTo(std::move(data), size, remote_ep, yield)) 
     {//todo log error
-        return false;
+        return false; 
     }
 
     
@@ -376,7 +376,9 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
     else
     {
         out_len = srtp_session_.unprotectSRTP(data, len);
-
+        RtpPacket rtp_pkt;
+        int32_t consumed = rtp_pkt.decode(data, out_len);
+        std::cout << "pt:" << (uint32_t)rtp_pkt.header_.pt << ", ssrc:" << rtp_pkt.header_.ssrc << std::endl;
     }
     return true;
 }
