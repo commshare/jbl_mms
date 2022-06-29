@@ -14,6 +14,8 @@
 #include "server/dtls/client_key_exchange.h"
 #include "base/thread/thread_worker.hpp"
 
+#include "server/dtls/extension/dtls_use_srtp.h"
+
 namespace mms {
 class DtlsSession {
 public:
@@ -25,6 +27,10 @@ public:
     bool init();
     void setDtlsCert(std::shared_ptr<DtlsCert> cert);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    void onHandshakeDone(std::function<void(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key)> & cb)
+    {
+        handshake_done_cb_ = cb;
+    }
 private:
     bool processClientHello(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processClientHelloWithCookie(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
@@ -34,7 +40,6 @@ private:
     
     bool processDone(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     int32_t decryptRSA(const std::string & enc_data, std::string & dec_data);
-    bool calcMasterSecret();
 private:
     std::shared_ptr<DTLSPlaintext> requireClientHello();
     std::shared_ptr<DTLSPlaintext> requireClientHelloWithCookie();
@@ -71,10 +76,12 @@ private:
     //    discard it.  (This is a simple space/bandwidth tradeoff).
     std::unordered_map<uint16_t, uint32_t> epoch_receive_seq_map_;
     std::unordered_map<uint16_t, uint32_t> epoch_send_seq_map_;
-    // uint32_t next_receive_seq_ = 0;
+
     ThreadWorker::Event *retrans_event_ = nullptr;
     bool ciper_state_changed_ = false;
     std::function<std::shared_ptr<DTLSPlaintext>()> next_msg_require_handler_;
     std::function<bool(std::shared_ptr<DTLSPlaintext> msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)> next_msg_handler_;
+
+    std::function<void(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key)> handshake_done_cb_;
 };
 };

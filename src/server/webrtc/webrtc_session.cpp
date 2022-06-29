@@ -345,6 +345,11 @@ void WebRtcSession::setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert)
     dtls_session_.setDtlsCert(dtls_cert);
 }
 
+bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    return true;
+}
+
 void WebRtcSession::service()
 {
 }

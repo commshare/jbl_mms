@@ -47,3 +47,12 @@ ExternalProject_Add(libwebsocket++-0.8.2
     INSTALL_COMMAND make install
 )
 
+ExternalProject_Add(libsrtp
+    EXCLUDE_FROM_ALL 1
+    URL https://github.com/cisco/libsrtp/archive/refs/tags/v2.4.2.tar.gz
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND ./configure --prefix=${PROJECT_BINARY_DIR}
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+)
+

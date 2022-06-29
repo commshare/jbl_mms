@@ -42,6 +42,7 @@ public:
 
     void setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
     bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);
     int32_t createLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl);

@@ -20,9 +20,11 @@ add_dependencies(mms
     libjsoncpp
     libopenssl-1.1.1
     libwebsocket++-0.8.2
+    libsrtp
 )
 
 target_link_libraries(mms
+    libsrtp2.a
     boost_system.a
     boost_serialization.a
     boost_date_time.a
