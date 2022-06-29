@@ -6,12 +6,18 @@
 #include "server/stun/protocol/stun_binding_response_msg.hpp"
 #include "server/stun/protocol/stun_mapped_address_attr.h"
 #include "udp_msg_demultiplex.h"
-
+#include <srtp2/srtp.h>
 using namespace mms;
 
 bool WebRtcServer::start()
 {
     bool ret = initCerts();
+    if (!ret)
+    {
+        return false;
+    }
+
+    ret = initSRTP();
     if (!ret)
     {
         return false;
@@ -25,6 +31,21 @@ bool WebRtcServer::start()
 
     ret = UdpServer::startListen(Config::getInstance().getWebrtcUdpPort());
     if (!ret)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool WebRtcServer::initSRTP()
+{
+    auto err = srtp_init();
+    if (err == srtp_err_status_ok)
+    {
+        //todo call srtp_install_event_handler
+    }
+
+    if (err != srtp_err_status_ok)
     {
         return false;
     }
@@ -45,7 +66,7 @@ bool WebRtcServer::initCerts()
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield){
         uint8_t *data = recv_data.get();
         UDP_MSG_TYPE msg_type = detectMsgType(data, len);
         if (UDP_MSG_STUN == msg_type) {
@@ -64,8 +85,11 @@ void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> d
                 return;
             }
         } else if (UDP_MSG_RTP == msg_type) {
-            std::cout << "recv srtp len:" << len << std::endl;
-        }
+            if (!processSRTPPacket(data, len, sock, remote_ep, yield))
+            {
+                return;
+            }
+        } 
     });
 }
 
@@ -125,6 +149,27 @@ bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock,
     return session->processDtlsPacket(data, len, sock, remote_ep, yield);
 }
 
+bool WebRtcServer::processSRTPPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+{
+    std::shared_ptr<WebRtcSession> session;
+    {
+        std::lock_guard<std::mutex> lck(session_map_mtx_);
+        auto it_session = endpoint_session_map_.find(remote_ep);
+        if (it_session == endpoint_session_map_.end())
+        {
+            return false;
+        }
+        session = it_session->second;
+    }
+
+    if (!session) // todo add log
+    {
+        return false;
+    }
+
+    return session->processSRtpPacket(data, len, sock, remote_ep, yield);
+}
+
 void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
 {
     try
@@ -144,7 +189,7 @@ void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)
 
         conn->set_message_handler(std::bind(&WebRtcSession::onMessage, webrtc_session.get(), this, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
-        webrtc_session->setDtlsCert(default_dtls_cert_);//todo, find cert by domain
+        webrtc_session->setDtlsCert(default_dtls_cert_); // todo, find cert by domain
         webrtc_session->service();
     }
     catch (std::exception &e)

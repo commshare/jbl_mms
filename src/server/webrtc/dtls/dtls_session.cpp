@@ -414,9 +414,9 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     //          auth_tag_length: 80
     // 生成srtp key
     std::string key_material_seed;
-    key_material_seed.append((char *)server_hello->random.random_raw, 32);
     key_material_seed.append((char *)client_hello->random.random_raw, 32);
-
+    key_material_seed.append((char *)server_hello->random.random_raw, 32);
+    
     size_t srtp_cipher_key_length = 16;  // 128/8
     size_t srtp_cipher_salt_length = 14; // 112/8
     // total:(16+14)*2
@@ -431,8 +431,8 @@ bool DtlsSession::processClientKeyExchange(std::shared_ptr<DTLSPlaintext> msg, U
     offset += srtp_cipher_salt_length;
     std::string server_master_salt((char *)(srtp_key_block.data() + offset), srtp_cipher_salt_length);
 
-    recv_key_ = client_master_key + client_master_salt;
-    send_key_ = server_master_key + server_master_salt;
+    srtp_recv_key_ = client_master_key + client_master_salt;
+    srtp_send_key_ = server_master_key + server_master_salt;
 
     epoch_receive_seq_map_[msg->getEpoch()] = msg->getSequenceNo() + 1;
     next_msg_require_handler_ = std::bind(&DtlsSession::requireChangeCipherSpec, this);
@@ -535,6 +535,10 @@ bool DtlsSession::processHandShakeFinished(std::shared_ptr<DTLSCiperText> dtls_m
         sock->sendTo(std::move(data), resp_size, remote_ep, yield);
     }
     // 已经收到finished消息了，不需要再处理后续消息
+    if (handshake_done_cb_)
+    {
+        handshake_done_cb_(SRTP_AES128_CM_HMAC_SHA1_80, srtp_recv_key_, srtp_send_key_);
+    }
     next_msg_handler_ = std::bind(&DtlsSession::processDone, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     return true;
 }

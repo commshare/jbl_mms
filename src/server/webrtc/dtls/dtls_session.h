@@ -27,7 +27,7 @@ public:
     bool init();
     void setDtlsCert(std::shared_ptr<DtlsCert> cert);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
-    void onHandshakeDone(std::function<void(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key)> & cb)
+    void onHandshakeDone(const std::function<void(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key)> & cb)
     {
         handshake_done_cb_ = cb;
     }
@@ -54,8 +54,8 @@ private:
     uint32_t send_message_seq_ = 0;
 
     SecurityParameters security_params_;
-    std::string recv_key_;
-    std::string send_key_;
+    std::string srtp_recv_key_;
+    std::string srtp_send_key_;
 
     std::unique_ptr<DtlsCiperSuite> ciper_suite_;
     std::shared_ptr<DtlsCert> dtls_cert_;

@@ -8,6 +8,7 @@
 
 #include "server/stun/protocol/stun_msg.h"
 #include "dtls/dtls_cert.h"
+#include "srtp/srtp_session.h"
 namespace mms {
 class WebSocketConn;
 
@@ -32,18 +33,25 @@ public:
         worker_ = worker;
     }
 
+    virtual ~WebRtcServer()
+    {
+        srtp_shutdown();
+    }
+
     bool start();
     void stop();
 private:
     void onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep) override;
     bool processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
     bool processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
+    bool processSRTPPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield);
 private:
     virtual void onWebsocketOpen(websocketpp::connection_hdl hdl);
     virtual void onWebsocketClose(websocketpp::connection_hdl hdl);
 private:
     UDP_MSG_TYPE detectMsgType(uint8_t * data, size_t len);
 private:
+    bool initSRTP();
     bool initCerts();
 private:
     ThreadWorker *worker_;

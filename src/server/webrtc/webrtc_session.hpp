@@ -14,6 +14,7 @@
 #include "server/stun/protocol/stun_msg.h"
 
 #include "dtls/dtls_session.h"
+#include "srtp/srtp_session.h"
 namespace mms {
 class WebsocketServer;
 class WebSocketConn;
@@ -46,6 +47,8 @@ public:
 private:
     bool processOfferMsg(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl, const std::string & sdp);
     int32_t createLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl);
+    int32_t sendLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl);
+    void onDtlsHandshakeDone(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key);
 private:
     ThreadWorker *worker_;
     WebSocketConn *ws_conn_;
@@ -61,6 +64,7 @@ private:
 
     std::shared_ptr<DtlsCert> dtls_cert_;
     DtlsSession dtls_session_;
+    SRTPSession srtp_session_;
 };
 
 };

@@ -11,6 +11,8 @@
 #include "server/stun/protocol/stun_mapped_address_attr.h"
 #include "dtls/dtls_cert.h"
 
+#include "protocol/rtp/rtp_header.h"
+
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn)
 {
@@ -18,6 +20,7 @@ WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker
     local_ice_ufrag_ = Utils::randStr(4);
     local_ice_pwd_ = Utils::randStr(24);
     dtls_session_.init();
+    dtls_session_.onHandshakeDone(std::bind(&WebRtcSession::onDtlsHandshakeDone, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 WebRtcSession::~WebRtcSession()
@@ -106,6 +109,11 @@ bool WebRtcSession::processOfferMsg(websocketpp::server<websocketpp::config::asi
     remote_ice_pwd_ = remote_ice_pwd.value().getPwd();
 
     if (0 != createLocalSdp(server, hdl))
+    {
+        return false;
+    }
+
+    if (0 != sendLocalSdp(server, hdl))
     {
         return false;
     }
@@ -209,7 +217,11 @@ int32_t WebRtcSession::createLocalSdp(websocketpp::server<websocketpp::config::a
             local_sdp_.addMediaSdp(video_sdp);
         }
     }
+    return 0;
+}
 
+int32_t WebRtcSession::sendLocalSdp(websocketpp::server<websocketpp::config::asio>* server, websocketpp::connection_hdl hdl)
+{
     std::string sdp = local_sdp_.toString();
     Json::Value root;
     Json::Value message;
@@ -345,8 +357,24 @@ void WebRtcSession::setDtlsCert(std::shared_ptr<DtlsCert> dtls_cert)
     dtls_session_.setDtlsCert(dtls_cert);
 }
 
+void WebRtcSession::onDtlsHandshakeDone(SRTPProtectionProfile profile, const std::string & srtp_recv_key, const std::string & srtp_send_key)
+{
+    if (!srtp_session_.init(profile, srtp_recv_key, srtp_send_key))
+    {
+        std::cout << "************************* srtp session init failed ***********************" << std::endl;
+    }
+}
+
 bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
+    if (RtpHeader::isRtcpPacket((const char*)data, len)) 
+    {
+        srtp_session_.unprotectSRTCP(data, len);
+    }
+    else
+    {
+        srtp_session_.unprotectSRTP(data, len);
+    }
     return true;
 }
 
