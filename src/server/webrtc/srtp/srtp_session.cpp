@@ -57,7 +57,7 @@ int32_t SRTPSession::unprotectSRTP(uint8_t *data, size_t len)
     {
         return -1;
     }
-    std::cout << "unprotect srtp len:" << len << std::endl;
+
     int out_len = len;
     auto err = srtp_unprotect(recv_ctx_, data, (int*)&out_len);
     if (err != srtp_err_status_ok)
@@ -65,7 +65,6 @@ int32_t SRTPSession::unprotectSRTP(uint8_t *data, size_t len)
         std::cout << "decode srtp failed, code:" << err << std::endl;
         return -2;
     }
-    std::cout << "unprotect srtp out len:" << out_len << std::endl;
     return out_len;
 }
 
@@ -75,7 +74,7 @@ int32_t SRTPSession::unprotectSRTCP(uint8_t *data, size_t len)
     {
         return -1;
     }
-    std::cout << "unprotect srtcp len:" << len << std::endl;
+
     int out_len = len;
     auto err = srtp_unprotect_rtcp(recv_ctx_, data, (int*)&out_len);
     if (err != srtp_err_status_ok)
@@ -83,6 +82,5 @@ int32_t SRTPSession::unprotectSRTCP(uint8_t *data, size_t len)
         std::cout << "decode srtcp failed, code:" << err << std::endl;
         return -2;
     }
-    std::cout << "unprotect srtcp out len:" << out_len << std::endl;
     return out_len;
 }

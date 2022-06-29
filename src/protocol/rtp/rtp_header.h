@@ -21,15 +21,15 @@ namespace mms
             return 4 + length;
         }
         // todo
-        // virtual int encode(std::shared_ptr<StreamUtil> stream)
-        // {
-        //     return 0;
-        // }
+        virtual int32_t encode(uint8_t *data, size_t len)
+        {
+            return 0;
+        }
 
-        // virtual int decode(std::shared_ptr<StreamUtil> stream)
-        // {
-        //     return 0;
-        // }
+        virtual int32_t decode(uint8_t *data, size_t len)
+        {
+            return 0;
+        }
     };
 
     class RtpHeader
@@ -89,8 +89,8 @@ namespace mms
         std::vector<uint32_t> csrcs;
         std::shared_ptr<RtpHeaderExtention> rtp_header_extention = nullptr; // exit if extension bit is set
     public:
-        // int encode(std::shared_ptr<StreamUtil> stream);
-        // int decode(std::shared_ptr<StreamUtil> stream);
+        int32_t encode(uint8_t *data, size_t len);
+        int32_t decode(uint8_t *data, size_t len);
         size_t size();
     };
 
@@ -101,8 +101,8 @@ namespace mms
         virtual ~RtpPacket();
 
     public:
-        // int encode(std::shared_ptr<StreamUtil> stream);
-        // int decode(std::shared_ptr<StreamUtil> stream);
+        int32_t encode(uint8_t *data, size_t len);
+        int32_t decode(uint8_t *data, size_t len);
         size_t size();
         uint16_t getSeqNum();
 

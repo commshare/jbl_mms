@@ -334,6 +334,7 @@ bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, co
 
     if (!sock->sendTo(std::move(data), size, remote_ep, yield)) 
     {//todo log error
+        return false;
     }
 
     
@@ -367,13 +368,15 @@ void WebRtcSession::onDtlsHandshakeDone(SRTPProtectionProfile profile, const std
 
 bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
+    int out_len = 0;
     if (RtpHeader::isRtcpPacket((const char*)data, len)) 
     {
-        srtp_session_.unprotectSRTCP(data, len);
+        out_len = srtp_session_.unprotectSRTCP(data, len);
     }
     else
     {
-        srtp_session_.unprotectSRTP(data, len);
+        out_len = srtp_session_.unprotectSRTP(data, len);
+
     }
     return true;
 }
