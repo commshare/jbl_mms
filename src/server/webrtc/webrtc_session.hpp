@@ -5,6 +5,7 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 #include "core/session.hpp"
+#include "core/rtp_media_source.hpp"
 #include "protocol/sdp/sdp.hpp"
 
 #include <boost/asio/ip/udp.hpp>
@@ -18,7 +19,7 @@
 namespace mms {
 class WebsocketServer;
 class WebSocketConn;
-class WebRtcSession  : public Session, public std::enable_shared_from_this<WebRtcSession>{
+class WebRtcSession  : public Session, public std::enable_shared_from_this<WebRtcSession>, public RtpMediaSource {
 public:
     WebRtcSession(ThreadWorker *worker, WebSocketConn *conn);
     virtual ~WebRtcSession();

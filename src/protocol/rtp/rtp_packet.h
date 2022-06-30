@@ -12,7 +12,6 @@ namespace mms {
         int32_t decode(uint8_t *data, size_t len);
         size_t size();
         uint16_t getSeqNum();
-
     public:
         RtpHeader header_;
         char *payload_;

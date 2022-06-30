@@ -14,7 +14,7 @@
 #include "protocol/rtp/rtp_packet.h"
 
 using namespace mms;
-WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : worker_(worker), ws_conn_(conn)
+WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : RtpMediaSource(worker), worker_(worker), ws_conn_(conn)
 {
     std::cout << "create webrtcsession" << std::endl;
     local_ice_ufrag_ = Utils::randStr(4);
@@ -80,7 +80,10 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
             if (!processOfferMsg(server, hdl, msg["sdp"].asString()))
             {
                 close();
+                return;
             }
+
+
         }
     }
 }
