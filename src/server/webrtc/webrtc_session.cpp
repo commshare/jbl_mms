@@ -13,6 +13,9 @@
 
 #include "protocol/rtp/rtp_packet.h"
 
+#include "protocol/sdp/attribute/common/dir.hpp"
+#include "core/media_manager.hpp"
+
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : RtpMediaSource(worker), worker_(worker), ws_conn_(conn)
 {
@@ -84,6 +87,17 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
             }
 
             setSessionName(domain + "/" + app + "/" + stream);
+            auto medias = remote_sdp_.getMediaSdps();
+            if (medias.size() < 0)
+            {
+                close();
+                return;
+            }
+
+            if (medias[0].getDir().getDir() == DirAttr::MEDIA_SENDONLY || medias[0].getDir().getDir() == DirAttr::MEDIA_SENDRECV)
+            {
+                MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
+            }
         }
     }
 }
