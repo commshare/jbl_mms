@@ -5,18 +5,18 @@ namespace mms {
     {
     public:
         RtpPacket() {};
-        virtual ~RtpPacket() {};
+        virtual ~RtpPacket();
 
     public:
         int32_t encode(uint8_t *data, size_t len);
         int32_t decode(uint8_t *data, size_t len);
         size_t size();
         uint16_t getSeqNum();
+
+        std::pair<char*, size_t> getPayload();
     public:
         RtpHeader header_;
-        char *payload_;
-        size_t payload_len_;
-        // std::shared_ptr<StreamUtil> stream_;
-        friend class RtpPacker;
+        char *payload_ = nullptr;
+        size_t payload_len_ = 0;
     };
 };

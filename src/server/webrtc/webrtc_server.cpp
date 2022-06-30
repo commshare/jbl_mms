@@ -9,6 +9,15 @@
 #include <srtp2/srtp.h>
 using namespace mms;
 
+uint64_t WebRtcServer::getEndPointHash(const boost::asio::ip::udp::endpoint& ep) 
+{
+    uint64_t v = 0;
+    v = ep.address().to_v4().to_uint();
+    v = v << 32;
+    v |= ep.port();
+    return v;
+}
+
 bool WebRtcServer::start()
 {
     bool ret = initCerts();
@@ -118,7 +127,7 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
             return false;
         }
         session = it_session->second;
-        endpoint_session_map_.insert(std::pair(remote_ep, session));
+        endpoint_session_map_.insert(std::pair(getEndPointHash(remote_ep), session));
     }
 
     if (!session) // todo add log
@@ -133,7 +142,7 @@ bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock,
     std::shared_ptr<WebRtcSession> session;
     {
         std::lock_guard<std::mutex> lck(session_map_mtx_);
-        auto it_session = endpoint_session_map_.find(remote_ep);
+        auto it_session = endpoint_session_map_.find(getEndPointHash(remote_ep));
         if (it_session == endpoint_session_map_.end())
         {
             return false;
@@ -154,7 +163,7 @@ bool WebRtcServer::processSRTPPacket(uint8_t *data, size_t len, UdpSocket *sock,
     std::shared_ptr<WebRtcSession> session;
     {
         std::lock_guard<std::mutex> lck(session_map_mtx_);
-        auto it_session = endpoint_session_map_.find(remote_ep);
+        auto it_session = endpoint_session_map_.find(getEndPointHash(remote_ep));
         if (it_session == endpoint_session_map_.end())
         {
             return false;

@@ -50,6 +50,7 @@ private:
     virtual void onWebsocketClose(websocketpp::connection_hdl hdl);
 private:
     UDP_MSG_TYPE detectMsgType(uint8_t * data, size_t len);
+    uint64_t getEndPointHash(const boost::asio::ip::udp::endpoint& ep);
 private:
     bool initSRTP();
     bool initCerts();
@@ -58,7 +59,8 @@ private:
     std::mutex mtx_;
     std::unordered_map<websocketpp::server<websocketpp::config::asio>::connection_ptr, std::shared_ptr<WebSocketConn>> conn_map_;
     std::mutex session_map_mtx_;
-    std::unordered_map<boost::asio::ip::udp::endpoint, std::shared_ptr<WebRtcSession>, hash_endpoint> endpoint_session_map_;
+    std::unordered_map<uint64_t, std::shared_ptr<WebRtcSession>> endpoint_session_map_;
+    // std::unordered_map<boost::asio::ip::udp::endpoint, std::shared_ptr<WebRtcSession>, hash_endpoint> endpoint_session_map_;
     std::unordered_map<std::string, std::shared_ptr<WebRtcSession>> ufrag_session_map_;
 
     std::shared_ptr<DtlsCert> default_dtls_cert_;

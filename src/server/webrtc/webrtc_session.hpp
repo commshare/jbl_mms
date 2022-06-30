@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <map>
 
 #include "base/thread/thread_worker.hpp"
 #include <websocketpp/config/asio_no_tls.hpp>
@@ -66,6 +67,9 @@ private:
     std::shared_ptr<DtlsCert> dtls_cert_;
     DtlsSession dtls_session_;
     SRTPSession srtp_session_;
+
+    uint8_t audio_pt_ = 96;
+    uint8_t video_pt_ = 97;
 };
 
 };

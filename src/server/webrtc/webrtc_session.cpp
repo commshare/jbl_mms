@@ -173,6 +173,7 @@ int32_t WebRtcSession::createLocalSdp()
             audio_sdp.setPortCount(1);
             audio_sdp.setProto("UDP/TLS/RTP/SAVPF");
             audio_sdp.addFmt(96);
+            audio_pt_ = 96;
             audio_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
             audio_sdp.setIceUfrag(IceUfrag(local_ice_ufrag_));
             audio_sdp.setIcePwd(IcePwd(local_ice_pwd_));
@@ -213,6 +214,7 @@ int32_t WebRtcSession::createLocalSdp()
             video_sdp.setPortCount(1);
             video_sdp.setProto("UDP/TLS/RTP/SAVPF");
             video_sdp.addFmt(97);
+            video_pt_ = 97;
             video_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
             video_sdp.setIceUfrag(IceUfrag(local_ice_ufrag_));
             video_sdp.setIcePwd(IcePwd(local_ice_pwd_));
@@ -403,13 +405,35 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
     if (RtpHeader::isRtcpPacket((const char*)data, len)) 
     {
         out_len = srtp_session_.unprotectSRTCP(data, len);
+        if (out_len < 0)
+        {
+            return false;
+        }
     }
     else
     {
         out_len = srtp_session_.unprotectSRTP(data, len);
+        if (out_len < 0)
+        {
+            return false;
+        }
         std::shared_ptr<RtpPacket> rtp_pkt = std::make_shared<RtpPacket>();
         int32_t consumed = rtp_pkt->decode(data, out_len);
-        std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
+        if (consumed < 0)
+        {
+            std::cout << "invalid rtp packet" << std::endl;
+            return false;
+        }
+
+        if (rtp_pkt->header_.pt == audio_pt_)
+        {
+            onAudioPacket(rtp_pkt);
+        }
+        else if (rtp_pkt->header_.pt == video_pt_)
+        {
+            onVideoPacket(rtp_pkt);
+        }
+        // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
     }
     return true;
 }

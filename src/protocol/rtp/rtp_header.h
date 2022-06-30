@@ -1,4 +1,6 @@
 #pragma once
+#include <string.h>
+#include <arpa/inet.h>
 #include <stdint.h>
 #include <memory>
 #include <vector>
@@ -15,10 +17,10 @@ namespace mms
     public:
         uint16_t profile;
         uint16_t length;
-        std::unique_ptr<char[]> header_extention;
+        std::unique_ptr<char[]> header_extension;
         virtual size_t size()
         {
-            return 4 + length;
+            return 4 + length*4;
         }
         // todo
         virtual int32_t encode(uint8_t *data, size_t len)
@@ -28,7 +30,30 @@ namespace mms
 
         virtual int32_t decode(uint8_t *data, size_t len)
         {
-            return 0;
+            uint8_t *data_start = data;
+            if (len < 2) 
+            {
+                return -1;
+            }
+            profile = ntohs(*(uint16_t*)data);
+            data += 2;
+            len -= 2;
+            
+            if (len < 2)
+            {
+                return -2;
+            }
+            length = ntohs(*(uint16_t*)data);
+            data += 2;
+            len -= 2;
+
+            header_extension = std::unique_ptr<char[]>(new char[length*4]);
+            if (len < length*4)
+            {
+                return -3;
+            }
+            memcpy(header_extension.get(), data, length*4);
+            return data - data_start;
         }
     };
 

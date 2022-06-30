@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <set>
+#include <map>
 #include <boost/circular_buffer.hpp>
 
 #include "media_source.hpp"
@@ -69,6 +70,8 @@ public:
     }
 protected:
     boost::circular_buffer<std::shared_ptr<RtpPacket>> av_pkts_;
+    std::map<uint16_t, std::shared_ptr<RtpPacket>> video_pkts_;
+    std::map<uint16_t, std::shared_ptr<RtpPacket>> audio_pkts_;
 protected:
     bool has_video_; 
     bool video_ready_ = false;

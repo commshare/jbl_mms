@@ -100,11 +100,14 @@ int32_t RtpHeader::decode(uint8_t *data, size_t len)
 
     if(extension)
     {
-        // rtp_header_extention = std::make_shared<RtpHeaderExtention>();
-        // if(0 != rtp_header_extention->decode(stream))
-        // {
-        //     return -5;
-        // }
+        rtp_header_extention = std::make_shared<RtpHeaderExtention>();
+        int32_t consumed = rtp_header_extention->decode(data, len);
+        if (consumed < 0)
+        {
+            return -5;
+        }
+        data += consumed;
+        len -= consumed;
     }
     return data - data_start;
 }
