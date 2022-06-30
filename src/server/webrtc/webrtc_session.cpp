@@ -74,7 +74,7 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
             std::string domain = ws_conn_->getDomain();
             const std::string &app = root["app"].asString();
             const std::string &stream = root["stream"].asString();
-            setSessionName(domain + "/" + app + "/" + stream);
+            
 
             // MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
             if (!processOfferMsg(server, hdl, msg["sdp"].asString()))
@@ -83,7 +83,7 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
                 return;
             }
 
-
+            setSessionName(domain + "/" + app + "/" + stream);
         }
     }
 }
@@ -395,9 +395,9 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
     else
     {
         out_len = srtp_session_.unprotectSRTP(data, len);
-        RtpPacket rtp_pkt;
-        int32_t consumed = rtp_pkt.decode(data, out_len);
-        std::cout << "pt:" << (uint32_t)rtp_pkt.header_.pt << ", ssrc:" << rtp_pkt.header_.ssrc << ", seq:" << rtp_pkt.header_.seqnum << std::endl;
+        std::shared_ptr<RtpPacket> rtp_pkt = std::make_shared<RtpPacket>();
+        int32_t consumed = rtp_pkt->decode(data, out_len);
+        std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
     }
     return true;
 }
