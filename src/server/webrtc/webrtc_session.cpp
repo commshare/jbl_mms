@@ -16,6 +16,8 @@
 #include "protocol/sdp/attribute/common/dir.hpp"
 #include "core/media_manager.hpp"
 
+#include "protocol/rtp/rtp_h264_packet.h"
+
 using namespace mms;
 WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : RtpMediaSource(worker), worker_(worker), ws_conn_(conn)
 {
@@ -427,11 +429,10 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
             {
                 return false;
             }
-            std::shared_ptr<RtpPacket> rtp_pkt = std::make_shared<RtpPacket>();
+            std::shared_ptr<H264RtpPacket> rtp_pkt = std::make_shared<H264RtpPacket>();
             int32_t consumed = rtp_pkt->decode(data, out_len);
             if (consumed < 0)
             {
-                std::cout << "invalid rtp packet" << std::endl;
                 return false;
             }
 

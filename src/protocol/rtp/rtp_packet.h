@@ -8,9 +8,9 @@ namespace mms {
         virtual ~RtpPacket();
 
     public:
-        int32_t encode(uint8_t *data, size_t len);
-        int32_t decode(uint8_t *data, size_t len);
-        size_t size();
+        virtual int32_t encode(uint8_t *data, size_t len);
+        virtual int32_t decode(uint8_t *data, size_t len);
+        virtual size_t size();
         uint16_t getSeqNum();
 
         std::pair<char*, size_t> getPayload();

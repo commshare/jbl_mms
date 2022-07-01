@@ -28,6 +28,16 @@ int32_t RtpPacket::decode(uint8_t *data, size_t len)
     return data - data_start;
 }
 
+int32_t RtpPacket::encode(uint8_t *data, size_t len)
+{
+    return 0;
+}
+
+size_t RtpPacket::size()
+{
+    return 0;
+}
+
 std::pair<char*, size_t> RtpPacket::getPayload()
 {
 
