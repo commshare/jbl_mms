@@ -1,35 +1,24 @@
 #include <arpa/inet.h>
 #include "rtp_header.h"
 using namespace mms;
-bool RtpHeader::isRtcpPacket(const char *data, size_t len)
+bool RtpHeader::isRtcpPacket(uint8_t *data, size_t len)
 {
     if (len < 2)
     {
         return false;
     }
+    bool is_rtp_or_rtcp = (len >= 12 && ((data[0] & 0xC0) == 0x80));
+    bool is_rtcp_pt     = (data[1] >= 192 && data[1] <= 223);
+    
+    return is_rtp_or_rtcp && is_rtcp_pt;
+}
 
-    const uint8_t pt = data[1];
-    switch (pt)
-    {
-    case 192:
-        return true;
-    case 193:
-        // not supported
-        // pass through and check for a potential RTP packet
-        return false;
-    case 195:
-    case 200:
-    case 201:
-    case 202:
-    case 203:
-    case 204:
-    case 205:
-    case 206:
-    case 207:
-        return true;
-    default:
-        return false;
-    }
+bool RtpHeader::isRtp(uint8_t *data, size_t len)
+{
+    bool is_rtp_or_rtcp = (len >= 12 && ((data[0] & 0xC0) == 0x80));
+    bool is_rtcp_pt     = (data[1] >= 192 && data[1] <= 223);
+    
+    return is_rtp_or_rtcp && !is_rtcp_pt;
 }
 
 int32_t RtpHeader::decode(uint8_t *data, size_t len)

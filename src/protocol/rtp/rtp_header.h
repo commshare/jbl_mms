@@ -60,7 +60,8 @@ namespace mms
     class RtpHeader
     {
     public:
-        static bool isRtcpPacket(const char *data, size_t len);
+        static bool isRtcpPacket(uint8_t *data, size_t len);
+        static bool isRtp(uint8_t *data, size_t len);
         RtpHeader() {};
         // little endian
         uint8_t csrc = 0;      // 4bit

@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include "srtp2/srtp.h"
 #include "server/dtls/extension/dtls_use_srtp.h"
 
@@ -24,5 +25,6 @@ namespace mms
         srtp_t send_ctx_ = nullptr;
         srtp_t recv_ctx_ = nullptr;
         srtp_policy_t srtp_policy_;
+        std::mutex mtx_;
     };
 };

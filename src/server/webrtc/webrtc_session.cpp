@@ -402,7 +402,7 @@ void WebRtcSession::onDtlsHandshakeDone(SRTPProtectionProfile profile, const std
 bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
 {
     int out_len = 0;
-    if (RtpHeader::isRtcpPacket((const char*)data, len)) 
+    if (RtpHeader::isRtcpPacket(data, len)) 
     {
         out_len = srtp_session_.unprotectSRTCP(data, len);
         if (out_len < 0)
@@ -410,7 +410,7 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
             return false;
         }
     }
-    else
+    else if (RtpHeader::isRtp(data, len))
     {
         out_len = srtp_session_.unprotectSRTP(data, len);
         if (out_len < 0)
@@ -434,6 +434,10 @@ bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock
             onVideoPacket(rtp_pkt);
         }
         // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
+    } 
+    else
+    {
+        std::cout << "************************ unknown rtp ******************************" << std::endl;
     }
     return true;
 }
