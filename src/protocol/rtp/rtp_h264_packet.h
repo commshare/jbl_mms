@@ -25,6 +25,10 @@ public:
         return type;
     }
 
+    bool isSingleNALU() const {
+        return type >= H264_RTP_PAYLOAD_SINGLE_NALU_START && type <= H264_RTP_PAYLOAD_SINGLE_NALU_END;
+    }
+    
     uint8_t getNaluType() const {
         return nalu_type;
     }
