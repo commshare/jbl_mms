@@ -58,7 +58,7 @@ int32_t SRTPSession::unprotectSRTP(uint8_t *data, size_t len)
         return -1;
     }
 
-    std::lock_guard<std::mutex> lck(mtx_);
+    // std::lock_guard<std::mutex> lck(mtx_);
     int out_len = len;
     auto err = srtp_unprotect(recv_ctx_, data, (int*)&out_len);
     if (err != srtp_err_status_ok)
@@ -76,7 +76,7 @@ int32_t SRTPSession::unprotectSRTCP(uint8_t *data, size_t len)
         return -1;
     }
 
-    std::lock_guard<std::mutex> lck(mtx_);
+    // std::lock_guard<std::mutex> lck(mtx_);
     int out_len = len;
     auto err = srtp_unprotect_rtcp(recv_ctx_, data, (int*)&out_len);
     if (err != srtp_err_status_ok)

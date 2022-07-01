@@ -75,38 +75,38 @@ bool WebRtcServer::initCerts()
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
     auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield){
-        uint8_t *data = recv_data.get();
-        UDP_MSG_TYPE msg_type = detectMsgType(data, len);
+    // boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield){
+        // uint8_t *data = recv_data.get();
+        UDP_MSG_TYPE msg_type = detectMsgType(data.get(), len);
         if (UDP_MSG_STUN == msg_type) {
-            StunMsg stun_msg;
-            int32_t ret = stun_msg.decode(data, len);
+            std::shared_ptr<StunMsg> stun_msg = std::make_shared<StunMsg>();
+            int32_t ret = stun_msg->decode(data.get(), len);
             if (0 == ret) 
             {
-                if (processStunPacket(stun_msg, data, len, sock, remote_ep, yield)) 
+                if (processStunPacket(stun_msg, std::move(data), len, sock, remote_ep)) 
                 {
                     return;
                 }
             }
         } else if (UDP_MSG_DTLS == msg_type) {
-            if (!processDtlsPacket(data, len, sock, remote_ep, yield))
+            if (!processDtlsPacket(std::move(data), len, sock, remote_ep))
             {
                 return;
             }
         } else if (UDP_MSG_RTP == msg_type) {
-            if (!processSRTPPacket(data, len, sock, remote_ep, yield))
+            if (!processSRTPPacket(std::move(data), len, sock, remote_ep))
             {
                 return;
             }
         } 
-    });
+    // });
 }
 
-bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool WebRtcServer::processStunPacket(std::shared_ptr<StunMsg> stun_msg, std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
-    std::cout << "stun_msg.type()=" << (uint32_t)stun_msg.type() << std::endl;
+    std::cout << "stun_msg.type()=" << (uint32_t)stun_msg->type() << std::endl;
     // 校验完整性
-    auto username_attr = stun_msg.getUserNameAttr();
+    auto username_attr = stun_msg->getUserNameAttr();
     if (!username_attr)
     {
         return false;
@@ -134,10 +134,10 @@ bool WebRtcServer::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t le
     {
         return false;
     }
-    return session->processStunPacket(stun_msg, data, len, sock, remote_ep, yield);
+    return session->processStunPacket(stun_msg, std::move(data), len, sock, remote_ep);
 }
 
-bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool WebRtcServer::processDtlsPacket(std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
     std::shared_ptr<WebRtcSession> session;
     {
@@ -155,10 +155,10 @@ bool WebRtcServer::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock,
         return false;
     }
 
-    return session->processDtlsPacket(data, len, sock, remote_ep, yield);
+    return session->processDtlsPacket(std::move(data), len, sock, remote_ep);
 }
 
-bool WebRtcServer::processSRTPPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool WebRtcServer::processSRTPPacket(std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
     std::shared_ptr<WebRtcSession> session;
     {
@@ -176,7 +176,7 @@ bool WebRtcServer::processSRTPPacket(uint8_t *data, size_t len, UdpSocket *sock,
         return false;
     }
 
-    return session->processSRtpPacket(data, len, sock, remote_ep, yield);
+    return session->processSRtpPacket(std::move(data), len, sock, remote_ep);
 }
 
 void WebRtcServer::onWebsocketOpen(websocketpp::connection_hdl hdl)

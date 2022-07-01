@@ -276,41 +276,46 @@ int32_t WebRtcSession::sendLocalSdp(websocketpp::server<websocketpp::config::asi
     return 0;
 }
 
-bool WebRtcSession::processStunPacket(StunMsg &stun_msg, uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool WebRtcSession::processStunPacket(std::shared_ptr<StunMsg> stun_msg, std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
-    const std::string &pwd = getLocalICEPwd();
-    if (!stun_msg.checkMsgIntegrity(data, len, pwd))
-    {
-        std::cout << "check msg integrity failed." << std::endl;
-        return false;
-    }
+    boost::asio::spawn(worker_->getIOContext(), [this, sock, stun_msg, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+        const std::string &pwd = getLocalICEPwd();
+        uint8_t *data = recv_data.get();
+        if (!stun_msg->checkMsgIntegrity(data, len, pwd))
+        {
+            std::cout << "check msg integrity failed." << std::endl;
+            return;
+        }
 
-    if (!stun_msg.checkFingerPrint(data, len))
-    {
-        std::cout << "check finger print failed." << std::endl;
-        return false;
-    }
+        if (!stun_msg->checkFingerPrint(data, len))
+        {
+            std::cout << "check finger print failed." << std::endl;
+            return;
+        }
 
-    switch (stun_msg.type())
-    {
-    case STUN_BINDING_REQUEST:
-    {
-        // 返回响应
-        return processStunBindingReq(stun_msg, sock, remote_ep, yield);
-    }
-    }
+        switch (stun_msg->type())
+        {
+        case STUN_BINDING_REQUEST:
+        {
+            // 返回响应
+            processStunBindingReq(stun_msg, sock, remote_ep, yield);
+            return;
+        }
+        }
+    });
+    
     return true;
 }
 
-bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
+bool WebRtcSession::processStunBindingReq(std::shared_ptr<StunMsg> stun_msg, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context &yield)
 {
-    StunBindingResponseMsg binding_resp(stun_msg);
+    StunBindingResponseMsg binding_resp(*stun_msg);
 
     auto mapped_addr_attr = std::make_unique<StunMappedAddressAttr>(remote_ep.address().to_v4().to_uint(), remote_ep.port());
     binding_resp.addAttr(std::move(mapped_addr_attr));
 
     // 校验完整性
-    auto req_username_attr = stun_msg.getUserNameAttr();
+    auto req_username_attr = stun_msg->getUserNameAttr();
     if (!req_username_attr)
     {
         return false;
@@ -374,14 +379,17 @@ bool WebRtcSession::processStunBindingReq(StunMsg &stun_msg, UdpSocket *sock, co
     return true;
 }
 
-bool WebRtcSession::processDtlsPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool WebRtcSession::processDtlsPacket(std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
-    bool ret = dtls_session_.processDtlsPacket(data, len, sock, remote_ep, yield);
-    if (!ret) {
-        std::cout << "process dtls packet failed" << std::endl;
-        return false;
-    }
-    std::cout << "process dtls packet success" << std::endl;
+    boost::asio::spawn(worker_->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+        bool ret = dtls_session_.processDtlsPacket(recv_data.get(), len, sock, remote_ep, yield);
+        if (!ret) {
+            std::cout << "process dtls packet failed" << std::endl;
+            return;
+        }
+        std::cout << "process dtls packet success" << std::endl;
+    });
+    
     return true;
 }
 
@@ -399,46 +407,50 @@ void WebRtcSession::onDtlsHandshakeDone(SRTPProtectionProfile profile, const std
     }
 }
 
-bool WebRtcSession::processSRtpPacket(uint8_t *data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep, boost::asio::yield_context & yield)
+bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)
 {
-    int out_len = 0;
-    if (RtpHeader::isRtcpPacket(data, len)) 
-    {
-        out_len = srtp_session_.unprotectSRTCP(data, len);
-        if (out_len < 0)
+    boost::asio::spawn(worker_->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield) {
+        uint8_t *data = recv_data.get();
+        int out_len = 0;
+        if (RtpHeader::isRtcpPacket(data, len)) 
         {
-            return false;
+            out_len = srtp_session_.unprotectSRTCP(data, len);
+            if (out_len < 0)
+            {
+                return false;
+            }
         }
-    }
-    else if (RtpHeader::isRtp(data, len))
-    {
-        out_len = srtp_session_.unprotectSRTP(data, len);
-        if (out_len < 0)
+        else if (RtpHeader::isRtp(data, len))
         {
-            return false;
-        }
-        std::shared_ptr<RtpPacket> rtp_pkt = std::make_shared<RtpPacket>();
-        int32_t consumed = rtp_pkt->decode(data, out_len);
-        if (consumed < 0)
-        {
-            std::cout << "invalid rtp packet" << std::endl;
-            return false;
-        }
+            out_len = srtp_session_.unprotectSRTP(data, len);
+            if (out_len < 0)
+            {
+                return false;
+            }
+            std::shared_ptr<RtpPacket> rtp_pkt = std::make_shared<RtpPacket>();
+            int32_t consumed = rtp_pkt->decode(data, out_len);
+            if (consumed < 0)
+            {
+                std::cout << "invalid rtp packet" << std::endl;
+                return false;
+            }
 
-        if (rtp_pkt->header_.pt == audio_pt_)
+            if (rtp_pkt->header_.pt == audio_pt_)
+            {
+                onAudioPacket(rtp_pkt);
+            }
+            else if (rtp_pkt->header_.pt == video_pt_)
+            {
+                onVideoPacket(rtp_pkt);
+            }
+            // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
+        } 
+        else
         {
-            onAudioPacket(rtp_pkt);
+            std::cout << "************************ unknown rtp ******************************" << std::endl;
         }
-        else if (rtp_pkt->header_.pt == video_pt_)
-        {
-            onVideoPacket(rtp_pkt);
-        }
-        // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
-    } 
-    else
-    {
-        std::cout << "************************ unknown rtp ******************************" << std::endl;
-    }
+    });
+    
     return true;
 }
 
