@@ -40,5 +40,15 @@ size_t RtpPacket::size()
 
 std::pair<char*, size_t> RtpPacket::getPayload()
 {
+    return std::pair(payload_, payload_len_);
+}
 
+uint16_t RtpPacket::getSeqNum()
+{
+    return header_.seqnum;
+}
+
+uint32_t RtpPacket::getTimestamp()
+{
+    return header_.timestamp;
 }

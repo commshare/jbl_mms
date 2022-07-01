@@ -12,6 +12,7 @@ namespace mms {
         virtual int32_t decode(uint8_t *data, size_t len);
         virtual size_t size();
         uint16_t getSeqNum();
+        uint32_t getTimestamp();
 
         std::pair<char*, size_t> getPayload();
     public:

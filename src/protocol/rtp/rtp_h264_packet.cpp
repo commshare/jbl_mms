@@ -20,6 +20,18 @@ int32_t H264RtpPacket::decode(uint8_t *data, size_t len)
     }
 
     type = (H264_RTP_HEADER_TYPE)(payload_[0] & 0x1F);
+    if (H264_RTP_PAYLOAD_FU_A == type)
+    {
+        uint8_t fu_header  = payload_[1];
+        start_bit  = (fu_header >> 7) & 0x01;
+        end_bit    = (fu_header >> 6) & 0x01;
+        nalu_type  = (fu_header & 0x1F);
+    } 
+    else if (type >= H264_RTP_PAYLOAD_SINGLE_NALU_START && type <= H264_RTP_PAYLOAD_SINGLE_NALU_END)
+    {
+        nalu_type  = type;
+    }
+
     return consumed;
 }
 

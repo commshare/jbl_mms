@@ -16,7 +16,7 @@ class MediaSink;
 class MediaSource {
     friend class MediaSink;
 public:
-    MediaSource(ThreadWorker *worker) : worker_(worker){
+    MediaSource(ThreadWorker *worker) : worker_(worker) {
         
     }
 

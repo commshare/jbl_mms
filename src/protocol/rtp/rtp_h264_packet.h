@@ -24,8 +24,25 @@ public:
     H264_RTP_HEADER_TYPE getType() const {
         return type;
     }
+
+    uint8_t getNaluType() const {
+        return nalu_type;
+    }
+
+    uint8_t isStartFU() const {
+        return start_bit;
+    }
+
+    uint8_t isEndFU() const {
+        return end_bit;
+    }
 private:
+    uint8_t marker;
+    uint8_t nalu_type;
     H264_RTP_HEADER_TYPE type;
+    // when fu-a
+    uint8_t start_bit;
+    uint8_t end_bit;
 };
 
 };
