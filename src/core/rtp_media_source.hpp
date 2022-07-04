@@ -13,6 +13,7 @@
 #include "base/sequence_pkt_buf.hpp"
 
 #include "protocol/rtp/rtp_packet.h"
+#include "protocol/rtp/rtp_h264_depacketizer.h"
 
 
 namespace mms {
@@ -79,5 +80,7 @@ protected:
     bool audio_ready_ = false;
     int32_t latest_video_timestamp_ = 0;
     int32_t latest_audio_timestamp_ = 0;
+
+    RtpH264Depacketizer h264_depacketizer_;
 };
 };
