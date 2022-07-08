@@ -68,8 +68,8 @@ private:
     DtlsSession dtls_session_;
     SRTPSession srtp_session_;
 
-    uint8_t audio_pt_ = 96;
-    uint8_t video_pt_ = 97;
+    uint8_t audio_pt_ = 111;
+    uint8_t video_pt_ = 127;
 };
 
 };

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <arpa/inet.h>
 #include "rtp_header.h"
 using namespace mms;
@@ -72,6 +73,7 @@ int32_t RtpHeader::decode(uint8_t *data, size_t len)
     }
 
     ssrc = ntohl(*(uint32_t*)data);
+    std::cout << "seq=" << seqnum << ", ssrc=" << ssrc << std::endl;
     data += 4;
     len -= 4;
 
@@ -99,4 +101,9 @@ int32_t RtpHeader::decode(uint8_t *data, size_t len)
         len -= consumed;
     }
     return data - data_start;
+}
+
+uint8_t RtpHeader::parsePt(uint8_t *data, size_t len)
+{
+    return data[1] & 0x7F;
 }

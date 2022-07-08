@@ -62,6 +62,7 @@ namespace mms
     public:
         static bool isRtcpPacket(uint8_t *data, size_t len);
         static bool isRtp(uint8_t *data, size_t len);
+        static uint8_t parsePt(uint8_t *data, size_t len);
         RtpHeader() {};
         // little endian
         uint8_t csrc = 0;      // 4bit

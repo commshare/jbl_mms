@@ -174,8 +174,7 @@ int32_t WebRtcSession::createLocalSdp()
             audio_sdp.setPort(9);
             audio_sdp.setPortCount(1);
             audio_sdp.setProto("UDP/TLS/RTP/SAVPF");
-            audio_sdp.addFmt(96);
-            audio_pt_ = 96;
+            audio_sdp.addFmt(audio_pt_);
             audio_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
             audio_sdp.setIceUfrag(IceUfrag(local_ice_ufrag_));
             audio_sdp.setIcePwd(IcePwd(local_ice_pwd_));
@@ -201,9 +200,9 @@ int32_t WebRtcSession::createLocalSdp()
             }
 
             auto &rap = remote_audio_payload.value();
-            Payload audio_payload(96, rap.getEncodingName(), rap.getClockRate(), rap.getEncodingParams());
-            audio_payload.addRtcpFb(RtcpFb(96, "nack"));
-            audio_payload.addRtcpFb(RtcpFb(96, "nack", "pli"));
+            Payload audio_payload(audio_pt_, rap.getEncodingName(), rap.getClockRate(), rap.getEncodingParams());
+            audio_payload.addRtcpFb(RtcpFb(audio_pt_, "nack"));
+            audio_payload.addRtcpFb(RtcpFb(audio_pt_, "nack", "pli"));
             audio_sdp.addPayload(audio_payload);
 
             local_sdp_.addMediaSdp(audio_sdp);
@@ -215,8 +214,7 @@ int32_t WebRtcSession::createLocalSdp()
             video_sdp.setPort(9);
             video_sdp.setPortCount(1);
             video_sdp.setProto("UDP/TLS/RTP/SAVPF");
-            video_sdp.addFmt(97);
-            video_pt_ = 97;
+            video_sdp.addFmt(video_pt_);
             video_sdp.setConnectionInfo({"IN", "IP4", "0.0.0.0"});
             video_sdp.setIceUfrag(IceUfrag(local_ice_ufrag_));
             video_sdp.setIcePwd(IcePwd(local_ice_pwd_));
@@ -241,12 +239,12 @@ int32_t WebRtcSession::createLocalSdp()
                 return -13;
             }
             auto &rvp = remote_video_payload.value();
-            Payload video_payload(97, rvp.getEncodingName(), rvp.getClockRate(), rvp.getEncodingParams());
-            video_payload.addRtcpFb(RtcpFb(97, "ccm", "fir"));
-            video_payload.addRtcpFb(RtcpFb(97, "goog-remb"));
-            video_payload.addRtcpFb(RtcpFb(97, "nack"));
-            video_payload.addRtcpFb(RtcpFb(97, "nack", "pli"));
-            video_payload.addRtcpFb(RtcpFb(97, "transport-cc"));
+            Payload video_payload(video_pt_, rvp.getEncodingName(), rvp.getClockRate(), rvp.getEncodingParams());
+            video_payload.addRtcpFb(RtcpFb(video_pt_, "ccm", "fir"));
+            video_payload.addRtcpFb(RtcpFb(video_pt_, "goog-remb"));
+            video_payload.addRtcpFb(RtcpFb(video_pt_, "nack"));
+            video_payload.addRtcpFb(RtcpFb(video_pt_, "nack", "pli"));
+            video_payload.addRtcpFb(RtcpFb(video_pt_, "transport-cc"));
 
             video_sdp.addPayload(video_payload);
             local_sdp_.addMediaSdp(video_sdp);
@@ -429,19 +427,27 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
             {
                 return false;
             }
-            std::shared_ptr<H264RtpPacket> rtp_pkt = std::make_shared<H264RtpPacket>();
-            int32_t consumed = rtp_pkt->decode(data, out_len);
-            if (consumed < 0)
-            {
-                return false;
-            }
 
-            if (rtp_pkt->header_.pt == audio_pt_)
+            auto pt = RtpHeader::parsePt(data, out_len);
+            if (pt == audio_pt_)
             {
-                onAudioPacket(rtp_pkt);
+                // onAudioPacket(rtp_pkt);
             }
-            else if (rtp_pkt->header_.pt == video_pt_)
+            else if (pt == video_pt_)
             {
+                printf("video  rtp len:%d, data:", out_len);
+                for (int i = 0; i < 30; i++) {
+                    printf("%02x ", data[i]);
+                }
+                printf("\r\n");
+                
+                
+                std::shared_ptr<H264RtpPacket> rtp_pkt = std::make_shared<H264RtpPacket>();
+                int32_t consumed = rtp_pkt->decode(data, out_len);
+                if (consumed < 0)
+                {
+                    return false;
+                }
                 onVideoPacket(rtp_pkt);
             }
             // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;

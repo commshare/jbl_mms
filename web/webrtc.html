@@ -184,6 +184,7 @@
 
                 peerConnection.setRemoteDescription(new RTCSessionDescription(description)).then(() => {
                     console.log('设置remote answer成功!');
+                    console.log(description);
                 }).catch((err) => {
                     console.log('设置remote answer错误', err);
                 });

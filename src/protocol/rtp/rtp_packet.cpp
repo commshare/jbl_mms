@@ -1,3 +1,4 @@
+#include <iostream>
 #include "rtp_packet.h"
 using namespace mms;
 
@@ -17,6 +18,12 @@ int32_t RtpPacket::decode(uint8_t *data, size_t len)
     {
         return -1;
     }
+    // std::cout << "header consumed:" << consumed << std::endl;
+    // printf("rtp:");
+    // for (int i = 0; i < 30; i++) {
+    //     printf("%02x ", data[i]);
+    // }
+    // printf("\r\n");
     data += consumed;
     len -= consumed;
 
