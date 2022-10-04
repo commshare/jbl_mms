@@ -73,7 +73,7 @@ int32_t RtpHeader::decode(uint8_t *data, size_t len)
     }
 
     ssrc = ntohl(*(uint32_t*)data);
-    std::cout << "seq=" << seqnum << ", ssrc=" << ssrc << std::endl;
+    std::cout << "seq=" << seqnum << ", ssrc=" << ssrc << ", padding=" << (uint32_t)padding << std::endl;
     data += 4;
     len -= 4;
 
