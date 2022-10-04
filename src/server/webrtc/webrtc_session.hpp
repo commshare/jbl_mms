@@ -70,6 +70,8 @@ private:
 
     uint8_t audio_pt_ = 111;
     uint8_t video_pt_ = 127;
+
+    uint32_t rtcp_pkt_count_ = 0;
 };
 
 };

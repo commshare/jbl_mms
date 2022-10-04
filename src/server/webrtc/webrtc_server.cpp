@@ -74,32 +74,28 @@ bool WebRtcServer::initCerts()
 
 void WebRtcServer::onUdpSocketRecv(UdpSocket *sock, std::unique_ptr<uint8_t[]> data, size_t len, boost::asio::ip::udp::endpoint &remote_ep)
 {
-    auto worker = thread_pool_inst::get_mutable_instance().getWorker(-1);
-    // boost::asio::spawn(worker->getIOContext(), [this, sock, recv_data = std::move(data), len, remote_ep](boost::asio::yield_context yield){
-        // uint8_t *data = recv_data.get();
-        UDP_MSG_TYPE msg_type = detectMsgType(data.get(), len);
-        if (UDP_MSG_STUN == msg_type) {
-            std::shared_ptr<StunMsg> stun_msg = std::make_shared<StunMsg>();
-            int32_t ret = stun_msg->decode(data.get(), len);
-            if (0 == ret) 
-            {
-                if (processStunPacket(stun_msg, std::move(data), len, sock, remote_ep)) 
-                {
-                    return;
-                }
-            }
-        } else if (UDP_MSG_DTLS == msg_type) {
-            if (!processDtlsPacket(std::move(data), len, sock, remote_ep))
+    UDP_MSG_TYPE msg_type = detectMsgType(data.get(), len);
+    if (UDP_MSG_STUN == msg_type) {
+        std::shared_ptr<StunMsg> stun_msg = std::make_shared<StunMsg>();
+        int32_t ret = stun_msg->decode(data.get(), len);
+        if (0 == ret) 
+        {
+            if (processStunPacket(stun_msg, std::move(data), len, sock, remote_ep)) 
             {
                 return;
             }
-        } else if (UDP_MSG_RTP == msg_type) {
-            if (!processSRTPPacket(std::move(data), len, sock, remote_ep))
-            {
-                return;
-            }
-        } 
-    // });
+        }
+    } else if (UDP_MSG_DTLS == msg_type) {
+        if (!processDtlsPacket(std::move(data), len, sock, remote_ep))
+        {
+            return;
+        }
+    } else if (UDP_MSG_RTP == msg_type) {
+        if (!processSRTPPacket(std::move(data), len, sock, remote_ep))
+        {
+            return;
+        }
+    } 
 }
 
 bool WebRtcServer::processStunPacket(std::shared_ptr<StunMsg> stun_msg, std::unique_ptr<uint8_t[]> data, size_t len, UdpSocket *sock, const boost::asio::ip::udp::endpoint &remote_ep)

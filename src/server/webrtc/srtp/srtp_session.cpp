@@ -60,6 +60,11 @@ int32_t SRTPSession::unprotectSRTP(uint8_t *data, size_t len)
 
     // std::lock_guard<std::mutex> lck(mtx_);
     int out_len = len;
+    printf("in data:");
+    for (int i = 0; i < 20; i++) {
+        printf("%02x ", data[i]);
+    }
+    printf("\r\n");
     auto err = srtp_unprotect(recv_ctx_, data, (int*)&out_len);
     if (err != srtp_err_status_ok)
     {

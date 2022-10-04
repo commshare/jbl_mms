@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include "protocol/sdp/webrtc/ssrc.h"
+// @refer https://tools.ietf.org/html/rfc5576#section-4
 // 2.10.1 ssrc-group#
 // 定义一组相关联的 ssrc：
 

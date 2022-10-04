@@ -70,5 +70,9 @@ std::string Payload::toString() const {
     for (auto & p : rtcp_fbs_) {
         oss << p.toString();
     }
+
+    for (auto & p : fmtps_) {
+        oss << p.second.toString();
+    }
     return oss.str();
 }

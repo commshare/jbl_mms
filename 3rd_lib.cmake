@@ -5,7 +5,7 @@ ExternalProject_Add(libboost-1.75.0
     URL https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ./bootstrap.sh --prefix=${PROJECT_BINARY_DIR}
-    BUILD_COMMAND ./b2 cxxflags="--std=c++11" --with-system --with-thread --with-date_time --with-regex --with-serialization --with-program_options --with-context --with-coroutine install
+    BUILD_COMMAND ./b2 cxxflags="--std=c++11" --with-system --with-filesystem --with-thread --with-date_time --with-regex --with-serialization --with-program_options --with-context --with-coroutine install
     INSTALL_COMMAND ""
 )
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)

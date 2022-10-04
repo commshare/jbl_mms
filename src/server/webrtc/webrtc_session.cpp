@@ -233,7 +233,7 @@ int32_t WebRtcSession::createLocalSdp()
             }
 
             video_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
-            auto remote_video_payload = media.searchPayload("H264");
+            auto remote_video_payload = media.searchPayload(127);
             if (!remote_video_payload.has_value())
             {
                 return -13;
@@ -245,6 +245,10 @@ int32_t WebRtcSession::createLocalSdp()
             video_payload.addRtcpFb(RtcpFb(video_pt_, "nack"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "nack", "pli"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "transport-cc"));
+            for (auto & p : rvp.getFmtps()) {
+                video_payload.addFmtp(p.second);
+            }
+            
 
             video_sdp.addPayload(video_payload);
             local_sdp_.addMediaSdp(video_sdp);
@@ -261,7 +265,7 @@ int32_t WebRtcSession::sendLocalSdp(websocketpp::server<websocketpp::config::asi
     message["type"] = "answer";
     message["sdp"] = sdp;
     root["message"] = message;
-
+    std::cout << "answer:" << sdp << std::endl;
     try
     {
         server->send(hdl, root.toStyledString(), websocketpp::frame::opcode::text);
@@ -414,6 +418,7 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
         int out_len = 0;
         if (RtpHeader::isRtcpPacket(data, len)) 
         {
+            std::cout << "on rtcp packet xxxxxxxxxxxxxxxxxxxxxxxxxxx " << ++rtcp_pkt_count_ << std::endl;
             out_len = srtp_session_.unprotectSRTCP(data, len);
             if (out_len < 0)
             {
@@ -434,23 +439,15 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
                 // onAudioPacket(rtp_pkt);
             }
             else if (pt == video_pt_)
-            {
-                printf("video  rtp len:%d, data:", out_len);
-                for (int i = 0; i < 30; i++) {
-                    printf("%02x ", data[i]);
-                }
-                printf("\r\n");
-                
-                
+            {   
                 std::shared_ptr<H264RtpPacket> rtp_pkt = std::make_shared<H264RtpPacket>();
                 int32_t consumed = rtp_pkt->decode(data, out_len);
                 if (consumed < 0)
                 {
                     return false;
                 }
-                onVideoPacket(rtp_pkt);
+                // onVideoPacket(rtp_pkt);
             }
-            // std::cout << "pt:" << (uint32_t)rtp_pkt->header_.pt << ", ssrc:" << rtp_pkt->header_.ssrc << ", seq:" << rtp_pkt->header_.seqnum << std::endl;
         } 
         else
         {

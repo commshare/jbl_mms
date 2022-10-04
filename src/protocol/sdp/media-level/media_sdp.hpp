@@ -314,6 +314,15 @@ namespace mms
             return std::nullopt;
         }
 
+        std::optional<Payload> searchPayload(uint32_t pt) const {
+            for (auto & p : payloads_) {
+                if (p.second.getPt() == pt) {
+                    return p.second;
+                }
+            }
+            return std::nullopt;
+        }
+
         void setFingerPrint(const FingerPrint & fp) {
             fingerprint_ = fp;
         }

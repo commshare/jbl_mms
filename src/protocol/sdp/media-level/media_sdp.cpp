@@ -136,6 +136,7 @@ bool MediaSdp::parseAttr(const std::string &line)
     }
     else if (Fmtp::isMyPrefix(line))
     {
+        std::cout << "curr_pt:" << curr_pt << ", fmtline:" << line << std::endl;
         if (0 != payloads_[curr_pt].parseFmtpAttr(line))
         {
             return false;

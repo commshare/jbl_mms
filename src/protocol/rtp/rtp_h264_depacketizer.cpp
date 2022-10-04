@@ -37,6 +37,7 @@ std::shared_ptr<RtpH264NALU> RtpH264Depacketizer::onPacket(std::shared_ptr<H264R
         }
 
         total_nalu_size += it->second->payload_len_ - 2;
+        it++;
     }
 
     if (!find_end_fu)
