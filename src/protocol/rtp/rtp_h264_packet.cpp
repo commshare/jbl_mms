@@ -21,9 +21,9 @@ int32_t H264RtpPacket::decode(uint8_t *data, size_t len)
     }
 
     type = (H264_RTP_HEADER_TYPE)(payload_[0] & 0x1F);
-    if (type == 28 || type == 29) {
-        std::cout << "rtp type:" << (uint32_t)type << ", payload[0]=" << (uint32_t)payload_[0] << std::endl;
-    }
+    // if (type == 28 || type == 29) {
+    //     std::cout << "rtp type:" << (uint32_t)type << ", payload[0]=" << (uint32_t)payload_[0] << std::endl;
+    // }
     
     if (H264_RTP_PAYLOAD_FU_A == type)
     {

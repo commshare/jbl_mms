@@ -17,7 +17,6 @@
 #include "session-level/timing.hpp"
 #include "session-level/tool.hpp"
 #include "attribute/common/dir.hpp"
-#include "session-level/ssrc_group.h"
 #include "protocol/sdp/ice/ice_ufrag.h"
 #include "protocol/sdp/ice/ice_pwd.h"
 
@@ -131,6 +130,5 @@ protected:
     std::optional<BundleAttr> bundle_attr_;
     
     std::vector<MediaSdp> media_sdps_;
-    std::optional<SsrcGroup> ssrc_group_;
 };
 };

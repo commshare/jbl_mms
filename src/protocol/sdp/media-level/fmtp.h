@@ -27,25 +27,25 @@ namespace mms
         static std::string prefix;
         static bool isMyPrefix(const std::string &line);
         Fmtp() = default;
-        Fmtp(int pt, const std::string &fmt_param) : pt_(pt), fmt_params_(fmt_param)
+        Fmtp(uint32_t pt, const std::unordered_map<std::string, std::string> & params) : pt_(pt), fmt_params_(params)
         {
         }
 
         bool parse(const std::string &line);
 
-        int getPt() const
+        uint32_t getPt() const
         {
             return pt_;
         }
 
-        void setPt(int pt)
+        void setPt(uint32_t pt)
         {
             pt_ = pt;
         }
         std::string toString() const;
 
     public:
-        int pt_; //-1代表所有pt，正值代表具体的pt
-        std::string fmt_params_;
+        uint32_t pt_; //-1代表所有pt，正值代表具体的pt
+        std::unordered_map<std::string, std::string> fmt_params_;
     };
 };

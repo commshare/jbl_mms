@@ -27,13 +27,28 @@ bool Fmtp::parse(const std::string & line)
     }
 
     pt_ = std::atoi(vs[0].c_str());
-    fmt_params_ = vs[1];
+    std::vector<std::string> kvs;
+    boost::split(kvs, vs[1], boost::is_any_of(";"));
+    for (auto & str : kvs) {
+        std::vector<std::string> kv;
+        boost::split(kv, str, boost::is_any_of("="));
+        if (kv.size() != 2) {
+            continue;
+        }
+        fmt_params_[kv[0]] = kv[1];
+    }
+
     return true;
 }
 
 std::string Fmtp::toString() const
 {
     std::ostringstream oss;
-    oss << prefix << pt_ << " " << fmt_params_ << std::endl;
+    std::vector<std::string> params;
+    for (auto & kv : fmt_params_) {
+        params.push_back(kv.first + "=" + kv.second);
+    }
+
+    oss << prefix << pt_ << " " << boost::algorithm::join(params, ";") << std::endl;
     return oss.str();
 }

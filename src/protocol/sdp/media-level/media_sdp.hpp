@@ -22,7 +22,7 @@
 #include "protocol/sdp/dtls/setup.h"
 #include "protocol/sdp/dtls/fingerprint.h"
 #include "protocol/sdp/session-level/candidate.h"
-#include "protocol/sdp/session-level/ssrc_group.h"
+#include "protocol/sdp/media-level/ssrc_group.h"
 
 #include "payload.h"
 // Media description, if present
@@ -325,6 +325,10 @@ namespace mms
 
         void setFingerPrint(const FingerPrint & fp) {
             fingerprint_ = fp;
+        }
+
+        FingerPrint & getFingerPrint() {
+            return fingerprint_;
         }
     private:
         // <media> is the media type.  Currently defined media are "audio",

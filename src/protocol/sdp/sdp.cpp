@@ -187,28 +187,6 @@ int32_t Sdp::parse(const std::string &sdp)
         media_sdps_.emplace_back(curr_media_sdp.value());
     }
 
-    for (; i < lines.size(); i++)
-    {
-        if (boost::starts_with(lines[i], SsrcGroup::prefix))
-        {
-            SsrcGroup ssrc_group;
-            if (!ssrc_group.parse(lines[i]))
-            {
-                return -8;
-            }
-            ssrc_group_ = ssrc_group;
-            continue;
-        }
-
-        if (ssrc_group_)
-        {
-            if (!ssrc_group_.value().parseSsrc(lines[i]))
-            {
-                return -9;
-            }
-        }
-    }
-
     return 0;
 }
 

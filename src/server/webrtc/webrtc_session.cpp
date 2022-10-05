@@ -418,7 +418,7 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
         int out_len = 0;
         if (RtpHeader::isRtcpPacket(data, len)) 
         {
-            std::cout << "on rtcp packet xxxxxxxxxxxxxxxxxxxxxxxxxxx " << ++rtcp_pkt_count_ << std::endl;
+            // std::cout << "on rtcp packet xxxxxxxxxxxxxxxxxxxxxxxxxxx " << ++rtcp_pkt_count_ << std::endl;
             out_len = srtp_session_.unprotectSRTCP(data, len);
             if (out_len < 0)
             {
@@ -446,7 +446,7 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
                 {
                     return false;
                 }
-                // onVideoPacket(rtp_pkt);
+                onVideoPacket(rtp_pkt);
             }
         } 
         else
