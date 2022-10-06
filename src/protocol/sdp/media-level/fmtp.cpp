@@ -5,6 +5,8 @@
 #include "fmtp.h"
 using namespace mms;
 std::string Fmtp::prefix = "a=fmtp:";
+std::string Fmtp::empty_str = "";
+
 bool Fmtp::isMyPrefix(const std::string & line)
 {
     if (boost::starts_with(line, prefix)) {

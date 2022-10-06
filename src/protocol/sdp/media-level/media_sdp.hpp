@@ -305,6 +305,10 @@ namespace mms
         }
         std::string toString() const;
 
+        std::unordered_map<int, Payload> & getPayloads() {
+            return payloads_;
+        }
+        
         std::optional<Payload> searchPayload(const std::string & encoding_name) const {
             for (auto & p : payloads_) {
                 if (p.second.getEncodingName() == encoding_name) {

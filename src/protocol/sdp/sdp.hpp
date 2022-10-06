@@ -70,7 +70,7 @@ public:
         return bundle_attr_.value();
     }
 
-    const std::vector<MediaSdp> & getMediaSdps() const {
+    std::vector<MediaSdp> & getMediaSdps() {
         return media_sdps_;
     }
 

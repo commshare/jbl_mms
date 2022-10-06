@@ -59,7 +59,7 @@ namespace mms
             fmtps_.insert(std::pair(fmtp.getPt(), fmtp));
         }
 
-        const std::unordered_map<int, Fmtp> &getFmtps() const
+        std::unordered_map<uint32_t, Fmtp> & getFmtps()
         {
             return fmtps_;
         }
@@ -76,6 +76,6 @@ namespace mms
         uint32_t clock_rate_;
         std::vector<std::string> encoding_params_;
         std::vector<RtcpFb> rtcp_fbs_;
-        std::unordered_map<int, Fmtp> fmtps_;
+        std::unordered_map<uint32_t, Fmtp> fmtps_;
     };
 };

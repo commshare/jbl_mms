@@ -233,19 +233,43 @@ int32_t WebRtcSession::createLocalSdp()
             }
 
             video_sdp.setFingerPrint(FingerPrint("sha-1", dtls_cert_->getFingerPrint()));
-            auto remote_video_payload = media.searchPayload(127);
-            if (!remote_video_payload.has_value())
-            {
+
+            Payload *match_video_payload = nullptr;    
+            auto & payloads = media.getPayloads();
+            for (auto & p : payloads) {
+                if (p.second.getEncodingName() != "H264") {
+                    continue;
+                }
+
+                auto & fmtps = p.second.getFmtps();
+                for (auto & pair : fmtps) {
+                    auto &fmtp = pair.second;
+                    if (fmtp.getParam("packetization-mode") == "1" && fmtp.getParam("level-asymmetry-allowed") == "1" && fmtp.getParam("profile-level-id") == "42001f") {
+                        match_video_payload = &p.second;
+                        break;
+                    }
+                }
+            }
+
+            // auto remote_video_payload = media.searchPayload(127);
+            // if (!remote_video_payload.has_value())
+            // {
+            //     return -13;
+            // }
+            // auto &rvp = remote_video_payload.value();
+            if (!match_video_payload) {
                 return -13;
             }
-            auto &rvp = remote_video_payload.value();
-            Payload video_payload(video_pt_, rvp.getEncodingName(), rvp.getClockRate(), rvp.getEncodingParams());
+
+            std::cout << "*************************** find payload ************************" << std::endl;
+            video_pt_ = match_video_payload->getPt();
+            Payload video_payload(video_pt_, match_video_payload->getEncodingName(), match_video_payload->getClockRate(), match_video_payload->getEncodingParams());
             video_payload.addRtcpFb(RtcpFb(video_pt_, "ccm", "fir"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "goog-remb"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "nack"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "nack", "pli"));
             video_payload.addRtcpFb(RtcpFb(video_pt_, "transport-cc"));
-            for (auto & p : rvp.getFmtps()) {
+            for (auto & p : match_video_payload->getFmtps()) {
                 video_payload.addFmtp(p.second);
             }
             

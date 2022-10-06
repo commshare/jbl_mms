@@ -25,6 +25,7 @@ namespace mms
     {
     public:
         static std::string prefix;
+        static std::string empty_str;
         static bool isMyPrefix(const std::string &line);
         Fmtp() = default;
         Fmtp(uint32_t pt, const std::unordered_map<std::string, std::string> & params) : pt_(pt), fmt_params_(params)
@@ -44,6 +45,21 @@ namespace mms
         }
         std::string toString() const;
 
+         std::unordered_map<std::string, std::string> & getParams() {
+            return fmt_params_;
+         }
+
+         bool hasParam(const std::string & k) {
+            return fmt_params_.find(k) != fmt_params_.end();
+         }
+
+         std::string getParam(const std::string & k) {
+            auto it = fmt_params_.find(k);
+            if (it == fmt_params_.end()) {
+                return empty_str;
+            }
+            return it->second;
+         }
     public:
         uint32_t pt_; //-1代表所有pt，正值代表具体的pt
         std::unordered_map<std::string, std::string> fmt_params_;
