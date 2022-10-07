@@ -33,12 +33,6 @@ public:
 
     bool onAudioPacket(std::shared_ptr<RtpPacket> audio_pkt);
     bool onVideoPacket(std::shared_ptr<RtpPacket> video_pkt);
-    // bool onSdp(std::shared_ptr<RtmpMetaDataMessage> metadata_pkt) {
-    //     metadata_ = metadata_pkt;
-    //     has_video_ = metadata_->hasVideo();
-    //     has_audio_ = metadata_->hasAudio();
-    //     return true;
-    // }
 
     bool addMediaSink(std::shared_ptr<MediaSink> media_sink) final {
         std::lock_guard<std::recursive_mutex> lck(sinks_mtx_);

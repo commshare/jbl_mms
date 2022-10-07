@@ -231,30 +231,30 @@ namespace mms
 
         void reverseDir()
         {
-            if (dir.getDir() == DirAttr::MEDIA_SENDONLY)
+            if (dir.getVal() == DirAttr::MEDIA_SENDONLY)
             {
-                dir.setDir(DirAttr::MEDIA_RECVONLY);
+                dir.setVal(DirAttr::MEDIA_RECVONLY);
             }
-            else if (dir.getDir() == DirAttr::MEDIA_RECVONLY)
+            else if (dir.getVal() == DirAttr::MEDIA_RECVONLY)
             {
-                dir.setDir(DirAttr::MEDIA_SENDONLY);
+                dir.setVal(DirAttr::MEDIA_SENDONLY);
             }
         }
 
         const DirAttr getReverseDir() const
         {
             DirAttr d;
-            if (dir.getDir() == DirAttr::MEDIA_SENDONLY)
+            if (dir.getVal() == DirAttr::MEDIA_SENDONLY)
             {
-                d.setDir(DirAttr::MEDIA_RECVONLY);
+                d.setVal(DirAttr::MEDIA_RECVONLY);
             }
-            else if (dir.getDir() == DirAttr::MEDIA_RECVONLY)
+            else if (dir.getVal() == DirAttr::MEDIA_RECVONLY)
             {
-                d.setDir(DirAttr::MEDIA_SENDONLY);
+                d.setVal(DirAttr::MEDIA_SENDONLY);
             }
             else
             {
-                d.setDir(DirAttr::MEDIA_SENDRECV);
+                d.setVal(DirAttr::MEDIA_SENDRECV);
             }
             return d;
         }

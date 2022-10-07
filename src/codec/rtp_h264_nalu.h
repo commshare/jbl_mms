@@ -14,6 +14,10 @@ public:
     size_t getPktsCount() {
         return rtp_pkts_.size();
     }
+
+    std::map<uint16_t, std::shared_ptr<H264RtpPacket>> & getRtpPkts() {
+        return rtp_pkts_;
+    }
 private:
     std::map<uint16_t, std::shared_ptr<H264RtpPacket>> rtp_pkts_;
 };

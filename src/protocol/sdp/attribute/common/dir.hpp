@@ -17,11 +17,11 @@ namespace mms
         bool parse(const std::string &line);
         std::string toString() const;
 
-        void setDir(MEDIA_DIR val) {
+        void setVal(MEDIA_DIR val) {
             dir_ = val;
         }
 
-        MEDIA_DIR getDir() const {
+        MEDIA_DIR getVal() const {
             return dir_;
         }
     private:

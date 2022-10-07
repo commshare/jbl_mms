@@ -11,9 +11,14 @@ bool RtpMediaSource::onAudioPacket(std::shared_ptr<RtpPacket> audio_pkt)
 bool RtpMediaSource::onVideoPacket(std::shared_ptr<RtpPacket> video_pkt) 
 {
     // std::cout << "on rtp video pkt, mark:" << (uint32_t)video_pkt->header_.marker << ", payload_len:" << video_pkt->payload_len_ << std::endl;
-    auto h264_nalu = h264_depacketizer_.onPacket(std::static_pointer_cast<H264RtpPacket>(video_pkt));
-    if (h264_nalu) {
-        std::cout << "******************* get h264 nalu, rtp count:" << h264_nalu->getPktsCount() << " ********************" << std::endl;
-    }
+    // auto h264_nalu = h264_depacketizer_.onPacket(std::static_pointer_cast<H264RtpPacket>(video_pkt));
+    // if (h264_nalu) {
+    //     std::cout << "******************* get h264 nalu, rtp count:" << h264_nalu->getPktsCount() << " ********************" << std::endl;
+    //     for (auto & p : h264_nalu->getRtpPkts()) {
+    //         std::cout << "************** type:" << p.second->getType() << ", start:" << (uint32_t)p.second->isStartFU() << ", end:" << (uint32_t)p.second->isEndFU() << std::endl;
+    //     }
+    // }
+
+    
     return true;
 }

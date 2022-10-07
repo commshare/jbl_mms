@@ -19,7 +19,7 @@
 #include "protocol/rtp/rtp_h264_packet.h"
 
 using namespace mms;
-WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : RtpMediaSource(worker), worker_(worker), ws_conn_(conn)
+WebRtcSession::WebRtcSession(ThreadWorker *worker, WebSocketConn *conn) : RtpMediaSource(worker), RtpMediaSink(worker), worker_(worker), ws_conn_(conn)
 {
     std::cout << "create webrtcsession" << std::endl;
     local_ice_ufrag_ = Utils::randStr(4);
@@ -94,9 +94,18 @@ void WebRtcSession::onMessage(websocketpp::server<websocketpp::config::asio> *se
                 return;
             }
 
-            if (medias[0].getDir().getDir() == DirAttr::MEDIA_SENDONLY || medias[0].getDir().getDir() == DirAttr::MEDIA_SENDRECV)
+            if (medias[0].getDir().getVal() == DirAttr::MEDIA_SENDONLY || medias[0].getDir().getVal() == DirAttr::MEDIA_SENDRECV)
             {
                 MediaManager::get_mutable_instance().addSource(session_name_, std::dynamic_pointer_cast<MediaSource>(shared_from_this()));
+            }
+            else if (medias[0].getDir().getVal() == DirAttr::MEDIA_RECVONLY || medias[0].getDir().getVal() == DirAttr::MEDIA_SENDRECV)
+            {
+                auto source = MediaManager::get_mutable_instance().getSource(session_name_);
+                if (!source) {//todo : reply 404
+                    close();
+                    return;
+                }
+                source->addMediaSink(std::dynamic_pointer_cast<MediaSink>(shared_from_this()));
             }
         }
     }
@@ -251,17 +260,10 @@ int32_t WebRtcSession::createLocalSdp()
                 }
             }
 
-            // auto remote_video_payload = media.searchPayload(127);
-            // if (!remote_video_payload.has_value())
-            // {
-            //     return -13;
-            // }
-            // auto &rvp = remote_video_payload.value();
             if (!match_video_payload) {
                 return -13;
             }
 
-            std::cout << "*************************** find payload ************************" << std::endl;
             video_pt_ = match_video_payload->getPt();
             Payload video_payload(video_pt_, match_video_payload->getEncodingName(), match_video_payload->getClockRate(), match_video_payload->getEncodingParams());
             video_payload.addRtcpFb(RtcpFb(video_pt_, "ccm", "fir"));
@@ -273,7 +275,6 @@ int32_t WebRtcSession::createLocalSdp()
                 video_payload.addFmtp(p.second);
             }
             
-
             video_sdp.addPayload(video_payload);
             local_sdp_.addMediaSdp(video_sdp);
         }
@@ -442,7 +443,6 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
         int out_len = 0;
         if (RtpHeader::isRtcpPacket(data, len)) 
         {
-            // std::cout << "on rtcp packet xxxxxxxxxxxxxxxxxxxxxxxxxxx " << ++rtcp_pkt_count_ << std::endl;
             out_len = srtp_session_.unprotectSRTCP(data, len);
             if (out_len < 0)
             {
@@ -457,10 +457,10 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
                 return false;
             }
 
-            auto pt = RtpHeader::parsePt(data, out_len);
+            auto pt = RtpHeader::parsePt(data, out_len);//todo 改成用ssrc来区分
             if (pt == audio_pt_)
             {
-                // onAudioPacket(rtp_pkt);
+                // RtpMediaSource::onAudioPacket(rtp_pkt);
             }
             else if (pt == video_pt_)
             {   
@@ -470,7 +470,7 @@ bool WebRtcSession::processSRtpPacket(std::unique_ptr<uint8_t[]> data, size_t le
                 {
                     return false;
                 }
-                onVideoPacket(rtp_pkt);
+                RtpMediaSource::onVideoPacket(rtp_pkt);
             }
         } 
         else
