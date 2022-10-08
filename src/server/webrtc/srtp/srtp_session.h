@@ -25,6 +25,5 @@ namespace mms
         srtp_t send_ctx_ = nullptr;
         srtp_t recv_ctx_ = nullptr;
         srtp_policy_t srtp_policy_;
-        std::mutex mtx_;
     };
 };
